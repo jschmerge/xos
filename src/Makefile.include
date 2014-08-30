@@ -1,0 +1,195 @@
+######################################################################
+# The rest of this is a work in progress, but should not
+# need modification
+######################################################################
+BUILD ?= release
+
+CC     ?= gcc
+CXX    ?= g++
+LD     ?= ld
+OBJCPY ?= objcopy
+
+DBG_TARGETS = $(TARGETS:%=%.debug)
+
+#
+# Print out our settings
+#
+WS = $(BLANK) $(BLANK)
+#$(info $(WS) INCLUDES = '$(INCLUDES)')
+#$(info $(WS)  DEFINES = '$(DEFINES)')
+#$(info $(WS)   CFLAGS = '$(CFLAGS)')
+#$(info $(WS) CXXFLAGS = '$(CXXFLAGS)')
+#$(info $(WS)  LDFLAGS = '$(LDFLAGS)')
+#$(info $(WS)     LIBS = '$(LIBS)')
+
+####
+# Cute stuff to beautify make output - use 'make V=1' to see command output
+####
+V           ?= 0
+Q_0          = @
+Q            = $(Q_$(V))
+QDEP_0       = @echo "       DEP" $<;
+QDEP         = $(QDEP_$(V))
+
+QCC_0        = @echo "        CC" $<;
+QCC          = $(QCC_$(V))
+QCXX_0       = @echo "       CXX" $<;
+QCXX         = $(QCXX_$(V))
+QLINK_0      = @echo "      LINK" $@;
+QLINK        = $(QLINK_$(V))
+QSYM_0       = @echo "       SYM" $@;
+QSYM         = $(QSYM_$(V))
+QSTRIP_0     = @echo "     STRIP" $@;
+QSTRIP       = $(QSTRIP_$(V))
+QLNKSYM_0    = @echo "    LNKSYM" $@;
+QLNKSYM      = $(QLNKSYM_$(V))
+
+
+QDEPDBG_0    = @echo "       DEP $< [dbg]";
+QDEPDBG      = $(QDEPDBG_$(V))
+QCCDBG_0     = @echo "        CC $< [dbg]";
+QCCDBG       = $(QCCDBG_$(V))
+QCXXDBG_0    = @echo "       CXX $< [dbg]";
+QCXXDBG      = $(QCXXDBG_$(V))
+QLINKDBG_0   = @echo "      LINK $@ [dbg]";
+QLINKDBG     = $(QLINKDBG_$(V))
+
+HIDEOUTPUT_0 = "/dev/null"
+HIDEOUTPUT_1 = "/dev/stdout"
+HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
+
+####
+# Auto-rules
+####
+BINDIR  = bin
+DEPDIR  = .deps
+OBJDIR  = .objs
+
+#
+# Create dependency '.d' file
+#
+$(DEPDIR)/%.d: %.cc
+	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+	$(QDEP)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CXXFLAGS) $< > $@
+
+$(DEPDIR)/%.debug.d: %.cc
+	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
+		$(CXXFLAGS_debug) $< > $@
+
+$(DEPDIR)/%.d: %.c
+	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+	$(QDEP)$(CC) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CFLAGS) $< > $@
+
+$(DEPDIR)/%.debug.d: %.c
+	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
+		$(CFLAGS_debug) $< > $@
+
+#
+# Source unit compilation
+#
+$(OBJDIR)/%.o: %.cc
+	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(QCXX)$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.debug.o: %.cc
+	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(QCXXDBG)$(CXX) $(CXXFLAGS_debug) -c $< -o $@
+
+$(OBJDIR)/%.o: %.c
+	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(QCC)$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.debug.o: %.c
+	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(QCCDBG)$(CC) $(CFLAGS_debug) -c $< -o $@
+
+#
+# TARGETS
+#
+all: release
+
+release: $(TARGETS)
+
+debug: $(DBG_TARGETS)
+
+libs: 
+
+#
+# This is the main bit of logic in this file. MAKE_PROGRAM gets expanded
+# for each target in TARGETS. It creates both release and debug targets
+# based on the files listed in the user-supplied $(target_OBJS) variable.
+#
+# If editing, make sure you use double dollar signs to avoid expansion until
+# the macro is called below in the $(foreach)
+#
+define MAKE_PROGRAM
+  #
+  # We need this to eat the whitespace in the parameter expansion
+  #
+  PROG = $(1)
+  EXE = $$(BINDIR)/$$(PROG)
+  #
+  # Place compiled objects in $(OBJDIR)
+  #
+  $$(PROG)_OBJS := $$($$(PROG)_OBJS:%.o=$$(OBJDIR)/%.o)
+  #
+  # Generate object list for the debug build
+  #
+  $$(PROG)_DBG_OBJS = $$($$(PROG)_OBJS:%.o=%.debug.o)
+
+  #
+  # Link the release build, then strip it, preserving debug symbols in
+  # $(target).symbols
+  #
+  $$(EXE): $$($$(PROG)_OBJS)
+	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
+	$$(QLINK)$$(CXX) $$(CXXFLAGS) -o $$@ $$^ $$(LDFLAGS) $$(LIBS)
+	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
+	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
+	$$(QLNKSYM)$$(OBJCPY) --add-gnu-debuglink $$@.symbols $$@
+	$$(Q)chmod 644 $$@.symbols
+
+  $$(PROG): $$(EXE)
+
+  $$(PROG).debug: $$(EXE).debug
+
+  .PHONY: $$(PROG) $$(PROG).debug
+
+  #
+  # Make target for debug build
+  #
+  $$(EXE).debug: $$($$(PROG)_DBG_OBJS)
+	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
+		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
+  #
+  # a normal equal here causes recursive expansion
+  #
+  OBJS := $$(OBJS) $$($$(PROG)_OBJS) $$($$(PROG)_DBG_OBJS)
+endef
+
+#
+# loop through the targets, generating our link rules
+#
+$(foreach T, $(TARGETS),$(eval $(call MAKE_PROGRAM, $(T))))
+
+#
+# deps are auto-generated from the accumulated list of OBJS from the
+# expansion above
+#
+DEPS     = $(OBJS:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
+
+tags:
+	ctags -R .
+
+clean:
+	rm -rf $(OBJDIR) $(BINDIR) core core.[0123456789]* a.out *.symbols
+
+docclean:
+	rm -rf doc/html
+
+realclean: clean docclean
+	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags
+
+-include $(DEPS)
