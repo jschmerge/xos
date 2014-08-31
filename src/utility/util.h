@@ -14,16 +14,12 @@
 ///
 /// Simple functor for freeing malloc-allocated memory
 ///
-struct MallocDeleter {
-	void operator () (void * p) { free(p); }
-};
+struct MallocDeleter { void operator () (void * p) { free(p); } };
  
 ///
 /// Simple functor for closing a C stdio FILE*
 ///
-struct FCloseFunctor {
-	void operator () (FILE * f) { fclose(f); }
-};
+struct FCloseFunctor { void operator () (FILE * f) { fclose(f); } };
 
 ///
 /// RAII Wrapper for C stdio FILE* objects
@@ -34,12 +30,12 @@ typedef std::unique_ptr<FILE, FCloseFunctor> FilePtr;
 /// convenience function for those times you need an std::string from a
 /// character literal
 ///                 
-inline const std::string S(const char * s)
-	{ return std::string(s); }
+inline const std::string S(const char * s) { return std::string(s); }
   
 ///
 /// Generic string -> whatever conversion routine. This version has issues,
-/// both with performance and bugs in the C/C++ standard library.
+/// both with performance and bugs in the C/C++ standard library...
+/// Specifically, the underlying deficiencies in strto{l,ll,ul,ull}
 ///
 template<class T>
 T stringTo(const std::string & s)
@@ -88,7 +84,9 @@ inline std::system_error make_syserr(int e, const char * msg)
 }
 
 inline std::system_error make_syserr(int e, const std::string & msg)
-	{ return make_syserr(e, msg.c_str()); }
+{
+	return std::system_error(std::error_code(e, std::system_category()), msg);
+}
 
 inline std::system_error make_syserr(const std::string & msg)
 	{ return make_syserr(errno, msg); }
