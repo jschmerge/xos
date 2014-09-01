@@ -87,7 +87,9 @@ namespace std {
 
 		// native format observers
 		const string_type & native() const noexcept;
+#endif
 		const value_type * c_str() const noexcept;
+#if 0
 		operator string_type() const;
 
 		template <class EcharT,

@@ -43,6 +43,9 @@ QSTRIP_0     = @echo "     STRIP" $@;
 QSTRIP       = $(QSTRIP_$(V))
 QLNKSYM_0    = @echo "    LNKSYM" $@;
 QLNKSYM      = $(QLNKSYM_$(V))
+QAR_0        = @echo "   ARCHIVE" $@;
+QAR          = $(QAR_$(V))
+
 
 
 QDEPDBG_0    = @echo "       DEP $< [dbg]";
@@ -188,8 +191,8 @@ define MAKE_LIBRARY
   $$(LIBNAME): $$(STATIC_LIB)
 
   $$(STATIC_LIB): $$($$(LIBNAME)_OBJS)
-	[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
-	ar cru $$@ $$^
+	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+	$$(QAR)ar cru $$@ $$^
   #
   # a normal equal here causes recursive expansion
   #

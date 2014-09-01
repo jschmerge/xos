@@ -49,6 +49,11 @@ path & path::operator /= (const path & )
 }
 #endif
 
+const path::value_type * path::c_str() const noexcept
+{
+	return pathname.c_str();
+}
+
    } /*v1*/
   }/*filesystem*/
  } /*experimental*/
