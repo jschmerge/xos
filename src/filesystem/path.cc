@@ -30,6 +30,26 @@ path & path::operator = (const path & other)
 	return *this;
 }
 
+path & path::operator /= (const path & p)
+{
+	if (!empty() && !p.empty() &&
+	    *p.native().cbegin() != preferred_separator &&
+	    *native().crbegin() != preferred_separator)
+	{
+		pathname += preferred_separator;
+		seperators.push_back(pathname.length() - 1);
+	}
+
+	auto oldLength = pathname.length();
+
+	pathname += p.pathname;
+
+	for (auto idx : p.seperators)
+		seperators.push_back(idx + oldLength);
+
+	return *this;
+}
+
 path & path::operator = (path && other) noexcept
 {
 	using std::swap;
@@ -42,12 +62,38 @@ path & path::operator = (path && other) noexcept
 	return *this;
 }
 
-#if XXX
-path & path::operator /= (const path & )
+void path::clear() noexcept
+{
+	pathname.clear();
+	seperators.clear();
+}
+
+path & path::make_preferred()
 {
 	return *this;
 }
-#endif
+
+void path::swap(path & rhs) noexcept
+{
+	std::swap(pathname, rhs.pathname);
+	std::swap(seperators, rhs.seperators);
+}
+
+const path::string_type & path::native() const noexcept
+{
+	return pathname;
+}
+
+const path::value_type * path::c_str() const noexcept
+{
+	return pathname.c_str();
+}
+
+bool path::empty() const noexcept
+{
+	return pathname.empty();
+}
+
 
 const path::value_type * path::c_str() const noexcept
 {

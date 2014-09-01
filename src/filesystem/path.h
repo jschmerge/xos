@@ -28,9 +28,9 @@ namespace std {
 		path & operator = (const path & p);
 		path & operator = (path && p) noexcept;
 
-#if 0
 		template <class Source>
 		 path(const Source & source);
+#if 0
 		template <class InputIterator>
 		 path(InputIterator first, InputIterator last);
 		template <class Source>
@@ -44,24 +44,19 @@ namespace std {
 		 path & assign(const Source & source);
 		template <class InputIterator>
 		 path & assign(InputIterator first, InputIterator last);
-#endif
 
+#endif
 		// appends
-#if XXX
-		// XXX - what is the runtime complexity here?
 		path & operator /= (const path & p);
-#endif
-
 #if 0
+
 		template <class Source>
 		 path & operator /= (const Source & source);
 		template <class Source>
 		 path & append(const Source & source);
 		template <class InputIterator>
 		 path & append(InputIterator first, InputIterator last);
-#endif
 
-#if 0
 		// concatenation
 		path & operator += (const path & x);
 		path & operator += (const string_type & x);
@@ -77,14 +72,19 @@ namespace std {
 		template <class InputIterator>
 		 path & concat(InputIterator first, InputIterator last);
 
+#endif
 		// modifiers
 		void clear() noexcept;
 		path & make_preferred();
+#if 0
 		path & remove_filename();
 		path & replace_filename(const path & replacement);
 		path & replace_extension(const path & replacement = path());
+#endif
 		void swap(path & rhs) noexcept;
+#if 0
 
+#endif
 		// native format observers
 		const string_type & native() const noexcept;
 #endif
@@ -131,8 +131,10 @@ namespace std {
 		path stem() const;
 		path extension() const;
 
+#endif
 		// query
 		bool empty() const noexcept;
+#if 0
 		bool has_root_name() const;
 		bool has_root_directory() const;
 		bool has_root_path() const;
