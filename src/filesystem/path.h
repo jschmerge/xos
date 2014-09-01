@@ -5,10 +5,8 @@
 #include <string>
 #include <vector>
 
-namespace std {
- namespace experimental {
-  namespace filesystem {
-   inline namespace v1 {
+namespace filesystem {
+inline namespace v1 {
 
 	class path
 	{
@@ -82,15 +80,11 @@ namespace std {
 		path & replace_extension(const path & replacement = path());
 #endif
 		void swap(path & rhs) noexcept;
-#if 0
-
-#endif
 		// native format observers
 		const string_type & native() const noexcept;
-#endif
 		const value_type * c_str() const noexcept;
-#if 0
 		operator string_type() const;
+#if 0
 
 		template <class EcharT,
 				  class traits = std::char_traits<EcharT>,
@@ -158,10 +152,19 @@ namespace std {
 		std::vector<string_type::size_type> seperators;
 	};
 
-   } /*v1*/
-  }/*filesystem*/
- } /*experimental*/
-} /*std*/
+	template <class Source>
+	path::path(const Source & source)
+	  : pathname(std::begin(source), std::end(source))
+	{
+		for (string_type::size_type i = 0; i < pathname.length(); ++i)
+		{
+			if (pathname[i] == preferred_separator)
+				seperators.push_back(i);
+		}
+	}
+
+} /*v1*/
+}/*filesystem*/
 
 
 #endif // GUARD_FS_PATH_H

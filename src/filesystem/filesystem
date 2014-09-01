@@ -11,10 +11,8 @@
 
 #include "path.h"
 
-namespace std {
- namespace experimental {
-  namespace filesystem {
-   inline namespace v1 {
+namespace filesystem {
+inline namespace v1 {
 
 	class path;
 
@@ -215,9 +213,7 @@ namespace std {
 	path temp_directory_path();
 	path temp_directory_path(std::error_code& ec);
 
-   } /*v1*/
-  }/*filesystem*/
- } /*experimental*/
-} /*std*/
+} /*v1*/
+}/*filesystem*/
 
 #endif // GUARD_FILESYSTEM_H

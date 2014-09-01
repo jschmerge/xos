@@ -1,9 +1,7 @@
 #include "path.h"
 
-namespace std {
- namespace experimental {
-  namespace filesystem {
-   inline namespace v1 {
+namespace filesystem {
+inline namespace v1 {
 
 path::path() noexcept
   : pathname(), seperators() 
@@ -89,19 +87,15 @@ const path::value_type * path::c_str() const noexcept
 	return pathname.c_str();
 }
 
+path::operator string_type() const
+{
+	return pathname;
+}
+
 bool path::empty() const noexcept
 {
 	return pathname.empty();
 }
 
-
-const path::value_type * path::c_str() const noexcept
-{
-	return pathname.c_str();
-}
-
-   } /*v1*/
-  }/*filesystem*/
- } /*experimental*/
-} /*std*/
-
+} /*v1*/
+} /*filesystem*/
