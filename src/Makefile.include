@@ -64,6 +64,7 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 BINDIR  = bin
 DEPDIR  = .deps
 OBJDIR  = .objs
+LIBDIR  = .libs
 
 #
 # Create dependency '.d' file
@@ -110,7 +111,7 @@ $(OBJDIR)/%.debug.o: %.c
 #
 all: release
 
-release: $(TARGETS)
+release: $(TARGETS) $(LIB_TARGETS)
 
 debug: $(DBG_TARGETS)
 
@@ -169,10 +170,38 @@ define MAKE_PROGRAM
   OBJS := $$(OBJS) $$($$(PROG)_OBJS) $$($$(PROG)_DBG_OBJS)
 endef
 
+define MAKE_LIBRARY
+  #
+  # We need this to eat the whitespace in the parameter expansion
+  #
+  LIBNAME = $(1)
+  STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).a
+  #
+  # Place compiled objects in $(OBJDIR)
+  #
+  $$(LIBNAME)_OBJS := $$($$(LIBNAME)_OBJS:%.o=$$(OBJDIR)/%.o)
+  #
+  # Generate object list for the debug build
+  #
+  $$(LIBNAME)_DBG_OBJS = $$($$(LIBNAME)_OBJS:%.o=%.debug.o)
+
+  $$(LIBNAME): $$(STATIC_LIB)
+
+  $$(STATIC_LIB): $$($$(LIBNAME)_OBJS)
+	[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+	ar cru $$@ $$^
+  #
+  # a normal equal here causes recursive expansion
+  #
+  OBJS := $$(OBJS) $$($$(LIBNAME)_OBJS) $$($$(LIBNAME)_DBG_OBJS)
+endef
+
 #
 # loop through the targets, generating our link rules
 #
 $(foreach T, $(TARGETS),$(eval $(call MAKE_PROGRAM, $(T))))
+
+$(foreach T, $(LIB_TARGETS),$(eval $(call MAKE_LIBRARY, $(T))))
 
 #
 # deps are auto-generated from the accumulated list of OBJS from the
@@ -184,7 +213,8 @@ tags:
 	ctags -R .
 
 clean:
-	rm -rf $(OBJDIR) $(BINDIR) core core.[0123456789]* a.out *.symbols
+	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) \
+	core core.[0123456789]* a.out *.symbols
 
 docclean:
 	rm -rf doc/html
