@@ -43,6 +43,10 @@ QSTRIP_0     = @echo "     STRIP" $@;
 QSTRIP       = $(QSTRIP_$(V))
 QLNKSYM_0    = @echo "    LNKSYM" $@;
 QLNKSYM      = $(QLNKSYM_$(V))
+QAR_0        = @echo "        AR" $@;
+QAR          = $(QAR_$(V))
+QRANLIB_0    = @echo "    RANLIB" $@;
+QRANLIB      = $(QRANLIB_$(V))
 
 
 QDEPDBG_0    = @echo "       DEP $< [dbg]";
@@ -64,7 +68,7 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 BINDIR  = bin
 DEPDIR  = .deps
 OBJDIR  = .objs
-LIBDIR  = .libs
+LIBDIR  = $(shell pwd)/lib
 
 #
 # Create dependency '.d' file
@@ -188,8 +192,9 @@ define MAKE_LIBRARY
   $$(LIBNAME): $$(STATIC_LIB)
 
   $$(STATIC_LIB): $$($$(LIBNAME)_OBJS)
-	[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
-	ar cru $$@ $$^
+	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+	$$(QAR)ar -cSurv $$@ $$^
+	$$(QRANLIB)ranlib $$@
   #
   # a normal equal here causes recursive expansion
   #
