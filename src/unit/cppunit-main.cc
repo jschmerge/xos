@@ -61,11 +61,8 @@ int main(int argc, char ** argv)
 	CppUnit::TestResult result;
 	CppUnit::TestResultCollector collector;
 
-	std::cerr << "----> Starting test" << std::endl;
-
 	result.addListener(&collector);
 
-	std::cerr << "----> Starting test2" << std::endl;
 	OutputterMap allOutputters{
 		{ "compiler", new CppUnit::CompilerOutputter(&collector, std::cout)},
 		{ "text", new CppUnit::TextOutputter(&collector, std::cout) },
@@ -86,7 +83,6 @@ int main(int argc, char ** argv)
 
 	std::string runTest = basename(argv[0]);
 
-	std::cerr << "----> Starting test3" << std::endl;
 	if (!find(CppUnit::TestFactoryRegistry::getRegistry().makeTest(), runTest))
 	{
 		runTest = "All Tests";
@@ -153,7 +149,6 @@ int main(int argc, char ** argv)
 	if (listener != nullptr)
 		result.addListener(listener);
 
-	std::cerr << "----> Starting test4" << std::endl;
 	CppUnit::Test * run = find(CppUnit::TestFactoryRegistry::getRegistry().makeTest(), runTest);
 
 	if (run == nullptr)
@@ -170,7 +165,6 @@ int main(int argc, char ** argv)
 		runner.run(result);
 	}
 
-	std::cerr << "----> Starting test5" << std::endl;
 	if (outputter) outputter->write();
 
 	return collector.testErrors() + collector.testFailures();
