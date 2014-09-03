@@ -11,6 +11,7 @@
 
 #include "path_traits.h"
 #include "path.h"
+#include "path_traits.h"
 
 namespace filesystem {
 inline namespace v1 {
