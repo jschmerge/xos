@@ -9,6 +9,7 @@
 #include <chrono>
 #include <system_error>
 
+#include "path_traits.h"
 #include "path.h"
 
 namespace filesystem {
