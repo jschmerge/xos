@@ -36,9 +36,10 @@ LIBS             = $(LIBS_$(BUILD))
 TARGETS            = unittest
 
 unittest_OBJS = cppunit-main.o \
-                unit-path.o
+                unit_path.o \
+                unit_path_traits.o
 
 include ../Makefile.include
 
-check:
+check: $(TARGETS)
 	bin/unittest -p brief
