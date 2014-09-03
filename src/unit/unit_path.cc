@@ -29,27 +29,33 @@ class Test_Path : public CppUnit::TestFixture
 
 	void valueConstructor()
 	{
-#if 0
-		const char value[] = "/foo/bar";
-		filesystem::path p(value);
-		CPPUNIT_ASSERT(! p.empty());
-//		fprintf(stderr, "---> \"%s\" \"%s\"\n", p.native().c_str(),
-//		        value);
+		{
+			const char value[] = "/foo/bar";
+			filesystem::path p1(value);
+			CPPUNIT_ASSERT(! p1.empty());
+			CPPUNIT_ASSERT(p1.native() == value);
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), value) == 0);
 
-		std::cerr << "'" << p.native() << "' '" << value << "'" << std::endl;
-		//CPPUNIT_ASSERT(p.native() == value);
-		CPPUNIT_ASSERT(strcmp(p.c_str(), value) == 0);
+			std::string val2(value);
+			filesystem::path p2(val2);
+			CPPUNIT_ASSERT(! p2.empty());
+			CPPUNIT_ASSERT(p2.native() == value);
+			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
+		}
 
-//		std::string s(value);
-		std::string s = p;
-		std::cerr << s << ' ' << s.length() << ' '
-		          << value << ' ' << strlen(value) << std::endl;
-		CPPUNIT_ASSERT(s == value);
-//
-//		CPPUNIT_ASSERT(! s.empty());
-//		CPPUNIT_ASSERT(s == value);
-//		CPPUNIT_ASSERT(strcmp(s.c_str(), value) == 0);
-#endif
+		{
+			const char * value = "/foo/bar";
+			filesystem::path p1(value);
+			CPPUNIT_ASSERT(! p1.empty());
+			CPPUNIT_ASSERT(p1.native() == value);
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), value) == 0);
+
+			std::string val2(value);
+			filesystem::path p2(val2);
+			CPPUNIT_ASSERT(! p2.empty());
+			CPPUNIT_ASSERT(p2.native() == value);
+			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
+		}
 	}
 
 };

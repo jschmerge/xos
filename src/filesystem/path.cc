@@ -5,11 +5,14 @@ namespace filesystem {
 inline namespace v1 {
 
 path::path() noexcept
-  : pathname(), seperators() 
+  : pathname()
+  , seperators() 
 	{ }
 
 path::path(const path & other)
-  : pathname(other.pathname), seperators(other.seperators) { }
+  : pathname(other.pathname)
+  , seperators(other.seperators)
+	{ }
 
 path::path(path && other) noexcept
   : pathname(std::move(other.pathname))

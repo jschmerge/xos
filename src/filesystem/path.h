@@ -28,15 +28,20 @@ inline namespace v1 {
 		path & operator = (const path & p);
 		path & operator = (path && p) noexcept;
 
-		template <class Source>
-		path(typename std::enable_if<
-			path_traits::is_path_initializer<Source>::is_ntcts_terminated,
-			const Source&>::type );
+		template <class Source,
+			      typename std::enable_if<
+		              path_traits::is_path_initializer<
+		                  Source>::is_ntcts_terminated,
+			          Source*>::type = nullptr>
+		path(const Source & src);
 
-		template <class Source>
-		path(typename std::enable_if<
-			!path_traits::is_path_initializer<Source>::is_ntcts_terminated,
-			const Source&>::type );
+		template <class Source,
+			      typename std::enable_if<
+		              ! path_traits::is_path_initializer<
+		                  Source>::is_ntcts_terminated,
+		              Source*>::type = nullptr>
+		path(const Source & src);
+
 #if 0
 		template <class InputIterator>
 		 path(InputIterator first, InputIterator last);
@@ -161,10 +166,12 @@ inline namespace v1 {
 		std::vector<string_type::size_type> seperators;
 	};
 
-	template <class Source>
-	path::path(typename std::enable_if<
-	             path_traits::is_path_initializer<Source>::is_ntcts_terminated,
-	             const Source&>::type src)
+	template <class Source,
+		      typename std::enable_if<
+	              path_traits::is_path_initializer<
+	                  Source>::is_ntcts_terminated,
+		          Source*>::type>
+	path::path(const Source & src)
 	{
 		for (auto i = src;
 		     *i != path_traits::is_path_initializer<Source>::eos; ++i)
@@ -173,12 +180,18 @@ inline namespace v1 {
 		}
 	}
 
-	template <class Source>
-	path::path(typename std::enable_if<
-	             !path_traits::is_path_initializer<Source>::is_ntcts_terminated,
-	             const Source&>::type src)
-	  : pathname(src.begin(), src.end())
+	template <class Source,
+		      typename std::enable_if<
+	              ! path_traits::is_path_initializer<
+	                  Source>::is_ntcts_terminated,
+	              Source*>::type>
+	path::path(const Source & src)
 	{
+		pathname.reserve(src.size());
+		for (const auto & i : src)
+		{
+			pathname.push_back(i);
+		}
 	}
 
 } /*v1*/

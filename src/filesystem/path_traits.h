@@ -142,43 +142,13 @@ struct is_path_initializer<C<EcharT, Args...>>
 	typedef typename std::remove_cv<
 	          typename C<EcharT, Args...>::value_type>::type value_type;
 	static constexpr bool is_ntcts_terminated = false;
-	typedef decltype(
-	  ++std::declval<typename C<EcharT, Args...>::iterator>()) iterator_type;
+//	typedef decltype(
+//	  ++std::declval<typename C<EcharT, Args...>::iterator>()) iterator_type;
 	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
 };
 
 // null pointer restriction
 template <> struct is_path_initializer<std::nullptr_t> : std::false_type { };
-
-#if 0
-template <typename T>
-struct is_path_array_source<T*> {
-	typedef typename std::decay<
-		typename std::remove_cv<T>::type>::type value_type;
-	static constexpr bool value = is_path_encodable<value_type>::value;
-};
-
-template <typename T>
-struct is_path_array_source<T[]> {
-	typedef typename std::remove_cv<
-		typename std::decay<T>::type>::type value_type;
-	static constexpr bool value = is_path_encodable<value_type>::value;
-};
-
-template <typename C>
-struct is_path_container_source
-{
-//	typedef typename C::iterator iterator_type;
-
-	typedef typename std::decay<
-		typename std::remove_cv<typename C::value_type>::type>::type value_type;
-	static constexpr bool value = is_path_encodable<value_type>::value;
-};
-
-template <typename T>
-struct is_path_source : std::false_type { };
-#endif
-
 
 } // namespace path_traits
 } // inline namespace v1
