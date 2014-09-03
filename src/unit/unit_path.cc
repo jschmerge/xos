@@ -6,11 +6,23 @@
 #include <cstring>
 #include <iostream>
 
+template <typename T>
+struct operands_and_result
+{
+	operands_and_result(const T & _o1, const T & _o2, const T & _result)
+	  : operand1(_o1), operand2(_o2), result(_result) { }
+
+	const T operand1;
+	const T operand2;
+	const T result;
+};
+
 class Test_Path : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Path);
 	CPPUNIT_TEST(defaultConstructor);
 	CPPUNIT_TEST(valueConstructor);
+	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -55,6 +67,68 @@ class Test_Path : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
+		}
+	}
+
+	void slashEqualOperator()
+	{
+		std::vector<operands_and_result<std::string>> path_set {
+			{ "", "", "" },
+			{ "", "/", "/" },
+			{ "", "/bar", "/bar" },
+			{ "", "bar", "bar" },
+			{ "", "/bar/", "/bar/" },
+			{ "", "bar/", "bar/" },
+
+			{ "/", "",      "/" },
+			{ "/", "/",     "/" },
+			{ "/", "/bar",  "/bar" },
+			{ "/", "bar",   "/bar" },
+			{ "/", "/bar/", "/bar/" },
+			{ "/", "bar/",  "/bar/" },
+
+			{ "/foo", ""     , "/foo" },
+			{ "/foo", "/"    , "/foo/" },
+			{ "/foo", "/bar" , "/foo/bar" },
+			{ "/foo", "bar"  , "/foo/bar" },
+			{ "/foo", "/bar/", "/foo/bar/" },
+			{ "/foo", "bar/" , "/foo/bar/" },
+
+			{ "foo", ""     , "foo" },
+			{ "foo", "/"    , "foo/" },
+			{ "foo", "/bar" , "foo/bar" },
+			{ "foo", "bar"  , "foo/bar" },
+			{ "foo", "/bar/", "foo/bar/" },
+			{ "foo", "bar/" , "foo/bar/" },
+
+			{ "/foo/", ""     , "/foo/" },
+			{ "/foo/", "/"    , "/foo/" },
+			{ "/foo/", "/bar" , "/foo/bar" },
+			{ "/foo/", "bar"  , "/foo/bar" },
+			{ "/foo/", "/bar/", "/foo/bar/" },
+			{ "/foo/", "bar/" , "/foo/bar/" },
+
+			{ "foo/", ""     , "foo/" },
+			{ "foo/", "/"    , "foo/" },
+			{ "foo/", "/bar" , "foo/bar" },
+			{ "foo/", "bar"  , "foo/bar" },
+			{ "foo/", "/bar/", "foo/bar/" },
+			{ "foo/", "bar/" , "foo/bar/" },
+		};
+
+//		putchar('\n');
+		for (const auto & i : path_set)
+		{
+			filesystem::path p1(i.operand1);
+			filesystem::path p2(i.operand2);
+
+			p1 /= p2;
+
+//			printf("'%s' + '%s' = '%s' (expected '%s')\n", i.operand1.c_str(),
+//			       i.operand2.c_str(), p1.native().c_str(), i.result.c_str());
+
+			CPPUNIT_ASSERT(p1.native() == i.result);
+
 		}
 	}
 
