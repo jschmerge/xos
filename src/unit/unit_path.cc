@@ -33,7 +33,6 @@ class Test_Path : public CppUnit::TestFixture
 		const char value[] = "/foo/bar";
 		filesystem::path p(value);
 		CPPUNIT_ASSERT(! p.empty());
-#if 0
 //		fprintf(stderr, "---> \"%s\" \"%s\"\n", p.native().c_str(),
 //		        value);
 

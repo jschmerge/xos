@@ -46,10 +46,12 @@ class Test_path_traits : public CppUnit::TestFixture
 
 		typedef C<T, N> Container;
 
+	  static_assert(is_path_initializer<Container>::value, "foo");
+
 		CPPUNIT_ASSERT(
-		  is_path_container_source<Container>::value);
+		  is_path_initializer<Container>::value);
 		CPPUNIT_ASSERT(
-		  is_path_container_source<Container>::value);
+		  is_path_initializer<Container>::value);
 	}
 
 	template<template <typename...> class C, typename T, typename ... Args>
@@ -60,19 +62,19 @@ class Test_path_traits : public CppUnit::TestFixture
 		typedef C<T, Args...> Container;
 
 		CPPUNIT_ASSERT(
-		  is_path_source<Container>::value);
+		  is_path_initializer<Container>::value);
 		CPPUNIT_ASSERT(
-		  is_path_source<Container>::value);
+		  is_path_initializer<Container>::value);
 	}
 
 	// Start of tests
 	void test_encodable_types()
 	{
 		using namespace filesystem::path_traits;
-		CPPUNIT_ASSERT(is_path_encodable<char>::value);
-		CPPUNIT_ASSERT(is_path_encodable<wchar_t>::value);
-		CPPUNIT_ASSERT(is_path_encodable<char16_t>::value);
-		CPPUNIT_ASSERT(is_path_encodable<char32_t>::value);
+		CPPUNIT_ASSERT(is_path_char_t_encodable<char>::value);
+		CPPUNIT_ASSERT(is_path_char_t_encodable<wchar_t>::value);
+		CPPUNIT_ASSERT(is_path_char_t_encodable<char16_t>::value);
+		CPPUNIT_ASSERT(is_path_char_t_encodable<char32_t>::value);
 	}
 
 	template<typename T>
@@ -109,17 +111,17 @@ class Test_path_traits : public CppUnit::TestFixture
 	{
 		using namespace filesystem::path_traits;
 
-		CPPUNIT_ASSERT(! is_path_source<T>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<T>::value);
 
-		CPPUNIT_ASSERT(is_path_source<               T *>::value);
-		CPPUNIT_ASSERT(is_path_source<const          T *>::value);
-		CPPUNIT_ASSERT(is_path_source<      volatile T *>::value);
-		CPPUNIT_ASSERT(is_path_source<const volatile T *>::value);
+		CPPUNIT_ASSERT(is_path_initializer<               T *>::value);
+		CPPUNIT_ASSERT(is_path_initializer<const          T *>::value);
+		CPPUNIT_ASSERT(is_path_initializer<      volatile T *>::value);
+		CPPUNIT_ASSERT(is_path_initializer<const volatile T *>::value);
 
-		CPPUNIT_ASSERT(is_path_source<               T[]>::value);
-		CPPUNIT_ASSERT(is_path_source<const          T[]>::value);
-		CPPUNIT_ASSERT(is_path_source<      volatile T[]>::value);
-		CPPUNIT_ASSERT(is_path_source<const volatile T[]>::value);
+		CPPUNIT_ASSERT(is_path_initializer<               T[]>::value);
+		CPPUNIT_ASSERT(is_path_initializer<const          T[]>::value);
+		CPPUNIT_ASSERT(is_path_initializer<      volatile T[]>::value);
+		CPPUNIT_ASSERT(is_path_initializer<const volatile T[]>::value);
 
 		test_path_container_data_sources<T>();
 	}
@@ -129,15 +131,15 @@ class Test_path_traits : public CppUnit::TestFixture
 	{
 		using namespace filesystem::path_traits;
 
-		CPPUNIT_ASSERT(! is_path_source<               T *>::value);
-		CPPUNIT_ASSERT(! is_path_source<const          T *>::value);
-		CPPUNIT_ASSERT(! is_path_source<      volatile T *>::value);
-		CPPUNIT_ASSERT(! is_path_source<const volatile T *>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<               T *>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<const          T *>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<      volatile T *>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<const volatile T *>::value);
 
-		CPPUNIT_ASSERT(! is_path_source<               T[]>::value);
-		CPPUNIT_ASSERT(! is_path_source<const          T[]>::value);
-		CPPUNIT_ASSERT(! is_path_source<      volatile T[]>::value);
-		CPPUNIT_ASSERT(! is_path_source<const volatile T[]>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<               T[]>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<const          T[]>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<      volatile T[]>::value);
+		CPPUNIT_ASSERT(! is_path_initializer<const volatile T[]>::value);
 	}
 
 };
