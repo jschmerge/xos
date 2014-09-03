@@ -77,56 +77,62 @@ template <> struct is_path_char_t_encodable<char32_t> : std::true_type  { };
 ///
 template <typename T> struct is_path_initializer : std::false_type { };
 
-template <typename EcharT, typename traits, typename Allocator>
-struct is_path_initializer<std::basic_string<EcharT, traits, Allocator>>
-  : std::true_type {
-	typedef typename std::remove_cv<EcharT>::type value_type;
+template <typename ECT, typename TR, typename ALLOC>
+struct is_path_initializer<std::basic_string<ECT, TR, ALLOC>>
+  : std::true_type
+{
+	typedef typename std::remove_cv<ECT>::type value_type;
+	static constexpr bool is_ntcts_terminated = false;
+	static constexpr value_type eos = value_type();
+	typedef typename std::basic_string<ECT, TR, ALLOC>::iterator iterator_type;
 };
 
 // pointer specialization
-template <typename EcharT> struct is_path_initializer<EcharT*> {
+template <typename EcharT> struct is_path_initializer<EcharT*>
+{
 	typedef typename std::decay<
 	          typename std::remove_cv<EcharT>::type>::type value_type;
-
+	static constexpr bool is_ntcts_terminated = true;
 	static constexpr value_type eos = value_type();
-
 	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
 };
 
 // array specialization
-template <typename EcharT> struct is_path_initializer<EcharT[]> {
+template <typename EcharT> struct is_path_initializer<EcharT[]>
+{
 	typedef typename std::decay<
 	          typename std::remove_cv<EcharT>::type>::type value_type;
-
+	static constexpr bool is_ntcts_terminated = true;
 	static constexpr value_type eos = value_type();
-
 	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
 };
 
 // array specialization, with extent
-template <typename EcharT, std::size_t N> struct is_path_initializer<EcharT[N]> {
+template <typename EcharT, std::size_t N> struct is_path_initializer<EcharT[N]>
+{
 	typedef typename std::decay<
 	          typename std::remove_cv<EcharT>::type>::type value_type;
-
+	static constexpr bool is_ntcts_terminated = true;
 	static constexpr value_type eos = value_type();
-
 	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
 };
 
 // container specialization
-template <typename EcharT, template <typename...> class C, typename ...Args>
-struct is_path_initializer<C<EcharT, Args...>> {
+template <typename EcharT,
+          template <typename...> class C,
+          typename ...Args>
+struct is_path_initializer<C<EcharT, Args...>>
+{
 	typedef typename std::remove_cv<
 	          typename C<EcharT, Args...>::value_type>::type value_type;
-
+	static constexpr bool is_ntcts_terminated = false;
 	typedef decltype(
 	  ++std::declval<typename C<EcharT, Args...>::iterator>()) iterator_type;
-
 	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
 };
 
+// null pointer restriction
 template <> struct is_path_initializer<std::nullptr_t> : std::false_type { };
-
 
 } // namespace path_traits
 } // inline namespace v1

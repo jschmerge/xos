@@ -32,6 +32,7 @@ class Test_Path : public CppUnit::TestFixture
 		const char value[] = "/foo/bar";
 		filesystem::path p(value);
 		CPPUNIT_ASSERT(! p.empty());
+#if 0
 //		fprintf(stderr, "---> \"%s\" \"%s\"\n", p.native().c_str(),
 //		        value);
 
@@ -48,6 +49,7 @@ class Test_Path : public CppUnit::TestFixture
 //		CPPUNIT_ASSERT(! s.empty());
 //		CPPUNIT_ASSERT(s == value);
 //		CPPUNIT_ASSERT(strcmp(s.c_str(), value) == 0);
+#endif
 	}
 
 };

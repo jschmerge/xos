@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "path_traits.h"
+
 namespace filesystem {
 inline namespace v1 {
 
@@ -27,7 +29,14 @@ inline namespace v1 {
 		path & operator = (path && p) noexcept;
 
 		template <class Source>
-		 path(const Source & source);
+		path(typename std::enable_if<
+			path_traits::is_path_initializer<Source>::is_ntcts_terminated,
+			const Source&>::type );
+
+		template <class Source>
+		path(typename std::enable_if<
+			!path_traits::is_path_initializer<Source>::is_ntcts_terminated,
+			const Source&>::type );
 #if 0
 		template <class InputIterator>
 		 path(InputIterator first, InputIterator last);
@@ -153,14 +162,23 @@ inline namespace v1 {
 	};
 
 	template <class Source>
-	path::path(const Source & source)
-	  : pathname(std::begin(source), std::end(source))
+	path::path(typename std::enable_if<
+	             path_traits::is_path_initializer<Source>::is_ntcts_terminated,
+	             const Source&>::type src)
 	{
-		for (string_type::size_type i = 0; i < pathname.length(); ++i)
+		for (auto i = src;
+		     *i != path_traits::is_path_initializer<Source>::eos; ++i)
 		{
-			if (pathname[i] == preferred_separator)
-				seperators.push_back(i);
+			pathname.push_back(*i);
 		}
+	}
+
+	template <class Source>
+	path::path(typename std::enable_if<
+	             !path_traits::is_path_initializer<Source>::is_ntcts_terminated,
+	             const Source&>::type src)
+	  : pathname(src.begin(), src.end())
+	{
 	}
 
 } /*v1*/
