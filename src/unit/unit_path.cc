@@ -6,19 +6,29 @@
 #include <cstring>
 #include <iostream>
 
-using filesystem::path;
+template <typename T>
+struct operands_and_result
+{
+	operands_and_result(const T & _o1, const T & _o2, const T & _result)
+	  : operand1(_o1), operand2(_o2), result(_result) { }
+
+	const T operand1;
+	const T operand2;
+	const T result;
+};
+
 class Test_Path : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Path);
 	CPPUNIT_TEST(defaultConstructor);
 	CPPUNIT_TEST(valueConstructor);
-	CPPUNIT_TEST(slashAppend);
+	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
 	void defaultConstructor()
 	{
-		path p;
+		filesystem::path p;
 		CPPUNIT_ASSERT(p.empty());
 		CPPUNIT_ASSERT(p.native() == "");
 		CPPUNIT_ASSERT(*p.c_str() == '\0');
@@ -33,13 +43,13 @@ class Test_Path : public CppUnit::TestFixture
 	{
 		{
 			const char value[] = "/foo/bar";
-			path p1(value);
+			filesystem::path p1(value);
 			CPPUNIT_ASSERT(! p1.empty());
 			CPPUNIT_ASSERT(p1.native() == value);
 			CPPUNIT_ASSERT(strcmp(p1.c_str(), value) == 0);
 
 			std::string val2(value);
-			path p2(val2);
+			filesystem::path p2(val2);
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
@@ -60,85 +70,65 @@ class Test_Path : public CppUnit::TestFixture
 		}
 	}
 
-	void slashAppend()
+	void slashEqualOperator()
 	{
-		{
-			const char * a = "foo";
-			const char * b = "bar";
+		std::vector<operands_and_result<std::string>> path_set {
+			{ "", "", "" },
+			{ "", "/", "/" },
+			{ "", "/bar", "/bar" },
+			{ "", "bar", "bar" },
+			{ "", "/bar/", "/bar/" },
+			{ "", "bar/", "bar/" },
 
-			path p1(a);
-			const path p2(b);
+			{ "/", "",      "/" },
+			{ "/", "/",     "/" },
+			{ "/", "/bar",  "/bar" },
+			{ "/", "bar",   "/bar" },
+			{ "/", "/bar/", "/bar/" },
+			{ "/", "bar/",  "/bar/" },
+
+			{ "/foo", ""     , "/foo" },
+			{ "/foo", "/"    , "/foo/" },
+			{ "/foo", "/bar" , "/foo/bar" },
+			{ "/foo", "bar"  , "/foo/bar" },
+			{ "/foo", "/bar/", "/foo/bar/" },
+			{ "/foo", "bar/" , "/foo/bar/" },
+
+			{ "foo", ""     , "foo" },
+			{ "foo", "/"    , "foo/" },
+			{ "foo", "/bar" , "foo/bar" },
+			{ "foo", "bar"  , "foo/bar" },
+			{ "foo", "/bar/", "foo/bar/" },
+			{ "foo", "bar/" , "foo/bar/" },
+
+			{ "/foo/", ""     , "/foo/" },
+			{ "/foo/", "/"    , "/foo/" },
+			{ "/foo/", "/bar" , "/foo/bar" },
+			{ "/foo/", "bar"  , "/foo/bar" },
+			{ "/foo/", "/bar/", "/foo/bar/" },
+			{ "/foo/", "bar/" , "/foo/bar/" },
+
+			{ "foo/", ""     , "foo/" },
+			{ "foo/", "/"    , "foo/" },
+			{ "foo/", "/bar" , "foo/bar" },
+			{ "foo/", "bar"  , "foo/bar" },
+			{ "foo/", "/bar/", "foo/bar/" },
+			{ "foo/", "bar/" , "foo/bar/" },
+		};
+
+//		putchar('\n');
+		for (const auto & i : path_set)
+		{
+			filesystem::path p1(i.operand1);
+			filesystem::path p2(i.operand2);
 
 			p1 /= p2;
 
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
-		}
-		{
-			const char * a = "foo/";
-			const char * b = "bar";
+//			printf("'%s' + '%s' = '%s' (expected '%s')\n", i.operand1.c_str(),
+//			       i.operand2.c_str(), p1.native().c_str(), i.result.c_str());
 
-			path p1(a);
-			const path p2(b);
+			CPPUNIT_ASSERT(p1.native() == i.result);
 
-			p1 /= p2;
-
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
-		}
-		{
-			const char * a = "/foo";
-			const char * b = "bar";
-
-			path p1(a);
-			const path p2(b);
-
-			p1 /= p2;
-
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "/foo/bar") == 0);
-		}
-		{
-			const char * a = "/foo/";
-			const char * b = "bar";
-
-			path p1(a);
-			const path p2(b);
-
-			p1 /= p2;
-
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "/foo/bar") == 0);
-		}
-		{
-			const char * a = "foo/";
-			const char * b = "/bar";
-
-			path p1(a);
-			const path p2(b);
-
-			p1 /= p2;
-
-			fprintf(stderr, "%s\n", p1.c_str());
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
-		}
-		{
-			const char * a = "foo";
-			const char * b = "/bar";
-
-			path p1(a);
-			const path p2(b);
-
-			p1 /= p2;
-
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
-		}
-		{
-			const char * a = "/foo/";
-			const char * b = "/bar";
-
-			path p1(a);
-			const path p2(b);
-
-			p1 /= p2;
-
-			CPPUNIT_ASSERT(strcmp(p1.c_str(), "/foo/bar") == 0);
 		}
 	}
 

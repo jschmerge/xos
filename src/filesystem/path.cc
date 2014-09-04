@@ -32,22 +32,33 @@ path & path::operator = (const path & other)
 	return *this;
 }
 
+/// The append operations use operator /= to denote their semantic effect
+/// of appending preferred-separator when needed.
+///
+/// Appends path::preferred_separator to pathname unless:
+/// - an added separator would be redundant, or
+/// - would change a relative path to an absolute path
+///    [Note: An empty path is relative. -- end note], or
+/// - p.empty() , or
+/// - *p.native().cbegin() is a directory separator.
 path & path::operator /= (const path & p)
 {
-	if (!empty() && !p.empty() &&
-	    *p.native().cbegin() != preferred_separator &&
-	    *native().crbegin() != preferred_separator)
+	if ( ! p.empty() )
 	{
-		pathname += preferred_separator;
-		seperators.push_back(pathname.length() - 1);
+		if (this->empty())
+		{
+			pathname = p.pathname;
+		} else
+		{
+			if (*pathname.rbegin() != preferred_separator)
+				pathname += preferred_separator;
+
+			if (*p.pathname.begin() == preferred_separator)
+				pathname += p.pathname.substr(1);
+			else
+				pathname += p.pathname;
+		}
 	}
-
-	auto oldLength = pathname.length();
-
-	pathname += p.pathname;
-
-	for (auto idx : p.seperators)
-		seperators.push_back(idx + oldLength);
 
 	return *this;
 }
