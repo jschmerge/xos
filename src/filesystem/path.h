@@ -166,6 +166,7 @@ inline namespace v1 {
 		std::vector<string_type::size_type> seperators;
 	};
 
+#if 0
 	template <class Source,
 		      typename std::enable_if<
 	              path_traits::is_path_initializer<
@@ -193,6 +194,7 @@ inline namespace v1 {
 			pathname.push_back(i);
 		}
 	}
+#endif
 
 } /*v1*/
 }/*filesystem*/
