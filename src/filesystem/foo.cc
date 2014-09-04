@@ -3,19 +3,32 @@
 #include <vector>
 #include <iterator>
 
+// Put these in an unamed namespace since they conflict with c++14 features
+namespace {
+
+template <bool B, typename T = void> 
+using enable_if_t = typename std::enable_if<B, T>::type;
+
+template <class T> 
+using decay_t = typename std::decay<T>::type;
+
+template <class T> 
+using iterator_category_t =
+	typename std::iterator_traits<decay_t<T>>::iterator_category;
+
+template<class T, class U>
+constexpr bool is_base_of()
+	{ return std::is_base_of<T, U>::value; }
+
+} // namespace
+
 template <typename T, typename Enable = void>
 struct is_iterable : std::false_type { };
 
 template <typename T>
-struct is_iterable <
-	T,	typename std::enable_if<
-			std::is_base_of<
-				std::forward_iterator_tag, typename std::iterator_traits<
-					typename std::decay<T>::type
-			>::iterator_category >::value >::type>
-{
-	static constexpr bool value = true;
-};
+struct is_iterable <T, enable_if_t<is_base_of<std::input_iterator_tag,
+                                              iterator_category_t<T>>()>>
+	{ static constexpr bool value = true; };
                                                        
 static_assert( ! is_iterable<int        >::value, "");
 static_assert( ! is_iterable<int &      >::value, "");
