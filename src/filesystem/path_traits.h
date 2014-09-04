@@ -4,6 +4,44 @@
 #include <type_traits>
 #include <string>
 
+// Put these in an unamed namespace since they conflict with c++14 features
+namespace {
+
+template <bool B, typename T = void> 
+using enable_if_t = typename std::enable_if<B, T>::type;
+
+template <class T> 
+using decay_t = typename std::decay<T>::type;
+
+template <class T> 
+using remove_cv_t = typename std::remove_cv<T>::type;
+
+template <class T> 
+using iterator_category_t =
+	typename std::iterator_traits<decay_t<T>>::iterator_category;
+
+template <class T> 
+using iterator_value_t =
+	typename std::iterator_traits<decay_t<T>>::value_type;
+
+template<class T, class U>
+constexpr bool is_base_of()
+	{ return std::is_base_of<T, U>::value; }
+
+template <typename T, typename Enable = void>
+struct is_iterable : std::false_type { };
+
+template <typename T>
+struct is_iterable <T, enable_if_t<is_base_of<std::input_iterator_tag,
+                                              iterator_category_t<T>>()>>
+  : std::true_type { };
+                                                       
+template<class T>
+constexpr bool iterable()
+	{ return is_iterable<T>::value; }
+
+} // namespace
+
 namespace filesystem {
 inline namespace v1 {
 namespace path_traits {
@@ -79,27 +117,21 @@ template <> struct is_path_char_t_encodable<char32_t> : std::true_type  { };
 ///	Arguments of type Source shall not be null pointers.
 ///
 
+template <typename T, typename Enable = void>
+struct is_path_initializer : std::false_type { };
+
 // Matches arrays, pointers and container iterators
-template <typename T, bool = std::is_fundamental<T>::value>
-struct is_path_initializer;
-
 template <typename T>
-struct is_path_initializer<T, true> : std::false_type { };
-
-template <typename T>
-struct is_path_initializer<T, false>
+struct is_path_initializer<T, enable_if_t<iterable<T>()>>
 {
-	typedef typename std::remove_cv<
-		typename std::iterator_traits<
-			typename std::decay<T>::type>::value_type>::type char_type;
-
+	typedef remove_cv_t<iterator_value_t<decay_t<T>>> char_type;
 	static constexpr bool value = is_path_char_t_encodable<char_type>::value;
 };
 
 template <typename EcharT, typename TR, typename ALLOC>
-struct is_path_initializer<std::basic_string<EcharT, TR, ALLOC>, false>
+struct is_path_initializer<std::basic_string<EcharT, TR, ALLOC>, void>
 {
-	typedef typename std::remove_cv<EcharT>::type char_type;
+	typedef remove_cv_t<EcharT> char_type;
 	static constexpr bool value = is_path_char_t_encodable<char_type>::value;
 };
 
@@ -130,6 +162,8 @@ struct is_path_initializer<std::basic_string<EcharT, TR, ALLOC>, false>
 	static_assert(! is_path_initializer<char>::value,
 	              "is_path_initializer failed");
 
+	static_assert(! is_path_initializer<std::vector<char>>::value, "");
+
 	static_assert(is_path_initializer<char*>::value,
 	              "is_path_initializer failed");
 	static_assert(is_path_initializer<const char*>::value,
@@ -153,12 +187,7 @@ struct is_path_initializer<std::basic_string<EcharT, TR, ALLOC>, false>
 
 	static_assert(is_path_initializer<std::basic_string<char>>::value,
 	              "is_path_initializer failed");
-	static_assert(is_path_initializer<std::basic_string<const char>>::value,
-	              "is_path_initializer failed");
 	static_assert(is_path_initializer<std::basic_string<volatile char>>::value,
-	              "is_path_initializer failed");
-	static_assert(is_path_initializer<
-	                std::basic_string<const volatile char>>::value,
 	              "is_path_initializer failed");
 
 	static_assert(is_path_initializer<std::vector<char>::iterator>::value,
