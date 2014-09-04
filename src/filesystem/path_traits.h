@@ -1,10 +1,8 @@
 #ifndef GUARD_PATH_TRAITS_H
 #define GUARD_PATH_TRAITS_H 1
 
-#include <cstdint>
 #include <type_traits>
 #include <string>
-#include <array>
 
 namespace filesystem {
 inline namespace v1 {
@@ -60,6 +58,7 @@ template <> struct is_path_char_t_encodable<char32_t> : std::true_type  { };
 ///	* basic_string<EcharT, traits, Allocator> . A function argument
 ///		const Source& source shall have an effective range
 ///		[source.begin(), source.end()).
+///
 ///	* A type meeting the input iterator requirements that iterates over
 ///		a NTCTS. The value type shall be an encoded character type. A
 ///		function argument const Source& source shall have an effective
@@ -79,134 +78,93 @@ template <> struct is_path_char_t_encodable<char32_t> : std::true_type  { };
 ///
 ///	Arguments of type Source shall not be null pointers.
 ///
-template <typename T> struct is_path_initializer : std::false_type { };
 
-template <typename ECT, typename TR, typename ALLOC>
-struct is_path_initializer<std::basic_string<ECT, TR, ALLOC>>
-  : std::true_type
-{
-	typedef typename std::remove_cv<ECT>::type value_type;
-	static constexpr bool is_ntcts_terminated = false;
-	static constexpr value_type eos = value_type();
-	typedef typename std::basic_string<ECT, TR, ALLOC>::iterator iterator_type;
-};
+// Matches arrays, pointers and container iterators
+template <typename T, bool = std::is_fundamental<T>::value>
+struct is_path_initializer;
 
-// pointer specialization
-template <typename EcharT> struct is_path_initializer<EcharT*>
-{
-	typedef typename std::decay<
-	          typename std::remove_cv<EcharT>::type>::type value_type;
-	static constexpr bool is_ntcts_terminated = true;
-	static constexpr value_type eos = value_type();
-	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
-};
+template <typename T>
+struct is_path_initializer<T, true> : std::false_type { };
 
-// array specialization
-template <typename EcharT> struct is_path_initializer<EcharT[]>
-{
-	typedef typename std::decay<
-	          typename std::remove_cv<EcharT>::type>::type value_type;
-	static constexpr bool is_ntcts_terminated = true;
-	static constexpr value_type eos = value_type();
-	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
-};
-
-// array specialization, with extent
-template <typename EcharT, std::size_t N>
-struct is_path_initializer<EcharT[N]>
-{
-	typedef typename std::decay<
-	          typename std::remove_cv<EcharT>::type>::type value_type;
-	static constexpr bool is_ntcts_terminated = true;
-	static constexpr value_type eos = value_type();
-	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
-};
-
-// std::array specialization, with extent
-template <typename EcharT, std::size_t N>
-struct is_path_initializer<std::array<EcharT, N>>
-{
-	typedef typename std::decay<
-	          typename std::remove_cv<EcharT>::type>::type value_type;
-	static constexpr bool is_ntcts_terminated = true;
-	static constexpr value_type eos = value_type();
-	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
-};
-
-// container specialization
-template <typename EcharT,
-          template <typename...> class C,
-          typename ...Args>
-struct is_path_initializer<C<EcharT, Args...>>
+template <typename T>
+struct is_path_initializer<T, false>
 {
 	typedef typename std::remove_cv<
-	          typename C<EcharT, Args...>::value_type>::type value_type;
-	static constexpr bool is_ntcts_terminated = false;
-//	typedef decltype(
-//	  ++std::declval<typename C<EcharT, Args...>::iterator>()) iterator_type;
-	static constexpr bool value = is_path_char_t_encodable<value_type>::value;
+		typename std::iterator_traits<
+			typename std::decay<T>::type>::value_type>::type char_type;
+
+	static constexpr bool value = is_path_char_t_encodable<char_type>::value;
+};
+
+template <typename EcharT, typename TR, typename ALLOC>
+struct is_path_initializer<std::basic_string<EcharT, TR, ALLOC>, false>
+{
+	typedef typename std::remove_cv<EcharT>::type char_type;
+	static constexpr bool value = is_path_char_t_encodable<char_type>::value;
 };
 
 // null pointer restriction
-template <> struct is_path_initializer<std::nullptr_t> : std::false_type { };
+//template <> struct is_path_initializer<std::nullptr_t, false> : std::false_type { };
+
 
 } // namespace path_traits
 } // inline namespace v1
 } // namespace filesystem
 
 #define DO_ASSERTS 1
+
 #if DO_ASSERTS
 #	include <vector>
+#	include <array>
 #	include <list>
 #	include <forward_list>
 #	include <string>
-
 
   namespace detail {
 
 	using filesystem::path_traits::is_path_initializer;
 	using filesystem::path_traits::is_path_char_t_encodable;
 
-	static_assert(is_path_char_t_encodable<char>::value, "foo");
-
-
-	static_assert(is_path_initializer<const char*>::value,
+	static_assert(! is_path_initializer<std::nullptr_t>::value,
 	              "is_path_initializer failed");
-
-	static_assert(is_path_initializer<const volatile char*>::value,
+	static_assert(! is_path_initializer<char>::value,
 	              "is_path_initializer failed");
 
 	static_assert(is_path_initializer<char*>::value,
 	              "is_path_initializer failed");
+	static_assert(is_path_initializer<const char*>::value,
+	              "is_path_initializer failed");
+	static_assert(is_path_initializer<volatile char*>::value,
+	              "is_path_initializer failed");
+	static_assert(is_path_initializer<const volatile char*>::value,
+	              "is_path_initializer failed");
 
+	static_assert(is_path_initializer<char[]>::value,
+	              "is_path_initializer failed");
 	static_assert(is_path_initializer<const char[]>::value,
+	              "is_path_initializer failed");
+	static_assert(is_path_initializer<volatile char[]>::value,
+	              "is_path_initializer failed");
+	static_assert(is_path_initializer<const volatile char[]>::value,
 	              "is_path_initializer failed");
 
 	static_assert(is_path_initializer<const char[10]>::value,
 	              "is_path_initializer failed");
 
-	static_assert(is_path_initializer<std::array<char, 10>>::value,
-	              "is_path_initializer failed");
-
-	static_assert(is_path_initializer<std::basic_string<volatile char>>::value,
-	              "is_path_initializer failed");
-
-	static_assert(is_path_initializer<std::vector<char>>::value,
-	              "is_path_initializer failed");
-
 	static_assert(is_path_initializer<std::basic_string<char>>::value,
 	              "is_path_initializer failed");
-
-	static_assert(is_path_initializer<std::vector<char>>::value,
+	static_assert(is_path_initializer<std::basic_string<const char>>::value,
 	              "is_path_initializer failed");
-
+	static_assert(is_path_initializer<std::basic_string<volatile char>>::value,
+	              "is_path_initializer failed");
 	static_assert(is_path_initializer<
-	                std::vector<char, std::allocator<char>>>::value,
+	                std::basic_string<const volatile char>>::value,
 	              "is_path_initializer failed");
 
-	static_assert(is_path_initializer<std::list<char>>::value,
+	static_assert(is_path_initializer<std::vector<char>::iterator>::value,
 	              "is_path_initializer failed");
-
+	static_assert(is_path_initializer<std::array<char, 10>::iterator>::value,
+	              "is_path_initializer failed");
   } // namespace detail
 
 #endif // DO_ASSERTS
