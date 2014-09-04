@@ -6,17 +6,14 @@ inline namespace v1 {
 
 path::path() noexcept
   : pathname()
-  , seperators() 
 	{ }
 
 path::path(const path & other)
   : pathname(other.pathname)
-  , seperators(other.seperators)
 	{ }
 
 path::path(path && other) noexcept
   : pathname(std::move(other.pathname))
-  , seperators(std::move(other.seperators))
 	{ }
 
 path::~path() { }
@@ -24,10 +21,7 @@ path::~path() { }
 path & path::operator = (const path & other)
 {
 	if (this != &other)
-	{
 		pathname = other.pathname;
-		seperators = other.seperators;
-	}
 
 	return *this;
 }
@@ -63,14 +57,32 @@ path & path::operator /= (const path & p)
 	return *this;
 }
 
+path & path::operator += (const path & x)
+{
+	return *this;
+}
+
+path & path::operator += (const string_type & x)
+{
+	return *this;
+}
+
+path & path::operator += (const value_type * x)
+{
+	return *this;
+}
+
+path & path::operator += (value_type x)
+{
+	return *this;
+}
+
 path & path::operator = (path && other) noexcept
 {
 	using std::swap;
+
 	if (this != &other)
-	{
 		swap(pathname, other.pathname);
-		swap(seperators, other.seperators);
-	}
 
 	return *this;
 }
@@ -78,7 +90,6 @@ path & path::operator = (path && other) noexcept
 void path::clear() noexcept
 {
 	pathname.clear();
-	seperators.clear();
 }
 
 path & path::make_preferred()
@@ -89,7 +100,6 @@ path & path::make_preferred()
 void path::swap(path & rhs) noexcept
 {
 	std::swap(pathname, rhs.pathname);
-	std::swap(seperators, rhs.seperators);
 }
 
 const path::string_type & path::native() const noexcept

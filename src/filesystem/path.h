@@ -163,7 +163,6 @@ inline namespace v1 {
 
 	 private:
 		string_type pathname; // exposition only
-		std::vector<string_type::size_type> seperators;
 	};
 
 	template <class Source,

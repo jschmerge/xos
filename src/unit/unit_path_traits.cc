@@ -21,6 +21,8 @@ class Test_path_traits : public CppUnit::TestFixture
 	CPPUNIT_TEST(test_negative_path_data_sources<unsigned char>);
 	CPPUNIT_TEST(test_negative_path_data_sources<short>);
 	CPPUNIT_TEST(test_negative_path_data_sources<int>);
+	CPPUNIT_TEST(test_negative_path_data_sources<long>);
+	CPPUNIT_TEST(test_negative_path_data_sources<long long>);
 
 
 	CPPUNIT_TEST(test_path_container_data_sources<char>);
