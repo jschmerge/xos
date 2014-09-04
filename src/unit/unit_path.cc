@@ -6,17 +6,19 @@
 #include <cstring>
 #include <iostream>
 
+using filesystem::path;
 class Test_Path : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Path);
 	CPPUNIT_TEST(defaultConstructor);
 	CPPUNIT_TEST(valueConstructor);
+	CPPUNIT_TEST(slashAppend);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
 	void defaultConstructor()
 	{
-		filesystem::path p;
+		path p;
 		CPPUNIT_ASSERT(p.empty());
 		CPPUNIT_ASSERT(p.native() == "");
 		CPPUNIT_ASSERT(*p.c_str() == '\0');
@@ -31,13 +33,13 @@ class Test_Path : public CppUnit::TestFixture
 	{
 		{
 			const char value[] = "/foo/bar";
-			filesystem::path p1(value);
+			path p1(value);
 			CPPUNIT_ASSERT(! p1.empty());
 			CPPUNIT_ASSERT(p1.native() == value);
 			CPPUNIT_ASSERT(strcmp(p1.c_str(), value) == 0);
 
 			std::string val2(value);
-			filesystem::path p2(val2);
+			path p2(val2);
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
@@ -55,6 +57,88 @@ class Test_Path : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
+		}
+	}
+
+	void slashAppend()
+	{
+		{
+			const char * a = "foo";
+			const char * b = "bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
+		}
+		{
+			const char * a = "foo/";
+			const char * b = "bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
+		}
+		{
+			const char * a = "/foo";
+			const char * b = "bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "/foo/bar") == 0);
+		}
+		{
+			const char * a = "/foo/";
+			const char * b = "bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "/foo/bar") == 0);
+		}
+		{
+			const char * a = "foo/";
+			const char * b = "/bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			fprintf(stderr, "%s\n", p1.c_str());
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
+		}
+		{
+			const char * a = "foo";
+			const char * b = "/bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "foo/bar") == 0);
+		}
+		{
+			const char * a = "/foo/";
+			const char * b = "/bar";
+
+			path p1(a);
+			const path p2(b);
+
+			p1 /= p2;
+
+			CPPUNIT_ASSERT(strcmp(p1.c_str(), "/foo/bar") == 0);
 		}
 	}
 
