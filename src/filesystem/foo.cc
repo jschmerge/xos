@@ -28,7 +28,7 @@ struct is_iterable : std::false_type { };
 template <typename T>
 struct is_iterable <T, enable_if_t<is_base_of<std::input_iterator_tag,
                                               iterator_category_t<T>>()>>
-	{ static constexpr bool value = true; };
+  : std::true_type { };
                                                        
 static_assert( ! is_iterable<int        >::value, "");
 static_assert( ! is_iterable<int &      >::value, "");
