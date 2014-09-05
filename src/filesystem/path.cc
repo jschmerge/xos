@@ -26,6 +26,17 @@ path & path::operator = (const path & other)
 	return *this;
 }
 
+path & path::operator = (path && other) noexcept
+{
+	using std::swap;
+
+	if (this != &other)
+		swap(pathname, other.pathname);
+
+	return *this;
+}
+
+
 /// The append operations use operator /= to denote their semantic effect
 /// of appending preferred-separator when needed.
 ///
@@ -57,33 +68,28 @@ path & path::operator /= (const path & p)
 	return *this;
 }
 
-path & path::operator += (const path & x)
+path & path::operator += (const path & other)
 {
+	this->pathname += other.pathname;
 	return *this;
 }
 
-path & path::operator += (const string_type & x)
+path & path::operator += (const string_type & other)
 {
+	this->pathname += other;
 	return *this;
 }
 
-path & path::operator += (const value_type * x)
+path & path::operator += (const value_type * other)
 {
+	for (const value_type * i = other; *i != value_type(); ++i)
+		this->pathname += *i;
 	return *this;
 }
 
-path & path::operator += (value_type x)
+path & path::operator += (value_type other)
 {
-	return *this;
-}
-
-path & path::operator = (path && other) noexcept
-{
-	using std::swap;
-
-	if (this != &other)
-		swap(pathname, other.pathname);
-
+	this->pathname += other;
 	return *this;
 }
 
@@ -120,6 +126,56 @@ path::operator string_type() const
 bool path::empty() const noexcept
 {
 	return pathname.empty();
+}
+
+bool path::has_root_name() const
+{
+	return false;
+}
+
+bool path::has_root_directory() const
+{
+	return false;
+}
+
+bool path::has_root_path() const
+{
+	return false;
+}
+
+bool path::has_relative_path() const
+{
+	return false;
+}
+
+bool path::has_parent_path() const
+{
+	return false;
+}
+
+bool path::has_filename() const
+{
+	return false;
+}
+
+bool path::has_stem() const
+{
+	return false;
+}
+
+bool path::has_extension() const
+{
+	return false;
+}
+
+bool path::is_absolute() const
+{
+	return false;
+}
+
+bool path::is_relative() const
+{
+	return false;
 }
 
 } /*v1*/

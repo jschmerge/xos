@@ -68,12 +68,15 @@ inline namespace v1 {
 		 path & append(const Source & source);
 		template <class InputIterator>
 		 path & append(InputIterator first, InputIterator last);
+#endif
 
 		// concatenation
-		path & operator += (const path & x);
-		path & operator += (const string_type & x);
-		path & operator += (const value_type * x);
-		path & operator += (value_type x);
+		path & operator += (const path & other);
+		path & operator += (const string_type & other);
+		path & operator += (const value_type * other);
+		path & operator += (value_type other);
+
+#if 0
 
 		template <class Source>
 		 path & operator += (const Source & x);
@@ -142,7 +145,6 @@ inline namespace v1 {
 #endif
 		// query
 		bool empty() const noexcept;
-#if 0
 		bool has_root_name() const;
 		bool has_root_directory() const;
 		bool has_root_path() const;
@@ -153,6 +155,7 @@ inline namespace v1 {
 		bool has_extension() const;
 		bool is_absolute() const;
 		bool is_relative() const;
+#if 0
 
 		// iterators
 		class iterator;
@@ -162,7 +165,7 @@ inline namespace v1 {
 #endif
 
 	 private:
-		string_type pathname; // exposition only
+		string_type pathname;
 	};
 
 #if 0
