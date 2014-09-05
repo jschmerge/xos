@@ -35,7 +35,8 @@ LIBS             = $(LIBS_$(BUILD))
 
 TARGETS            = 
 LIB_TARGETS        = libfilesystem
-libfilesystem_OBJS = path.o
+libfilesystem_OBJS = path.o \
+                     filesystem_error.o
 
 include ../Makefile.include
 
