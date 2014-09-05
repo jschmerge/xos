@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <tuple>
 
 template <typename T>
 struct operands_and_result
@@ -41,7 +42,6 @@ class Test_Path : public CppUnit::TestFixture
 
 	void valueConstructor()
 	{
-#if 0
 		{
 			const char value[] = "/foo/bar";
 			filesystem::path p1(value);
@@ -69,57 +69,54 @@ class Test_Path : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
 		}
-#endif
 	}
 
 	void slashEqualOperator()
 	{
-#if 0
 		std::vector<operands_and_result<std::string>> path_set {
-			{ "", "", "" },
-			{ "", "/", "/" },
-			{ "", "/bar", "/bar" },
-			{ "", "bar", "bar" },
-			{ "", "/bar/", "/bar/" },
-			{ "", "bar/", "bar/" },
+			{ ""      , ""      , "" },
+			{ ""      , "/"     , "/" },
+			{ ""      , "/bar"  , "/bar" },
+			{ ""      , "bar"   , "bar" },
+			{ ""      , "/bar/" , "/bar/" },
+			{ ""      , "bar/"  , "bar/" },
 
-			{ "/", "",      "/" },
-			{ "/", "/",     "/" },
-			{ "/", "/bar",  "/bar" },
-			{ "/", "bar",   "/bar" },
-			{ "/", "/bar/", "/bar/" },
-			{ "/", "bar/",  "/bar/" },
+			{ "/"     , ""      , "/" },
+			{ "/"     , "/"     , "/" },
+			{ "/"     , "/bar"  , "/bar" },
+			{ "/"     , "bar"   , "/bar" },
+			{ "/"     , "/bar/" , "/bar/" },
+			{ "/"     , "bar/"  , "/bar/" },
 
-			{ "/foo", ""     , "/foo" },
-			{ "/foo", "/"    , "/foo/" },
-			{ "/foo", "/bar" , "/foo/bar" },
-			{ "/foo", "bar"  , "/foo/bar" },
-			{ "/foo", "/bar/", "/foo/bar/" },
-			{ "/foo", "bar/" , "/foo/bar/" },
+			{ "/foo"  , ""      , "/foo" },
+			{ "/foo"  , "/"     , "/foo/" },
+			{ "/foo"  , "/bar"  , "/foo/bar" },
+			{ "/foo"  , "bar"   , "/foo/bar" },
+			{ "/foo"  , "/bar/" , "/foo/bar/" },
+			{ "/foo"  , "bar/"  , "/foo/bar/" },
 
-			{ "foo", ""     , "foo" },
-			{ "foo", "/"    , "foo/" },
-			{ "foo", "/bar" , "foo/bar" },
-			{ "foo", "bar"  , "foo/bar" },
-			{ "foo", "/bar/", "foo/bar/" },
-			{ "foo", "bar/" , "foo/bar/" },
+			{ "foo"   , ""      , "foo" },
+			{ "foo"   , "/"     , "foo/" },
+			{ "foo"   , "/bar"  , "foo/bar" },
+			{ "foo"   , "bar"   , "foo/bar" },
+			{ "foo"   , "/bar/" , "foo/bar/" },
+			{ "foo"   , "bar/"  , "foo/bar/" },
 
-			{ "/foo/", ""     , "/foo/" },
-			{ "/foo/", "/"    , "/foo/" },
-			{ "/foo/", "/bar" , "/foo/bar" },
-			{ "/foo/", "bar"  , "/foo/bar" },
-			{ "/foo/", "/bar/", "/foo/bar/" },
-			{ "/foo/", "bar/" , "/foo/bar/" },
+			{ "/foo/" , ""      , "/foo/" },
+			{ "/foo/" , "/"     , "/foo/" },
+			{ "/foo/" , "/bar"  , "/foo/bar" },
+			{ "/foo/" , "bar"   , "/foo/bar" },
+			{ "/foo/" , "/bar/" , "/foo/bar/" },
+			{ "/foo/" , "bar/"  , "/foo/bar/" },
 
-			{ "foo/", ""     , "foo/" },
-			{ "foo/", "/"    , "foo/" },
-			{ "foo/", "/bar" , "foo/bar" },
-			{ "foo/", "bar"  , "foo/bar" },
-			{ "foo/", "/bar/", "foo/bar/" },
-			{ "foo/", "bar/" , "foo/bar/" },
+			{ "foo/"  , ""      , "foo/" },
+			{ "foo/"  , "/"     , "foo/" },
+			{ "foo/"  , "/bar"  , "foo/bar" },
+			{ "foo/"  , "bar"   , "foo/bar" },
+			{ "foo/"  , "/bar/" , "foo/bar/" },
+			{ "foo/"  , "bar/"  , "foo/bar/" },
 		};
 
-//		putchar('\n');
 		for (const auto & i : path_set)
 		{
 			filesystem::path p1(i.operand1);
@@ -133,9 +130,7 @@ class Test_Path : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(p1.native() == i.result);
 
 		}
-#endif
 	}
-
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_Path);

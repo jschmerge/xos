@@ -125,6 +125,7 @@ template <typename T>
 struct is_path_initializer<T, enable_if_t<iterable<T>()>>
 {
 	typedef remove_cv_t<iterator_value_t<decay_t<T>>> char_type;
+	static constexpr bool is_ntcts = true;
 	static constexpr bool value = is_path_char_t_encodable<char_type>::value;
 };
 
@@ -132,18 +133,15 @@ template <typename EcharT, typename TR, typename ALLOC>
 struct is_path_initializer<std::basic_string<EcharT, TR, ALLOC>, void>
 {
 	typedef remove_cv_t<EcharT> char_type;
+	static constexpr bool is_ntcts = false;
 	static constexpr bool value = is_path_char_t_encodable<char_type>::value;
 };
-
-// null pointer restriction
-//template <> struct is_path_initializer<std::nullptr_t, false> : std::false_type { };
-
 
 } // namespace path_traits
 } // inline namespace v1
 } // namespace filesystem
 
-#define DO_ASSERTS 1
+#define DO_ASSERTS 0
 
 #if DO_ASSERTS
 #	include <vector>

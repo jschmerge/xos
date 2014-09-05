@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <algorithm>
 #include <vector>
 
 #include "path_traits.h"
@@ -28,19 +29,34 @@ inline namespace v1 {
 		path & operator = (const path & p);
 		path & operator = (path && p) noexcept;
 
-		template <class Source,
-			      typename std::enable_if<
-		              path_traits::is_path_initializer<
-		                  Source>::is_ntcts_terminated,
-			          Source*>::type = nullptr>
-		path(const Source & src);
+		template <class Source>
+		void dispatch_initialization(Source & src);
 
-		template <class Source,
-			      typename std::enable_if<
-		              ! path_traits::is_path_initializer<
-		                  Source>::is_ntcts_terminated,
-		              Source*>::type = nullptr>
-		path(const Source & src);
+		template <class T>
+		using char_encodable_t = path_traits::is_path_char_t_encodable<T>;
+
+		template <class EcharT>
+		enable_if_t<char_encodable_t<EcharT>::value>
+		dispatch_initialization(const EcharT * src)
+		{
+			// FIXME
+			pathname.assign(src);
+		}
+
+		template <class C, class T, class A>
+		enable_if_t<char_encodable_t<C>::value>
+		dispatch_initialization(const std::basic_string<C, T, A> &  src)
+		{
+			// FIXME
+			pathname.assign(src);
+		}
+
+		template <class Source> path(const Source & src)
+		{
+			dispatch_initialization(src);
+		}
+
+
 
 #if 0
 		template <class InputIterator>
@@ -166,36 +182,6 @@ inline namespace v1 {
 	 private:
 		string_type pathname;
 	};
-
-#if 0
-	template <class Source,
-		      typename std::enable_if<
-	              path_traits::is_path_initializer<
-	                  Source>::is_ntcts_terminated,
-		          Source*>::type>
-	path::path(const Source & src)
-	{
-		for (auto i = src;
-		     *i != path_traits::is_path_initializer<Source>::eos; ++i)
-		{
-			pathname.push_back(*i);
-		}
-	}
-
-	template <class Source,
-		      typename std::enable_if<
-	              ! path_traits::is_path_initializer<
-	                  Source>::is_ntcts_terminated,
-	              Source*>::type>
-	path::path(const Source & src)
-	{
-		pathname.reserve(src.size());
-		for (const auto & i : src)
-		{
-			pathname.push_back(i);
-		}
-	}
-#endif
 
 } /*v1*/
 }/*filesystem*/
