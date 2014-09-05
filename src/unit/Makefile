@@ -37,7 +37,8 @@ TARGETS            = unittest
 
 unittest_OBJS = cppunit-main.o \
                 unit_path.o \
-                unit_path_traits.o
+                unit_path_traits.o \
+                unit_filesystem_error.o
 
 include ../Makefile.include
 

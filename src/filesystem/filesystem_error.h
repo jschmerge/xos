@@ -24,6 +24,8 @@ class filesystem_error : public std::system_error
 
 	const path & path2() const noexcept;
 
+	// Rather than override what() here, we rely on system_error::what
+
  protected:
 	const path p1;
 	const path p2;
