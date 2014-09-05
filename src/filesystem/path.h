@@ -70,6 +70,7 @@ inline namespace v1 {
 		 path & append(InputIterator first, InputIterator last);
 #endif
 
+#endif
 		// concatenation
 		path & operator += (const path & other);
 		path & operator += (const string_type & other);
@@ -78,6 +79,7 @@ inline namespace v1 {
 
 #if 0
 
+#if 0
 		template <class Source>
 		 path & operator += (const Source & x);
 		template <class EcharT>
