@@ -69,12 +69,14 @@ inline namespace v1 {
 		template <class InputIterator>
 		 path & append(InputIterator first, InputIterator last);
 
+#endif
 		// concatenation
 		path & operator += (const path & x);
 		path & operator += (const string_type & x);
 		path & operator += (const value_type * x);
 		path & operator += (value_type x);
 
+#if 0
 		template <class Source>
 		 path & operator += (const Source & x);
 		template <class EcharT>
