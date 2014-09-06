@@ -14,8 +14,15 @@ typedef std::map<std::string, CppUnit::Outputter *> OutputterMap;
 typedef std::map<std::string, CppUnit::TestListener *> ListenerMap;
 
 //////////////////////////////////////////////////////////////////////
-void usage()
+void usage(const char * name)
 {
+	std::cerr << "usage: " << name
+	          << " "
+	             "[-r repeatnumber] "
+	             "[-t testname] "
+	             "[-o {compiler|text|xml|none}] "
+	             "[-p {dots|brief|none}] [-l] [-h]"
+	          << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -139,7 +146,7 @@ int main(int argc, char ** argv)
 
 		case 'h':
 		default:
-			usage();
+			usage(argv[0]);
 			return 1;
 			break; // not reached
 		}
