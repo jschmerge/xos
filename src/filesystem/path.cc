@@ -1,20 +1,16 @@
 #include "path.h"
 #include "filesystem"
 
+#include <cstring> // for strcmp
+
 namespace filesystem {
 inline namespace v1 {
 
-path::path() noexcept
-  : pathname()
-	{ }
+path::path() noexcept : pathname() { }
 
-path::path(const path & other)
-  : pathname(other.pathname)
-	{ }
+path::path(const path & other) : pathname(other.pathname) { }
 
-path::path(path && other) noexcept
-  : pathname(std::move(other.pathname))
-	{ }
+path::path(path && other) noexcept : pathname(std::move(other.pathname)) { }
 
 path::~path() { }
 
@@ -35,7 +31,6 @@ path & path::operator = (path && other) noexcept
 
 	return *this;
 }
-
 
 /// The append operations use operator /= to denote their semantic effect
 /// of appending preferred-separator when needed.
@@ -121,6 +116,23 @@ const path::value_type * path::c_str() const noexcept
 path::operator string_type() const
 {
 	return pathname;
+}
+
+//////////////////////////////////////////////////////////////////////
+// compare
+int path::compare(const path & p) const noexcept
+{
+	return strcmp(c_str(), p.c_str());
+}
+
+int path::compare(const string_type & s) const
+{
+	return strcmp(c_str(), s.c_str());
+}
+
+int path::compare(const value_type * s) const
+{
+	return strcmp(c_str(), s);
 }
 
 bool path::empty() const noexcept

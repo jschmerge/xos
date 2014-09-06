@@ -20,16 +20,21 @@ struct operands_and_result
 
 class Test_Path : public CppUnit::TestFixture
 {
+	typedef filesystem::path path;
+
 	CPPUNIT_TEST_SUITE(Test_Path);
 	CPPUNIT_TEST(defaultConstructor);
-	CPPUNIT_TEST(valueConstructor);
+	CPPUNIT_TEST(valueConstructors);
+	CPPUNIT_TEST(assignmentOperators);
 	CPPUNIT_TEST(slashEqualOperator);
+	CPPUNIT_TEST(plusEqualOperators);
+	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
 	void defaultConstructor()
 	{
-		filesystem::path p;
+		path p;
 		CPPUNIT_ASSERT(p.empty());
 		CPPUNIT_ASSERT(p.native() == "");
 		CPPUNIT_ASSERT(*p.c_str() == '\0');
@@ -44,13 +49,13 @@ class Test_Path : public CppUnit::TestFixture
 	{
 		{
 			const char value[] = "/foo/bar";
-			filesystem::path p1(value);
+			path p1(value);
 			CPPUNIT_ASSERT(! p1.empty());
 			CPPUNIT_ASSERT(p1.native() == value);
 			CPPUNIT_ASSERT(strcmp(p1.c_str(), value) == 0);
 
 			std::string val2(value);
-			filesystem::path p2(val2);
+			path p2(val2);
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
@@ -58,13 +63,13 @@ class Test_Path : public CppUnit::TestFixture
 
 		{
 			const char * value = "/foo/bar";
-			filesystem::path p1(value);
+			path p1(value);
 			CPPUNIT_ASSERT(! p1.empty());
 			CPPUNIT_ASSERT(p1.native() == value);
 			CPPUNIT_ASSERT(strcmp(p1.c_str(), value) == 0);
 
 			std::string val2(value);
-			filesystem::path p2(val2);
+			path p2(val2);
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
@@ -119,8 +124,8 @@ class Test_Path : public CppUnit::TestFixture
 
 		for (const auto & i : path_set)
 		{
-			filesystem::path p1(i.operand1);
-			filesystem::path p2(i.operand2);
+			path p1(i.operand1);
+			path p2(i.operand2);
 
 			p1 /= p2;
 
@@ -131,6 +136,40 @@ class Test_Path : public CppUnit::TestFixture
 
 		}
 	}
+
+	void assignmentOperators()
+	{
+		path p1("/foo");
+		path p2("/bar");
+
+		p1 = p2;
+
+		CPPUNIT_ASSERT(p1.compare(p2) == 0);
+	}
+
+	void plusEqualOperators()
+	{
+		// path
+		// string_type
+		// value_type *
+		// value_type
+	}
+
+	void compareFunctions()
+	{
+		CPPUNIT_ASSERT(path("a").compare(path("a")) == 0);
+		CPPUNIT_ASSERT(path("a").compare(path("b")) < 0);
+		CPPUNIT_ASSERT(path("b").compare(path("a")) > 0);
+
+		CPPUNIT_ASSERT(path("a").compare(std::string("a")) == 0);
+		CPPUNIT_ASSERT(path("a").compare(std::string("b")) < 0);
+		CPPUNIT_ASSERT(path("b").compare(std::string("a")) > 0);
+
+		CPPUNIT_ASSERT(path("a").compare("a") == 0);
+		CPPUNIT_ASSERT(path("a").compare("b") < 0);
+		CPPUNIT_ASSERT(path("b").compare("a") > 0);
+	}
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_Path);

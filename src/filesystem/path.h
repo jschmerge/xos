@@ -143,9 +143,11 @@ inline namespace v1 {
 		std::u32string generic_u32string() const;
 
 		// compare
+#endif
 		int compare(const path & p) const noexcept;
 		int compare(const string_type & s) const;
 		int compare(const value_type * s) const;
+#if 0
 
 		// decomposition
 		path root_name() const;
