@@ -45,7 +45,7 @@ That isn't a primary goal, however.
 
 Not much, I'm afraid. Mostly what exists are utility classes that I've gathered
 from various projects I have worked on. A good example of such a class is
-PosixClock<T>, which implements a clocksource templated on the standard
+PosixClock&lt;T&gt;, which implements a clocksource templated on the standard
 integral constants that clock\_gettime uses for identifying clock sources.
 
 There's also some useful error handling routines, including utility functions
