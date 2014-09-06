@@ -45,7 +45,7 @@ class Test_Path : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(*s.c_str() == '\0');
 	}
 
-	void valueConstructor()
+	void valueConstructors()
 	{
 		{
 			const char value[] = "/foo/bar";
