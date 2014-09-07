@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include <tuple>
 
 template <typename T>
 struct operands_and_result
@@ -18,13 +17,34 @@ struct operands_and_result
 	const T result;
 };
 
+template <class C>
+struct string_constant;
+
+template <> struct string_constant<char>
+{ static constexpr char array_value[] = "/foo/bar"; };
+
+#if 0
+template <> struct string_constant<wchar_t>
+{ static constexpr wchar_t array_value[] = L"/foo/bar"; };
+
+template <> struct string_constant<char16_t>
+{ static constexpr char16_t array_value[] = u"/foo/bar"; };
+
+template <> struct string_constant<char32_t>
+{ static constexpr char32_t array_value[] = U"/foo/bar"; };
+#endif
+
 class Test_Path : public CppUnit::TestFixture
 {
 	typedef filesystem::path path;
 
 	CPPUNIT_TEST_SUITE(Test_Path);
-	CPPUNIT_TEST(defaultConstructor);
-	CPPUNIT_TEST(valueConstructors);
+	CPPUNIT_TEST(constructors<char>);
+#if 0
+	CPPUNIT_TEST(constructors<wchar_t>);
+	CPPUNIT_TEST(constructors<char16_t>);
+	CPPUNIT_TEST(constructors<char32_t>);
+#endif
 	CPPUNIT_TEST(assignmentOperators);
 	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST(plusEqualOperators);
@@ -32,17 +52,37 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
-	void defaultConstructor()
+	template <class ECT>
+	void constructors()
 	{
-		path p;
-		CPPUNIT_ASSERT(p.empty());
-		CPPUNIT_ASSERT(p.native() == "");
-		CPPUNIT_ASSERT(*p.c_str() == '\0');
-		std::string s = p;
+		// path::path()
+		path path_default;
+		CPPUNIT_ASSERT(path_default.empty());
+		CPPUNIT_ASSERT(path_default.native() == "");
+		CPPUNIT_ASSERT(*path_default.c_str() == '\0');
 
-		CPPUNIT_ASSERT(s.empty());
-		CPPUNIT_ASSERT(s == "");
-		CPPUNIT_ASSERT(*s.c_str() == '\0');
+		// path::path<const ECT[]>(const ECT [] &)
+		{
+			path path_source_array( string_constant<ECT>::array_value);
+			CPPUNIT_ASSERT(! path_source_array.empty());
+		}
+
+		// path::path<const ECT*>(const ECT * &)
+		{
+			const ECT * value = string_constant<ECT>::array_value;
+			path path_source_pointer(value);
+			CPPUNIT_ASSERT(! path_source_pointer.empty());
+		}
+
+		// path::path<basic_string<ECT>>(const basic_string<ECT> &)
+		{
+			const std::basic_string<ECT> value(
+				string_constant<ECT>::array_value);
+
+			path path_source_string(value);
+			CPPUNIT_ASSERT(! path_source_string.empty());
+		}
+
 	}
 
 	void valueConstructors()

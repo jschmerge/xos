@@ -23,6 +23,10 @@ inline namespace v1 {
 		path(const path & p);
 		path(path && p) noexcept;
 
+		template <class Source>
+		path(const Source & src)
+			{ dispatch_initialization(src); }
+
 		~path();
 
 		// assignments
@@ -34,29 +38,6 @@ inline namespace v1 {
 
 		template <class T>
 		using char_encodable_t = path_traits::is_path_char_t_encodable<T>;
-
-		template <class EcharT>
-		enable_if_t<char_encodable_t<EcharT>::value>
-		dispatch_initialization(const EcharT * src)
-		{
-			// FIXME
-			pathname.assign(src);
-		}
-
-		template <class C, class T, class A>
-		enable_if_t<char_encodable_t<C>::value>
-		dispatch_initialization(const std::basic_string<C, T, A> &  src)
-		{
-			// FIXME
-			pathname.assign(src);
-		}
-
-		template <class Source> path(const Source & src)
-		{
-			dispatch_initialization(src);
-		}
-
-
 
 #if 0
 		template <class InputIterator>
@@ -182,6 +163,24 @@ inline namespace v1 {
 #endif
 
 	 private:
+
+		template <class EcharT>
+		enable_if_t<char_encodable_t<EcharT>::value>
+		dispatch_initialization(const EcharT * src)
+		{
+			//std::codecvt<EcharT, char, std::mbstate_t> cvt;
+			// FIXME
+			pathname.assign(src);
+		}
+
+		template <class C, class T, class A>
+		enable_if_t<char_encodable_t<C>::value>
+		dispatch_initialization(const std::basic_string<C, T, A> &  src)
+		{
+			// FIXME
+			pathname.assign(src);
+		}
+
 		string_type pathname;
 	};
 
