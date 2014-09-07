@@ -22,6 +22,7 @@ struct string_constant;
 
 template <> struct string_constant<char>
 { static constexpr char array_value[] = "/foo/bar"; };
+constexpr char string_constant<char>::array_value[];
 
 #if 0
 template <> struct string_constant<wchar_t>
