@@ -1,6 +1,7 @@
 #ifndef GUARD_CODECVT_H
 #define GUARD_CODECVT_H 1
 #include <cwchar>
+#include <cassert>
 #include <locale>
 
 enum codecvt_mode
@@ -28,6 +29,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	  : std::codecvt<Elem, char, std::mbstate_t>(refs) { }
 
 	~codecvt_utf8() { }
+
  protected:
 	bool do_always_noconv() const noexcept override
 		{ return false; }
@@ -44,19 +46,29 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	             intern_type * to_limit,
 	             intern_type * & to_nex) const override;
 
-	int do_length(state_type & state,
+*/
+	int do_length(state_type & /* state */,
 	              const extern_type * from,
 	              const extern_type * from_end,
-	              std::size_t max) const override;
-*/
+	              std::size_t max) const override
+	{
+		assert(from <= from_end);
+		const extern_type * iter = nullptr;
+		size_t count = 0;
+
+		for (iter = from; ((iter != from_end) && (count < max)); ++iter)
+		{
+		}
+		return (iter - from);
+	}
 
 	constexpr int do_max_length() const noexcept override
 	{
-		return ( (max_code <=       0x7f) ? 1 :
-		         ( (max_code <=      0x7ff) ? 2 :
-		           ( (max_code <=     0xffff) ? 3 :
-		             ( (max_code <=   0x1fffff) ? 4 :
-		               ( (max_code <=  0x3ffffff) ? 5 :
+		return (           (max_code <=       0x7f) ? 1 :
+		         (         (max_code <=      0x7ff) ? 2 :
+		           (       (max_code <=     0xffff) ? 3 :
+		             (     (max_code <=   0x1fffff) ? 4 :
+		               (   (max_code <=  0x3ffffff) ? 5 :
 		                 ( (max_code <= 0x7fffffff) ? 6 : -1 ) ) ) ) ) );
 	}
 
