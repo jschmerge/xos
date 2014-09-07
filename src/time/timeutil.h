@@ -8,8 +8,6 @@
 #include <cassert>
 #include <system_error>
 
-#include "average.h"
-
 //////////////////////////////////////////////////////////////////////
 template<clockid_t SOURCE>
 struct PosixClock
@@ -76,6 +74,40 @@ from_timespec(const struct timespec & ts) noexcept
 }
 
 //////////////////////////////////////////////////////////////////////
+template<clockid_t SRC>
+typename PosixClock<SRC>::time_point PosixClock<SRC>::now()
+{
+	struct timespec ts;
+	int rc = 0;
+
+	if ((rc = clock_gettime(clockSource, &ts)) != 0)
+		throw std::system_error(errno, std::system_category(), "clock_gettime");
+
+	time_point ret = from_timespec<PosixClock<SRC>,
+	                                      PosixClock<SRC>::duration>(ts);
+
+	return ret;
+}
+
+#if 0
+//////////////////////////////////////////////////////////////////////
+inline uint64_t getTSC()
+{
+#if (__x86_64)
+	uint32_t lo, hi;
+	__asm__ __volatile__ ( "cpuid\n\t"
+	                       "rdtsc"
+	/* in */             : "=a" (lo), "=d" (hi)
+	/* out */            : "a"(0)
+	/* clobber */        : "%ebx", "%ecx", "memory");
+
+	return (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi) << 32));
+#else
+#	error "getTSC is not implemented for your architecture"
+#endif
+}
+
+//////////////////////////////////////////////////////////////////////
 template <class CLK>
 std::tuple<Average<double>, double> getClockResolution(int samples)
 {
@@ -95,39 +127,6 @@ std::tuple<Average<double>, double> getClockResolution(int samples)
 	}
 
 	return std::tie(averagePrecision, resolution);
-}
-
-//////////////////////////////////////////////////////////////////////
-template<clockid_t SRC>
-typename PosixClock<SRC>::time_point PosixClock<SRC>::now()
-{
-	struct timespec ts;
-	int rc = 0;
-
-	if ((rc = clock_gettime(clockSource, &ts)) != 0)
-		throw std::system_error(errno, std::system_category(), "clock_gettime");
-
-	time_point ret = from_timespec<PosixClock<SRC>,
-	                                      PosixClock<SRC>::duration>(ts);
-
-	return ret;
-}
-
-//////////////////////////////////////////////////////////////////////
-inline uint64_t getTSC()
-{
-#if (__x86_64)
-	uint32_t lo, hi;
-	__asm__ __volatile__ ( "cpuid\n\t"
-	                       "rdtsc"
-	/* in */             : "=a" (lo), "=d" (hi)
-	/* out */            : "a"(0)
-	/* clobber */        : "%ebx", "%ecx", "memory");
-
-	return (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi) << 32));
-#else
-#	error "getTSC is not implemented for your architecture"
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -183,5 +182,6 @@ Average<double> getFunctionTiming(size_t samples, F function, Args&&... args)
 
 	return avg;
 }
+#endif
 
 #endif // GUARD_TIMEUTIL_H

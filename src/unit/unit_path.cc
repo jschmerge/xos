@@ -22,9 +22,7 @@ struct string_constant;
 
 template <> struct string_constant<char>
 { static constexpr char array_value[] = "/foo/bar"; };
-constexpr char string_constant<char>::array_value[];
 
-#if 0
 template <> struct string_constant<wchar_t>
 { static constexpr wchar_t array_value[] = L"/foo/bar"; };
 
@@ -33,7 +31,11 @@ template <> struct string_constant<char16_t>
 
 template <> struct string_constant<char32_t>
 { static constexpr char32_t array_value[] = U"/foo/bar"; };
-#endif
+
+constexpr char string_constant<char>::array_value[];
+constexpr wchar_t string_constant<wchar_t>::array_value[];
+constexpr char16_t string_constant<char16_t>::array_value[];
+constexpr char32_t string_constant<char32_t>::array_value[];
 
 class Test_Path : public CppUnit::TestFixture
 {
