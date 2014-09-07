@@ -29,11 +29,9 @@ template<class T> size_t nlz(T value)
 }
 
 template <class T>
-/* constexpr */ size_t
+constexpr size_t
 numLeadingZeros(T value, size_t count = std::numeric_limits<T>::digits)
 {
-
-	printf("-> %zd\n", count);
 	return (value == 0) ? count : numLeadingZeros<T>(value >> 1, count - 1);
 }
 
