@@ -37,7 +37,10 @@ size_t utf8length(char c)
 	if (retval == 1) throw std::runtime_error("bad encoding");
 
 	// for the "0xxxxxxx"b case of plain ascii
-	if (retval == 0) retval = 1;
+	//if (retval == 0) retval = 1;
+	retval += (retval == 0);
+
+	printf("---> %zd\n", retval);
 
 	return retval;
 }
@@ -52,31 +55,35 @@ size_t utf8length2(char c)
 	value |= (value >> 4);
 	shiftval &= value;
 
+	printf("%08x\n", shiftval);
 	size_t retval = __builtin_popcount(~shiftval);
+	retval -= 24;
 
 	// "10xxxxxx"b is a continuation byte
 	if (retval == 1) throw std::runtime_error("bad encoding");
 
 	// for the "0xxxxxxx"b case of plain ascii
-	if (retval == 0) retval = 1;
-	//retval += (retval == 0);
+	//if (retval == 0) retval = 1;
+	retval += (retval == 0);
 
+	printf("---> %zd\n", retval);
 	return retval;
 }
 
-size_t utf8strlen(const std::basic_string<char> & str)
+size_t utf8strlen(const std::basic_string<char> & str, size_t (*lenfun)(char))
 {
 	size_t sz = 0;
 	size_t char_length = 0;
 	for (std::basic_string<char>::const_iterator i = str.begin();
 	     i != str.end(); i += char_length)
 	{
-		char_length = utf8length(*i);
+		char_length = lenfun(*i);
 		++sz;
 	}
 	return sz;
 }
 
+#if 0
 size_t utf8strlen2(const std::basic_string<char> & str)
 {
 	size_t sz = 0;
@@ -89,6 +96,7 @@ size_t utf8strlen2(const std::basic_string<char> & str)
 	}
 	return sz;
 }
+#endif
 
 template <class C>
 void stringInfo(const std::basic_string<C> & str)
@@ -115,12 +123,8 @@ int main()
 	std::basic_string<char16_t> simpleU16String = u"foo bar";
 	std::basic_string<char32_t> simpleU32String = U"foo bar";
 
-	printf("char length = %zd\n", utf8strlen(simpleString));
+	printf("char length = %zd\n", utf8strlen(simpleString, utf8length));
 	stringInfo(simpleString);
-//	stringInfo(simpleWString);
-//	stringInfo(simpleU16String);
-//	stringInfo(simpleU32String);
-
 
 	std::basic_string<char> complexString
 	  = u8"\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
@@ -131,42 +135,40 @@ int main()
 	std::basic_string<char32_t> complexU32String
 	  = U"\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
 
-	printf("char length = %zd\n", utf8strlen(complexString));
-	printf("char length2 = %zd\n", utf8strlen2(complexString));
+	printf("char length = %zd\n", utf8strlen(simpleString, utf8length));
+	printf("char length = %zd\n", utf8strlen(simpleString, utf8length2));
 	stringInfo(complexString);
-//	stringInfo(complexWString);
-//	stringInfo(complexU16String);
 
 	for (int q = 0; q < 10; ++q)
 	{
-	const unsigned reps = 100000000;
-	size_t x = 0;
-	auto begin = PosixClock<CLOCK_REALTIME>::now();
-	for (unsigned i = 0; i < reps; ++i)
-	{
-		x += utf8strlen(simpleString);
-		x += utf8strlen(complexString);
-	}
-	auto end = PosixClock<CLOCK_REALTIME>::now();
+		const unsigned reps = 10000000;
+		size_t x = 0;
+		auto begin = PosixClock<CLOCK_REALTIME>::now();
+		for (unsigned i = 0; i < reps; ++i)
+		{
+			x += utf8strlen(simpleString, utf8length);
+			x += utf8strlen(complexString, utf8length);
+		}
+		auto end = PosixClock<CLOCK_REALTIME>::now();
 
-	auto d = (end - begin);
+		auto d = (end - begin);
 
-	printf("%zd\n", x / reps);
-	printf("time utfstrlen %'ld\n", d.count());
+		printf("%zd\n", x / reps);
+		printf("time utfstrlen %'ld\n", d.count());
 ///////////////
-	x = 0;
-	begin = PosixClock<CLOCK_REALTIME>::now();
-	for (unsigned i = 0; i < reps; ++i)
-	{
-		x += utf8strlen2(simpleString);
-		x += utf8strlen2(complexString);
-	}
-	end = PosixClock<CLOCK_REALTIME>::now();
+		x = 0;
+		begin = PosixClock<CLOCK_REALTIME>::now();
+		for (unsigned i = 0; i < reps; ++i)
+		{
+			x += utf8strlen(simpleString, utf8length2);
+			x += utf8strlen(complexString, utf8length2);
+		}
+		end = PosixClock<CLOCK_REALTIME>::now();
 
-	d = (end - begin);
+		d = (end - begin);
 
-	printf("%zd\n", x / reps);
-	printf("time utfstrlen2 %'ld\n", d.count());
+		printf("%zd\n", x / reps);
+		printf("time utfstrlen2 %'ld\n", d.count());
 	}
 	
 	return 0;

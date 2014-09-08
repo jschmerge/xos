@@ -15,6 +15,7 @@ template<class Elem,
          unsigned long max_code = 0x10ffff,
          codecvt_mode Mode = (codecvt_mode)0>
 class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
+// internal = Elem, external = char
 {
 	static_assert(max_code <= 0x7fffffff,
 	              "Max code must fit into a 31-bit integer");
