@@ -1,8 +1,10 @@
 #ifndef GUARD_CODECVT_H
 #define GUARD_CODECVT_H 1
+
 #include <cwchar>
 #include <cassert>
 #include <stdexcept>
+#include <limits>
 #include <locale>
 
 enum codecvt_mode
@@ -17,7 +19,8 @@ inline bool is_utf8_codepoint_start (char c)
 	unsigned char val = static_cast<unsigned char>(c);
 	bool rc = false;
 	
-	if (val <= 0x7f || ((val >= 0xb8) && (val <= 0xfd)))
+// 1011 1111
+	if (val <= 0x7f || ((val >= 0xc0) && (val <= 0xfd)))
 		rc = true;
 
 	return rc;
@@ -26,32 +29,61 @@ inline bool is_utf8_codepoint_start (char c)
 inline size_t utf8_codepoint_length (char c)
 {
 	unsigned char val = static_cast<unsigned char>(c);
-	if (val <= 0x7f)
-		return 1;
-	else if (val <= 0xb7) // 10xxxxxx
-		{ }
-	else if (val <= 0xdf)
-		return 2;
-	else if (val <= 0xef)
-		return 3;
-	else if (val <= 0xf7)
-		return 4;
-	else if (val <= 0xfb)
-		return 5;
-	else if (val <= 0xfd)
-		return 6;
+	if (val <= 0x7f)      return 1;
+	else if (val <= 0xbf) return 0;
+	else if (val <= 0xdf) return 2;
+	else if (val <= 0xef) return 3;
+	else if (val <= 0xf7) return 4;
+	else if (val <= 0xfb) return 5;
+	else if (val <= 0xfd) return 6;
 
-	throw std::runtime_error("bad encoding");
+	return 0;
 }
 
-template<class Elem,
-         unsigned long max_code = 0x10ffff,
+inline bool utf8_update_mbstate(std::mbstate_t & s, const char c)
+{
+	if (is_utf8_codepoint_start(c))
+	{
+		// handle error
+		if (s.__count != 0)
+			return false;
+
+		s.__count = utf8_codepoint_length(c);
+
+		if (s.__count == 1)
+		{
+			s.__value.__wch = c;
+			s.__count = 0;
+		} else if (s.__count == 0)
+		{
+			return false;
+		} else
+		{
+			s.__value.__wch = (c & ((1ul << (s.__count + 1) ) - 1));
+			s.__count--;
+		}
+	} else
+	{
+		// handle error
+		if (s.__count <= 0)
+			return false;
+
+		s.__value.__wch <<= 6;
+		s.__value.__wch |= (0x0000003ful & static_cast<unsigned long>(c));
+		s.__count--;
+	}
+
+	return true;
+}
+
+
+template<class Elem, unsigned long max_code = 0x10ffff,
          codecvt_mode Mode = (codecvt_mode)0>
 class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
-// internal = Elem, external = char
 {
-	static_assert(max_code <= 0x7fffffff,
-	              "Max code must fit into a 31-bit integer");
+	static_assert(max_code <= std::numeric_limits<Elem>::max(),
+	              "Max code is greater than internal character "
+	              "representation type");
  public:
 	// suck this stuff in from codecvt
 	using typename std::codecvt<Elem, char, std::mbstate_t>::state_type;
@@ -69,58 +101,61 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 
 	int do_encoding() const noexcept override { return 0; }
 
-/*
 	result do_in(state_type & state,
 	             const extern_type * from,
 	             const extern_type * from_end,
 	             const extern_type * & from_next,
 	             intern_type * to,
 	             intern_type * to_limit,
-	             intern_type * & to_nex) const override;
+	             intern_type * & to_next) const override
+	{
+		assert(from <= from_end);
+		assert(to <= to_limit);
 
-*/
-	int do_length(state_type & state, const extern_type * from,
-	              const extern_type * from_end, std::size_t max) const override
+		for (from_next = from, to_next = to;
+		     (from_next < from_end) && (to_next < to_limit);
+		     ++from_next)
+		{
+			if ( ! utf8_update_mbstate(state, *from_next))
+				return std::codecvt_base::error;
+
+			if (state.__count == 0)
+			{
+				if (state.__value.__wch > max_code)
+					return std::codecvt_base::error;
+
+				*to_next = state.__value.__wch;
+				++to_next;
+			}
+		}
+
+		if (state.__count != 0)
+			return std::codecvt_base::partial;
+		else if (from_next < from_end)
+			return std::codecvt_base::partial;
+		else
+			return std::codecvt_base::ok;
+	}
+
+	int do_length(state_type & state,
+	              const char * from,
+	              const char * from_end,
+	              std::size_t max) const override
 	{
 		assert(from <= from_end);
 		std::size_t count = 0;
-		extern_type * iter = nullptr;
+		const extern_type * iter = nullptr;
 
-		for (iter = from; iter < from_end; ++iter)
+		for (iter = from; (iter < from_end) && (count < max); ++iter)
 		{
-/*
-
-			len  data_bits mask
-			1 -> 8 // special case
-			2 -> 5 ->      0x1F -> 2^5 - 1
-			3 -> 4 ->      0x0F -> 2^4 - 1 
-			4 -> 3 ->      0x07 -> 2^3 - 1
-			5 -> 2 ->      0x03 -> 2^2 - 1
-			6 -> 1 ->      0x01 -> 2^1 - 1
-*/
-		}
-
-		return (iter - from);
-#if 0
-		size_t count = 0;
-
-		size_t point_len = 0;
-
-		const extern_type * iter = from;
-		while (count < max)
-		{
-			point_len = utf8_codepoint_length(*iter);
-			if ((iter + point_len) <= from_end)
-			{
-				iter += point_len;
-				++count;
-			} else
+			if ( ! utf8_update_mbstate(state, *iter))
 				break;
+
+			if (state.__count == 0)
+				++count;
 		}
 
-		printf("====> %zd\n", count);
 		return (iter - from);
-#endif
 	}
 
 	constexpr int do_max_length() const noexcept override
@@ -133,20 +168,26 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		                 ( (max_code <= 0x7fffffff) ? 6 : -1 ) ) ) ) ) );
 	}
 
-/*
+#if 0
 	result do_out(state_type & state,
 	              const intern_type * from,
 	              const intern_type * from_end,
 	              const intern_type * from_next,
 	              extern_type * to,
 	              extern_type * to_limit,
-	              extern_type * & to_next) const override;
+	              extern_type * & to_next) const
+	{
+		return std::codecvt_base::noconv;
+	}
 
 	result do_unshift(state_type & state,
 	                  extern_type * to,
 	                  extern_type * to_limit,
-	                  extern_type * & to_next) const override;
-*/
+	                  extern_type * & to_next) const override
+	{
+		return std::codecvt_base::noconv;
+	}
+#endif
 };
 
 #if 0 
