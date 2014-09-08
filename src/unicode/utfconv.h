@@ -2,6 +2,7 @@
 #define GUARD_CODECVT_H 1
 #include <cwchar>
 #include <cassert>
+#include <stdexcept>
 #include <locale>
 
 enum codecvt_mode
@@ -11,6 +12,27 @@ enum codecvt_mode
 	little_endian = 1
 };
  
+inline size_t utf8_codepoint_length (char c)
+{
+	unsigned char val = static_cast<unsigned char>(c);
+	if (val <= 0x7f)
+		return 1;
+	else if (val <= 0xb7) // 10xxxxxx
+		{ }
+	else if (val <= 0xdf)
+		return 2;
+	else if (val <= 0xef)
+		return 3;
+	else if (val <= 0xf7)
+		return 4;
+	else if (val <= 0xfb)
+		return 5;
+	else if (val <= 0xfd)
+		return 6;
+
+	throw std::runtime_error("bad encoding");
+}
+
 template<class Elem,
          unsigned long max_code = 0x10ffff,
          codecvt_mode Mode = (codecvt_mode)0>
@@ -54,12 +76,23 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	              std::size_t max) const override
 	{
 		assert(from <= from_end);
-		const extern_type * iter = nullptr;
 		size_t count = 0;
 
-		for (iter = from; ((iter != from_end) && (count < max)); ++iter)
+		size_t point_len = 0;
+
+		const extern_type * iter = from;
+		while (count < max)
 		{
+			point_len = utf8_codepoint_length(*iter);
+			if ((iter + point_len) <= from_end)
+			{
+				iter += point_len;
+				++count;
+			} else
+				break;
 		}
+
+		printf("====> %zd\n", count);
 		return (iter - from);
 	}
 
