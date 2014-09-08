@@ -12,6 +12,17 @@ enum codecvt_mode
 	little_endian = 1
 };
  
+inline bool is_utf8_codepoint_start (char c)
+{
+	unsigned char val = static_cast<unsigned char>(c);
+	bool rc = false;
+	
+	if (val <= 0x7f || ((val >= 0xb8) && (val <= 0xfd)))
+		rc = true;
+
+	return rc;
+}
+
 inline size_t utf8_codepoint_length (char c)
 {
 	unsigned char val = static_cast<unsigned char>(c);
@@ -54,11 +65,9 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	~codecvt_utf8() { }
 
  protected:
-	bool do_always_noconv() const noexcept override
-		{ return false; }
+	bool do_always_noconv() const noexcept override { return false; }
 
-	int do_encoding() const noexcept override
-		{ return 0; }
+	int do_encoding() const noexcept override { return 0; }
 
 /*
 	result do_in(state_type & state,
@@ -70,12 +79,29 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	             intern_type * & to_nex) const override;
 
 */
-	int do_length(state_type & /* state */,
-	              const extern_type * from,
-	              const extern_type * from_end,
-	              std::size_t max) const override
+	int do_length(state_type & state, const extern_type * from,
+	              const extern_type * from_end, std::size_t max) const override
 	{
 		assert(from <= from_end);
+		std::size_t count = 0;
+		extern_type * iter = nullptr;
+
+		for (iter = from; iter < from_end; ++iter)
+		{
+/*
+
+			len  data_bits mask
+			1 -> 8 // special case
+			2 -> 5 ->      0x1F -> 2^5 - 1
+			3 -> 4 ->      0x0F -> 2^4 - 1 
+			4 -> 3 ->      0x07 -> 2^3 - 1
+			5 -> 2 ->      0x03 -> 2^2 - 1
+			6 -> 1 ->      0x01 -> 2^1 - 1
+*/
+		}
+
+		return (iter - from);
+#if 0
 		size_t count = 0;
 
 		size_t point_len = 0;
@@ -94,6 +120,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 
 		printf("====> %zd\n", count);
 		return (iter - from);
+#endif
 	}
 
 	constexpr int do_max_length() const noexcept override
