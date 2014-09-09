@@ -3,91 +3,10 @@
 
 #include <cwchar>
 #include <cassert>
-#include <stdexcept>
 #include <limits>
 #include <locale>
 
-namespace std {
-
-template<> class codecvt<char16_t, char, mbstate_t>
-  : public __codecvt_abstract_base<char16_t, char, mbstate_t>
-{
- public:
-	typedef char16_t          intern_type;
-	typedef char              extern_type;
-	typedef mbstate_t         state_type;
-
-	static locale::id id;
-
-	explicit codecvt(size_t __refs = 0)
-	  : __codecvt_abstract_base<char16_t, char, mbstate_t>(__refs) { }
-
-	explicit codecvt(__c_locale, size_t __refs = 0)
-	  : __codecvt_abstract_base<char16_t, char, mbstate_t>(__refs) { }
-
- protected:
-	virtual ~codecvt() { }
-
-	virtual result
-	do_out(mbstate_t&, const char16_t*, const char16_t*, const char16_t*&,
-	       char*, char *, char*&) const = 0;
-
-	virtual result do_unshift(mbstate_t&, char*, char*, char*&) const = 0;
-
-	virtual result
-	do_in(mbstate_t&, const char*, const char*, const char*&,
-	      char16_t*, char16_t*, char16_t*&) const = 0;
-
-	virtual int do_encoding() const noexcept = 0;
-
-	virtual bool do_always_noconv() const noexcept = 0;
-
-	virtual int
-	do_length(mbstate_t&, const char*, const char*, size_t) const = 0;
-
-	virtual int do_max_length() const noexcept = 0;
-};
-
-template<> class codecvt<char32_t, char, mbstate_t>
-  : public __codecvt_abstract_base<char32_t, char, mbstate_t>
-{
- public:
-	typedef char32_t          intern_type;
-	typedef char              extern_type;
-	typedef mbstate_t         state_type;
-
-	static locale::id id;
-
-	explicit codecvt(size_t __refs = 0)
-	  : __codecvt_abstract_base<char32_t, char, mbstate_t>(__refs) { }
-
-	explicit codecvt(__c_locale, size_t __refs = 0)
-	  : __codecvt_abstract_base<char32_t, char, mbstate_t>(__refs) { }
-
- protected:
-	virtual ~codecvt() { }
-
-	virtual result
-	do_out(mbstate_t&, const char32_t*, const char32_t*, const char32_t*&,
-	       char*, char *, char*&) const = 0;
-
-	virtual result do_unshift(mbstate_t&, char*, char*, char*&) const = 0;
-
-	virtual result
-	do_in(mbstate_t&, const char*, const char*, const char*&,
-	      char32_t*, char32_t*, char32_t*&) const = 0;
-
-	virtual int do_encoding() const noexcept = 0;
-
-	virtual bool do_always_noconv() const noexcept = 0;
-
-	virtual int
-	do_length(mbstate_t&, const char*, const char*, size_t) const = 0;
-
-	virtual int do_max_length() const noexcept = 0;
-};
-
-} // namespace std
+#include "stdworkarounds.h"
 
 enum codecvt_mode
 {
@@ -158,25 +77,23 @@ inline bool utf8_update_mbstate(std::mbstate_t & s, const char c)
 	return true;
 }
 
-
 template<class Elem, unsigned long max_code = 0x10ffff,
          codecvt_mode Mode = (codecvt_mode)0>
 class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 {
+ public:
 	static_assert(max_code <= std::numeric_limits<Elem>::max(),
 	              "Max code is greater than internal character "
 	              "representation type");
- public:
 	// suck this stuff in from codecvt
 	using typename std::codecvt<Elem, char, std::mbstate_t>::state_type;
 	using typename std::codecvt<Elem, char, std::mbstate_t>::extern_type;
 	using typename std::codecvt<Elem, char, std::mbstate_t>::intern_type;
 	using typename std::codecvt<Elem, char, std::mbstate_t>::result;
 
-	explicit codecvt_utf8(std::size_t refs = 0)
-	  : std::codecvt<Elem, char, std::mbstate_t>(refs) { }
+	using std::codecvt<Elem, char, std::mbstate_t>::codecvt;
 
-	~codecvt_utf8() { }
+	virtual ~codecvt_utf8() { }
 
 	template <class WC>
 	static inline size_t utf8_bytes_needed (intern_type c)
@@ -196,10 +113,14 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 
 
  protected:
+	
+	//////////////////////////////////////////////////////////////////
 	bool do_always_noconv() const noexcept override { return false; }
 
+	//////////////////////////////////////////////////////////////////
 	int do_encoding() const noexcept override { return 0; }
 
+	//////////////////////////////////////////////////////////////////
 	result do_in(state_type & state,
 	             const extern_type * from,
 	             const extern_type * from_end,
@@ -236,6 +157,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 			return std::codecvt_base::ok;
 	}
 
+	//////////////////////////////////////////////////////////////////
 	int do_length(state_type & state,
 	              const char * from,
 	              const char * from_end,
@@ -257,6 +179,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		return (iter - from);
 	}
 
+	//////////////////////////////////////////////////////////////////
 	constexpr int do_max_length() const noexcept override
 	{
 		return (           (max_code <=       0x7f) ? 1 :
@@ -267,23 +190,66 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		                 ( (max_code <= 0x7fffffff) ? 6 : -1 ) ) ) ) ) );
 	}
 
+	//////////////////////////////////////////////////////////////////
 	result do_out(state_type & state,
 	              const intern_type * from,
 	              const intern_type * from_end,
-	              const intern_type * from_next,
+	              const intern_type * & from_next,
 	              extern_type * to,
 	              extern_type * to_limit,
 	              extern_type * & to_next) const
 	{
+		from_next = from;
 		to_next = to;
 
 		while ((to_next < to_limit) && (from_next < from_end))
 		{
-			if (state.__value.__wch != 0)
+			if (state.__count != 0)
 			{
+				intern_type outValue
+				    = (intern_type(0x3f) << ((state.__count - 1) * 6));
+				outValue &= state.__value.__wch;
+				outValue >>= ((state.__count -1) * 6);
+				*to_next = static_cast<extern_type>(outValue & extern_type(~0));
+				*to_next |= 0x80;
+				++to_next;
+				--state.__count;
 			} else
 			{
+				unsigned char val = 0;
 				state.__value.__wch = *from_next;
+
+				if (state.__value.__wch < 0x80)
+				{
+					val = state.__value.__wch;
+
+					state.__value.__wch = 0;
+					state.__count = 0;
+				} else if (state.__value.__wch < 0x800)
+				{
+					val = (0xc0 | (state.__value.__wch >> 6));
+					state.__count = 1;
+				} else if (state.__value.__wch < 0x10000)
+				{
+					val = (0xe0 | (state.__value.__wch >> 12));
+					state.__count = 2;
+				} else if (state.__value.__wch < 0x200000)
+				{
+					val = (0xf0 | (state.__value.__wch >> 18));
+					state.__count = 3;
+				} else if (state.__value.__wch < 0x4000000)
+				{
+					val = (0xf8 | (state.__value.__wch >> 24));
+					state.__count = 4;
+				} else if (state.__value.__wch < 0x80000000)
+				{
+					val = (0xfc | (state.__value.__wch >> 30));
+					state.__count = 5;
+				} else
+					return std::codecvt_base::error;
+
+				*to_next = val;
+				++to_next;
 				++from_next;
 			}
 		}
@@ -291,6 +257,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		return std::codecvt_base::noconv;
 	}
 
+	//////////////////////////////////////////////////////////////////
 	result do_unshift(state_type & ,//state,
 	                  extern_type * ,//to,
 	                  extern_type * ,//to_limit,

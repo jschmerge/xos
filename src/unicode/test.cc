@@ -3,9 +3,6 @@
 #include <cstring>
 #include <iostream>
 
-template class std::codecvt<char16_t, char, mbstate_t>;
-template class std::codecvt<char32_t, char, mbstate_t>;
-
 int main()
 {
 	std::basic_string<char> complexString
@@ -13,12 +10,9 @@ int main()
 
 	wchar_t buffer[30];
 
-/*
-	fputs("====> ", stdout);
 	for (const auto & c : complexString)
 		printf("%02hhx ", c);
 	putchar('\n');
-*/
 
 	codecvt_utf8<wchar_t> cnv;
 
@@ -48,15 +42,21 @@ int main()
 	       complexString.data() + complexString.length() + 1,
 	       next_in, buffer, buffer + 30, next_out);
 
-/*
 	for (int i = 0; i < next_out - buffer; ++i)
 		printf("%x ", buffer[i]);
-
 	putchar('\n');
-*/
+
+	memset(&mbs, 0, sizeof(mbs));
+	char buf2[40];
+	const wchar_t * last = nullptr;
+	char * last_out = nullptr;
+	cnv.out(mbs, buffer, next_out, last, buf2, buf2 + 40, last_out);
+
+	for (char * p = buf2; p < last_out; ++p)
+		printf("%02hhx ", *p);
+	putchar('\n');
 
 //	std::cout << complexString << std::endl;
-	std::wcout << L'\u5916' << L'\n';
 	  //L"\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388\n";
 	return 0;
 }
