@@ -7,6 +7,8 @@
 #include <limits>
 #include <locale>
 
+#include "../utility/bithacks.h"
+
 enum codecvt_mode
 {
 	consume_header = 4,
@@ -96,6 +98,23 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 
 	~codecvt_utf8() { }
 
+	template <class WC>
+	static inline size_t utf8_bytes_needed (intern_type c)
+	{
+
+		size_t ret = 0;
+
+		     if (static_cast<unsigned int>(c) <       0x7fu) ret = 1;
+		else if (static_cast<unsigned int>(c) <      0x7ffu) ret = 2;
+		else if (static_cast<unsigned int>(c) <     0xffffu) ret = 4;
+		else if (static_cast<unsigned int>(c) <   0x1fffffu) ret = 4;
+		else if (static_cast<unsigned int>(c) <  0x3ffffffu) ret = 5;
+		else if (static_cast<unsigned int>(c) < 0x7fffffffu) ret = 6;
+
+		return ret;
+	}
+
+
  protected:
 	bool do_always_noconv() const noexcept override { return false; }
 
@@ -168,7 +187,6 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		                 ( (max_code <= 0x7fffffff) ? 6 : -1 ) ) ) ) ) );
 	}
 
-#if 0
 	result do_out(state_type & state,
 	              const intern_type * from,
 	              const intern_type * from_end,
@@ -177,6 +195,19 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	              extern_type * to_limit,
 	              extern_type * & to_next) const
 	{
+		to_next = to;
+
+		while ((to_next < to_limit) && (from_next < from_end))
+		{
+			if (state.__value.__wch != 0)
+			{
+			} else
+			{
+				state.__value.__wch = *from_next;
+				++from_next;
+			}
+		}
+
 		return std::codecvt_base::noconv;
 	}
 
@@ -187,7 +218,6 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	{
 		return std::codecvt_base::noconv;
 	}
-#endif
 };
 
 #if 0 
