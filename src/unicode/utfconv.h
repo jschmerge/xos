@@ -21,6 +21,7 @@ inline bool is_utf8_codepoint_start (char c)
 	bool rc = false;
 	
 // 1011 1111
+//	if ((val & 0xc0) == 0xc0)
 	if (val <= 0x7f || ((val >= 0xc0) && (val <= 0xfd)))
 		rc = true;
 
@@ -60,7 +61,7 @@ inline bool utf8_update_mbstate(std::mbstate_t & s, const char c)
 			return false;
 		} else
 		{
-			unsigned int mask = ((1ul << s.__count ) - 1);
+			unsigned int mask = ((1ul << (7 - s.__count) ) - 1);
 			s.__value.__wch = (c & mask);
 			s.__count--;
 		}
@@ -255,17 +256,34 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 			}
 		}
 
-		return std::codecvt_base::noconv;
+		return ( (  (state.__count == 0)
+		         && (from_next == from_end)) ?
+		         std::codecvt_base::ok :
+		         std::codecvt_base::partial );
 	}
 
 	//////////////////////////////////////////////////////////////////
-	result do_unshift(state_type & ,//state,
-	                  extern_type * ,//to,
-	                  extern_type * ,//to_limit,
-	                  extern_type * & //to_next
-	) const override
+	result do_unshift(state_type & state,
+	                  extern_type * to,
+	                  extern_type * to_limit,
+	                  extern_type * & to_next) const override
 	{
-		return std::codecvt_base::noconv;
+		assert(to <= to_limit);
+
+		for (to_next = to; (  (to_next < to_limit)
+		                   && (state.__count != 0) ); ++to_next)
+		{
+			intern_type outValue = (intern_type(0x3f) << ((state.__count - 1) * 6));
+			outValue &= state.__value.__wch;
+			outValue >>= ((state.__count -1) * 6);
+			*to_next = static_cast<extern_type>(outValue & extern_type(~0));
+			*to_next |= 0x80;
+			--state.__count;
+		}
+
+		return ( (state.__count == 0) ?
+		         std::codecvt_base::ok :
+		         std::codecvt_base::partial );
 	}
 };
 
