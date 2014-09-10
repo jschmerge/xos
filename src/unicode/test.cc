@@ -1,18 +1,71 @@
 #include "utfconv.h"
 #include <cstdio>
+#include <cstdlib>
 #include <cassert>
 #include <cstring>
 #include <iostream>
 
 const char * string_utf8
-  = u8"\U0010FF00\U00011111a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
+  = u8"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388\U0010FF00  \U00011111 \U0010FFFF";
 
 const char16_t * string_utf16
-  = u"\U0010FF00\U00011111a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
+  = u"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388\U0010FF00  \U00011111 \U0010FFFF";
 
 const char32_t * string_utf32
-  = U"\U0010FF00\U00011111a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
+  = U"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388\U0010FF00  \U00011111 \U0010FFFF";
 
+typedef std::codecvt<char32_t, char, std::mbstate_t>::result result;
+
+template <unsigned int limit = 0x7fffffff>
+void testStuff()
+{
+	char32_t wc[4];
+	char nc[8];
+
+	const char32_t * last_in = nullptr;
+	char * last_out = nullptr;
+	codecvt_utf8<char32_t, limit> cnv;
+	
+	for (wc[0] = 0; wc[0] < (limit + 1); ++wc[0])
+	{
+		if ((wc[0] & 0xFFFFF) == 0)
+			printf("Processing plane 0x%08x\n", wc[0]);
+
+		std::mbstate_t mbs = std::mbstate_t();
+		memset(nc, 0, 8);
+		result r = cnv.out(mbs, wc, wc + 1, last_in, nc, nc + 8, last_out);
+
+		switch (r)
+		{
+		 case std::codecvt_base::ok:
+			break;
+		 case std::codecvt_base::partial:
+			printf("Partial conversion of charater 0x%08x; %ld chars written\n",
+			       wc[0], last_out - nc);
+			break;
+		 case std::codecvt_base::error:
+			printf("Conversion error of charater 0x%08x\n", wc[0]);
+			break;
+		 case std::codecvt_base::noconv:
+			printf("No conversion (error) of charater 0x%08x\n", wc[0]);
+			break;
+		}
+
+		assert(r == std::codecvt_base::ok);
+		assert(mbs.__count == 0);
+
+		const char * last_in2 = nullptr;
+		char32_t * last_out2 = nullptr;
+		memset(&mbs, 0, sizeof(mbs));
+
+		r = cnv.in(mbs, nc, last_out, last_in2, wc + 1, wc + 2, last_out2);
+		assert((r == std::codecvt_base::ok));
+
+		assert(wc[0] == wc[1]);
+		assert(mbs.__count == 0);
+
+	}
+}
 
 int main()
 {
@@ -62,5 +115,6 @@ int main()
 	putchar('\n');
 	printf("%s\n", buf2);
 
+	testStuff();
 	return 0;
 }

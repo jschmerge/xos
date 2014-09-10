@@ -256,6 +256,18 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 			}
 		}
 
+		while ((to_next < to_limit) && state.__count > 0)
+		{
+			intern_type outValue
+			    = (intern_type(0x3f) << ((state.__count - 1) * utf8_continuation_bits_per_byte));
+			outValue &= state.__value.__wch;
+			outValue >>= ((state.__count -1) * utf8_continuation_bits_per_byte);
+			*to_next = static_cast<extern_type>(outValue & extern_type(~0));
+			*to_next |= 0x80;
+			++to_next;
+			--state.__count;
+		}
+
 		return ( (  (state.__count == 0)
 		         && (from_next == from_end)) ?
 		         std::codecvt_base::ok :
