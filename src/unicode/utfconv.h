@@ -60,7 +60,8 @@ inline bool utf8_update_mbstate(std::mbstate_t & s, const char c)
 			return false;
 		} else
 		{
-			s.__value.__wch = (c & ((1ul << (s.__count + 1) ) - 1));
+			unsigned int mask = ((1ul << s.__count ) - 1);
+			s.__value.__wch = (c & mask);
 			s.__count--;
 		}
 	} else
