@@ -5,13 +5,13 @@
 #include <iostream>
 
 const char * string_utf8
-  = u8"\U00011111\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
+  = u8"\U0010FF00\U00011111a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
 
 const char16_t * string_utf16
-  = u"\U00011111\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
+  = u"\U0010FF00\U00011111a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
 
 const char32_t * string_utf32
-  = U"\U00011111\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
+  = U"\U0010FF00\U00011111a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388";
 
 
 int main()
@@ -39,10 +39,13 @@ int main()
 
 	for (int i = 0; i < (next_out - buffer - 1); ++i)
 	{
-		assert(static_cast<char32_t>(buffer[i]) == string_utf32[i]);
 		printf("%x ", buffer[i]);
 	}
 	putchar('\n');
+	for (int i = 0; i < (next_out - buffer - 1); ++i)
+	{
+		assert(static_cast<char32_t>(buffer[i]) == string_utf32[i]);
+	}
 
 	memset(&mbs, 0, sizeof(mbs));
 	char buf2[100];
