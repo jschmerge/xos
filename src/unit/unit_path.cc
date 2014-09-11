@@ -17,25 +17,49 @@ struct operands_and_result
 	const T result;
 };
 
-template <class C>
-struct string_constant;
+template <class C> struct string_constant;
 
 template <> struct string_constant<char>
-{ static constexpr char array_value[] = "/foo/bar"; };
+{
+	static constexpr char array_value[] = "/foo/bar";
+	static constexpr char array_value2[] = "/\u5916\u56FD/\u8A9E\u306E/"
+	                                       "\u5B66\u7FD2\u3068/\u6559\u6388";
+};
 
 template <> struct string_constant<wchar_t>
-{ static constexpr wchar_t array_value[] = L"/foo/bar"; };
+{
+	static constexpr wchar_t array_value[] = L"/foo/bar";
+	static constexpr wchar_t array_value2[] = L"/\u5916\u56FD/\u8A9E\u306E/"
+	                                           "\u5B66\u7FD2\u3068/"
+	                                           "\u6559\u6388";
+};
 
 template <> struct string_constant<char16_t>
-{ static constexpr char16_t array_value[] = u"/foo/bar"; };
+{
+	static constexpr char16_t array_value[] = u"/foo/bar";
+	static constexpr char16_t array_value2[] = u"/\u5916\u56FD/\u8A9E\u306E/"
+	                                            "\u5B66\u7FD2\u3068/"
+	                                            "\u6559\u6388";
+};
 
 template <> struct string_constant<char32_t>
-{ static constexpr char32_t array_value[] = U"/foo/bar"; };
+{
+	static constexpr char32_t array_value[] = U"/foo/bar";
+	static constexpr char32_t array_value2[] = U"/\u5916\u56FD/\u8A9E\u306E/"
+	                                            "\u5B66\u7FD2\u3068/"
+	                                            "\u6559\u6388";
+};
 
 constexpr char string_constant<char>::array_value[];
 constexpr wchar_t string_constant<wchar_t>::array_value[];
 constexpr char16_t string_constant<char16_t>::array_value[];
 constexpr char32_t string_constant<char32_t>::array_value[];
+
+constexpr char string_constant<char>::array_value2[];
+constexpr wchar_t string_constant<wchar_t>::array_value2[];
+constexpr char16_t string_constant<char16_t>::array_value2[];
+constexpr char32_t string_constant<char32_t>::array_value2[];
+
 
 class Test_Path : public CppUnit::TestFixture
 {
@@ -67,7 +91,20 @@ class Test_Path : public CppUnit::TestFixture
 
 		// path::path<const ECT[]>(const ECT [] &)
 		{
+			if (config::verbose)
+			{
+				printf("\n---------------------------------------------\n"
+				       "Constructing path with '%s'\n",
+				       string_constant<char>::array_value);
+			}
+
 			path path_source_array( string_constant<ECT>::array_value);
+
+			if (config::verbose)
+			{
+				printf("                Path = '%s'\n",
+				       path_source_array.c_str());
+			}
 			CPPUNIT_ASSERT(! path_source_array.empty());
 			CPPUNIT_ASSERT( strcmp(path_source_array.c_str(),
 			                       string_constant<char>::array_value) == 0);
@@ -91,6 +128,49 @@ class Test_Path : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(! path_source_string.empty());
 			CPPUNIT_ASSERT( strcmp(path_source_string.c_str(),
 			                       string_constant<char>::array_value) == 0);
+		}
+
+		//////////
+
+		// path::path<const ECT[]>(const ECT [] &)
+		{
+			if (config::verbose)
+			{
+				std::cout << "-----------------------------------------------\n"
+				          << "Constructing path with '"
+				          << string_constant<char>::array_value2
+				          << "'" << std::endl;
+			}
+			path path_source_array( string_constant<ECT>::array_value2);
+			if (config::verbose)
+			{
+				std::cout << "                Path = '"
+				          << path_source_array.c_str() << "'" << std::endl;
+			}
+
+			CPPUNIT_ASSERT(! path_source_array.empty());
+			CPPUNIT_ASSERT( strcmp(path_source_array.c_str(),
+			                       string_constant<char>::array_value2) == 0);
+		}
+
+		// path::path<const ECT*>(const ECT * &)
+		{
+			const ECT * value = string_constant<ECT>::array_value2;
+			path path_source_pointer(value);
+			CPPUNIT_ASSERT(! path_source_pointer.empty());
+			CPPUNIT_ASSERT( strcmp(path_source_pointer.c_str(),
+			                       string_constant<char>::array_value2) == 0);
+		}
+
+		// path::path<basic_string<ECT>>(const basic_string<ECT> &)
+		{
+			const std::basic_string<ECT> value(
+				string_constant<ECT>::array_value2);
+
+			path path_source_string(value);
+			CPPUNIT_ASSERT(! path_source_string.empty());
+			CPPUNIT_ASSERT( strcmp(path_source_string.c_str(),
+			                       string_constant<char>::array_value2) == 0);
 		}
 
 	}
@@ -179,11 +259,14 @@ class Test_Path : public CppUnit::TestFixture
 
 			p1 /= p2;
 
-//			printf("'%s' + '%s' = '%s' (expected '%s')\n", i.operand1.c_str(),
-//			       i.operand2.c_str(), p1.native().c_str(), i.result.c_str());
+			if (config::verbose)
+			{
+				printf("'%s' + '%s' = '%s' (expected '%s')\n",
+				       i.operand1.c_str(), i.operand2.c_str(),
+				       p1.native().c_str(), i.result.c_str());
+			}
 
 			CPPUNIT_ASSERT(p1.native() == i.result);
-
 		}
 	}
 
