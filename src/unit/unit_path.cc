@@ -43,11 +43,9 @@ class Test_Path : public CppUnit::TestFixture
 
 	CPPUNIT_TEST_SUITE(Test_Path);
 	CPPUNIT_TEST(constructors<char>);
-#if 0
 	CPPUNIT_TEST(constructors<wchar_t>);
 	CPPUNIT_TEST(constructors<char16_t>);
 	CPPUNIT_TEST(constructors<char32_t>);
-#endif
 	CPPUNIT_TEST(assignmentOperators);
 	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST(plusEqualOperators);
@@ -58,6 +56,9 @@ class Test_Path : public CppUnit::TestFixture
 	template <class ECT>
 	void constructors()
 	{
+		// TODO - augment string classes with non-ascii chars and
+		// native and narrow versions of the strings
+
 		// path::path()
 		path path_default;
 		CPPUNIT_ASSERT(path_default.empty());
@@ -68,6 +69,8 @@ class Test_Path : public CppUnit::TestFixture
 		{
 			path path_source_array( string_constant<ECT>::array_value);
 			CPPUNIT_ASSERT(! path_source_array.empty());
+			CPPUNIT_ASSERT( strcmp(path_source_array.c_str(),
+			                       string_constant<char>::array_value) == 0);
 		}
 
 		// path::path<const ECT*>(const ECT * &)
@@ -75,6 +78,8 @@ class Test_Path : public CppUnit::TestFixture
 			const ECT * value = string_constant<ECT>::array_value;
 			path path_source_pointer(value);
 			CPPUNIT_ASSERT(! path_source_pointer.empty());
+			CPPUNIT_ASSERT( strcmp(path_source_pointer.c_str(),
+			                       string_constant<char>::array_value) == 0);
 		}
 
 		// path::path<basic_string<ECT>>(const basic_string<ECT> &)
@@ -84,6 +89,8 @@ class Test_Path : public CppUnit::TestFixture
 
 			path path_source_string(value);
 			CPPUNIT_ASSERT(! path_source_string.empty());
+			CPPUNIT_ASSERT( strcmp(path_source_string.c_str(),
+			                       string_constant<char>::array_value) == 0);
 		}
 
 	}

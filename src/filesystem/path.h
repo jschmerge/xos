@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "path_traits.h"
+#include "../unicode/utfconv.h"
 
 namespace filesystem {
 inline namespace v1 {
@@ -168,17 +169,45 @@ inline namespace v1 {
 		enable_if_t<char_encodable_t<EcharT>::value>
 		dispatch_initialization(const EcharT * src)
 		{
-			//std::codecvt<EcharT, char, std::mbstate_t> cvt;
-			// FIXME
-			pathname.assign(src);
+#if 0
+			constexpr unsigned int maxValue =
+			  std::min(std::numeric_limits<
+			    typename std::make_unsigned<EcharT>::type>::max(), 0x10FFFFu);
+#endif
+
+			size_t len = 0;
+			codecvt_utf8<EcharT> cvt;
+
+			for (len = 0; src[len] != 0; ++len) { }
+
+			pathname.resize(len * cvt.max_length(), '\0');
+
+			const EcharT * from_next = nullptr;
+			char * to_next = nullptr;
+			std::mbstate_t mbs = std::mbstate_t();
+			cvt.out(mbs, src, src + len, from_next,
+			        const_cast<char*>(pathname.data()),
+			        const_cast<char*>(pathname.data() + pathname.length()),
+			        to_next);
+			pathname.erase(to_next - pathname.data());
 		}
 
 		template <class C, class T, class A>
 		enable_if_t<char_encodable_t<C>::value>
-		dispatch_initialization(const std::basic_string<C, T, A> &  src)
+		dispatch_initialization(const std::basic_string<C, T, A> & src)
 		{
-			// FIXME
-			pathname.assign(src);
+			codecvt_utf8<C> cvt;
+
+			pathname.resize(src.length() * cvt.max_length(), '\0');
+
+			const C * from_next = nullptr;
+			char * to_next = nullptr;
+			std::mbstate_t mbs = std::mbstate_t();
+			cvt.out(mbs, src.data(), src.data() + src.length(), from_next,
+			        const_cast<char*>(pathname.data()),
+			        const_cast<char*>(pathname.data() + pathname.length()),
+			        to_next);
+			pathname.erase(to_next - pathname.data());
 		}
 
 		string_type pathname;
