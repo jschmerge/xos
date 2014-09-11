@@ -1,4 +1,4 @@
-#include "../filesystem/filesystem"
+#include "../filesystem/path_traits.h"
 
 #include "cppunit-header.h"
 
