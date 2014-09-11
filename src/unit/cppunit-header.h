@@ -44,4 +44,8 @@
 	typedef int CppUnitDummyTypedefForSemiColonEnding__
 // End of Macro
 
+namespace config {
+	extern bool verbose;
+};
+
 #endif // GUARD_UNIT_HEADER_H

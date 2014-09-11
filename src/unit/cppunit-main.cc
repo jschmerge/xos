@@ -10,6 +10,10 @@
 
 #include "cppunit-header.h"
 
+namespace config {
+	bool verbose = false;
+};
+
 typedef std::map<std::string, CppUnit::Outputter *> OutputterMap;
 typedef std::map<std::string, CppUnit::TestListener *> ListenerMap;
 
@@ -21,7 +25,7 @@ void usage(const char * name)
 	             "[-r repeatnumber] "
 	             "[-t testname] "
 	             "[-o {compiler|text|xml|none}] "
-	             "[-p {dots|brief|none}] [-l] [-h]"
+	             "[-p {dots|brief|verbose|none}] [-l] [-h]"
 	          << std::endl;
 }
 
@@ -80,6 +84,7 @@ int main(int argc, char ** argv)
 	ListenerMap allListeners{
 		{ "dots", new CppUnit::TextTestProgressListener() },
 		{ "brief", new CppUnit::BriefTestProgressListener() },
+		{ "verbose", new CppUnit::BriefTestProgressListener() },
 		{ "none", nullptr },
 	};
 
@@ -122,6 +127,12 @@ int main(int argc, char ** argv)
 		case 'p':
 			{
 			std::string progress(optarg);
+
+			if (progress == "verbose")
+			{
+				progress = "brief";
+				config::verbose = true;
+			}
 
 			ListenerMap::const_iterator it = allListeners.find(optarg);
 
