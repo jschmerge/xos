@@ -17,29 +17,24 @@ enum codecvt_mode
  
 inline bool is_utf8_codepoint_start (char c)
 {
-	unsigned char val = static_cast<unsigned char>(c);
 	bool rc = false;
 	
-// 1011 1111
-//	if ((val & 0xc0) == 0xc0)
-	if (val <= 0x7f || ((val >= 0xc0) && (val <= 0xfd)))
+	if ((static_cast<unsigned char>(c) & 0xc0ul) != 0x80ul)
 		rc = true;
 
 	return rc;
 }
 
-inline size_t utf8_codepoint_length (char c)
+inline constexpr size_t utf8_codepoint_length (char c)
 {
-	unsigned char val = static_cast<unsigned char>(c);
-	if (val < 0x80)      return 1;
-	else if (val < 0xc0) return 0;
-	else if (val < 0xe0) return 2;
-	else if (val < 0xf0) return 3;
-	else if (val < 0xf8) return 4;
-	else if (val < 0xfc) return 5;
-	else if (val < 0xfe) return 6;
-
-	return 0;
+	return ( (static_cast<unsigned char>(c) < 0x80ul) ? 1 :
+	       ( (static_cast<unsigned char>(c) < 0xc0ul) ? 0 :
+	       ( (static_cast<unsigned char>(c) < 0xe0ul) ? 2 :
+	       ( (static_cast<unsigned char>(c) < 0xf0ul) ? 3 :
+	       ( (static_cast<unsigned char>(c) < 0xf8ul) ? 4 :
+	       ( (static_cast<unsigned char>(c) < 0xfcul) ? 5 :
+	       ( (static_cast<unsigned char>(c) < 0xfeul) ? 6 :
+	          0 ) ) ) ) ) ) );
 }
 
 
@@ -111,14 +106,19 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 
 	virtual ~codecvt_utf8() { }
 
+	static constexpr unsigned int utf_length_limits[] = {
+		0x80, 0x800, 0x10000, 0x200000, 0x4000000, 0x80000000
+	};
+
 	static constexpr int utf8_bytes_needed (intern_type c)
 	{
-		return ( (c <       0x80) ? 1 :
-		       ( (c <      0x800) ? 2 :
-		       ( (c <    0x10000) ? 3 :
-		       ( (c <   0x200000) ? 4 :
-		       ( (c <  0x4000000) ? 5 :
-		       ( (c < 0x80000000) ? 6 : -1 ) ) ) ) ) );
+		return ( (static_cast<unsigned int>(c) < utf_length_limits[0]) ? 1 :
+		       ( (static_cast<unsigned int>(c) < utf_length_limits[1]) ? 2 :
+		       ( (static_cast<unsigned int>(c) < utf_length_limits[2]) ? 3 :
+		       ( (static_cast<unsigned int>(c) < utf_length_limits[3]) ? 4 :
+		       ( (static_cast<unsigned int>(c) < utf_length_limits[4]) ? 5 :
+		       ( (static_cast<unsigned int>(c) < utf_length_limits[5]) ? 6 :
+		          -1 ) ) ) ) ) );
 	}
 
  protected:
@@ -159,12 +159,9 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 			}
 		}
 
-		if (state.__count != 0)
-			return std::codecvt_base::partial;
-		else if (from_next < from_end)
-			return std::codecvt_base::partial;
-		else
-			return std::codecvt_base::ok;
+		return ( ( (state.__count != 0) || (from_next < from_end) ) ?
+			     std::codecvt_base::partial :
+		         std::codecvt_base::ok );
 	}
 
 	//////////////////////////////////////////////////////////////////
@@ -189,6 +186,29 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		return (iter - from);
 	}
 
+	inline unsigned int data_shift(int byte_number) const
+	{
+		return ((byte_number - 1) * utf8_continuation_bits_per_byte);
+	}
+
+	inline unsigned int data_mask(int byte_number) const
+	{
+		return (0x3ful << data_shift(byte_number));
+	}
+
+	inline char next_utf8_byte(const std::mbstate_t & s) const
+	{
+		return (0x80 | (data_mask(s.__count) & s.__value.__wch) >> data_shift(s.__count));
+//		         & s.__value.__wch) ) >> ((s.__count - 1) * utf_continuation_bytes));
+/*
+				intern_type outValue
+				    = (intern_type(0x3f) << ((state.__count - 1) * utf8_continuation_bits_per_byte));
+				outValue &= state.__value.__wch;
+				outValue >>= ((state.__count -1) * utf8_continuation_bits_per_byte);
+				*to_next = static_cast<extern_type>(outValue & extern_type(~0));
+				*to_next |= 0x80;
+*/
+	}
 	//////////////////////////////////////////////////////////////////
 	result do_out(state_type & state,
 	              const intern_type * from,
@@ -208,12 +228,15 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		{
 			if (state.__count != 0)
 			{
+/*
 				intern_type outValue
 				    = (intern_type(0x3f) << ((state.__count - 1) * utf8_continuation_bits_per_byte));
 				outValue &= state.__value.__wch;
 				outValue >>= ((state.__count -1) * utf8_continuation_bits_per_byte);
 				*to_next = static_cast<extern_type>(outValue & extern_type(~0));
 				*to_next |= 0x80;
+*/
+				*to_next = next_utf8_byte(state);
 				++to_next;
 				--state.__count;
 			} else
@@ -221,29 +244,29 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 				unsigned char val = 0;
 				state.__value.__wch = *from_next;
 
-				if (state.__value.__wch < 0x80)
+				if (state.__value.__wch < utf_length_limits[0])
 				{
 					val = state.__value.__wch;
 
 					state.__value.__wch = 0;
 					state.__count = 0;
-				} else if (state.__value.__wch < 0x800)
+				} else if (state.__value.__wch < utf_length_limits[1])
 				{
 					val = (0xc0 | (state.__value.__wch >> 6));
 					state.__count = 1;
-				} else if (state.__value.__wch < 0x10000)
+				} else if (state.__value.__wch < utf_length_limits[2])
 				{
 					val = (0xe0 | (state.__value.__wch >> 12));
 					state.__count = 2;
-				} else if (state.__value.__wch < 0x200000)
+				} else if (state.__value.__wch < utf_length_limits[3])
 				{
 					val = (0xf0 | (state.__value.__wch >> 18));
 					state.__count = 3;
-				} else if (state.__value.__wch < 0x4000000)
+				} else if (state.__value.__wch < utf_length_limits[4])
 				{
 					val = (0xf8 | (state.__value.__wch >> 24));
 					state.__count = 4;
-				} else if (state.__value.__wch < 0x80000000)
+				} else if (state.__value.__wch < utf_length_limits[5])
 				{
 					val = (0xfc | (state.__value.__wch >> 30));
 					state.__count = 5;
