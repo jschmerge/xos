@@ -141,7 +141,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	}
 
  protected:
-	constexpr int do_max_length() const noexcept override
+	int do_max_length() const noexcept override
 	{ return utf8_bytes_needed(max_code); }
 	
 	bool do_always_noconv() const noexcept override
@@ -212,7 +212,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 	              const intern_type * & from_next,
 	              extern_type * to,
 	              extern_type * to_limit,
-	              extern_type * & to_next) const
+	              extern_type * & to_next) const override
 	{
 		assert(from <= from_end);
 		assert(to <= to_limit);
@@ -303,6 +303,62 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		         std::codecvt_base::ok :
 		         std::codecvt_base::partial );
 	}
+};
+
+template<unsigned long max_code, codecvt_mode Mode>
+class codecvt_utf8<char, max_code, Mode>
+  : public std::codecvt<char, char, std::mbstate_t>
+{
+ public:
+	// suck this stuff in from codecvt
+	using typename std::codecvt<char, char, std::mbstate_t>::state_type;
+	using typename std::codecvt<char, char, std::mbstate_t>::extern_type;
+	using typename std::codecvt<char, char, std::mbstate_t>::intern_type;
+	using typename std::codecvt<char, char, std::mbstate_t>::result;
+
+	// just use base ctor
+	using std::codecvt<char, char, std::mbstate_t>::codecvt;
+
+	virtual ~codecvt_utf8() { }
+
+ protected:
+	int do_max_length() const noexcept override
+	{ return sizeof(char); }
+	
+	bool do_always_noconv() const noexcept override
+	{ return true; }
+
+	int do_encoding() const noexcept override
+	{ return 1; }
+
+	result do_in(state_type &, const extern_type * from,
+	             const extern_type *, const extern_type * & from_next,
+	             intern_type * to, intern_type *,
+	             intern_type * & to_next) const override
+	{
+		from_next = from;
+		to_next = to;
+		return std::codecvt_base::noconv;
+	}
+
+	int do_length(state_type &, const char * from, const char * from_end,
+	              std::size_t max) const override
+	{ return std::min(static_cast<std::size_t>(from_end - from), max); }
+
+	result do_out(state_type &,
+	              const intern_type * from, const intern_type *,
+	              const intern_type * & from_next, extern_type * to,
+	              extern_type *, extern_type * & to_next) const override
+	{
+		from_next = from;
+		to_next = to;
+		return std::codecvt_base::noconv;
+	}
+
+	//////////////////////////////////////////////////////////////////
+	result do_unshift(state_type &, extern_type *, extern_type *,
+	                  extern_type * &) const override
+	{ return std::codecvt_base::noconv; }
 };
 
 #if 0 
