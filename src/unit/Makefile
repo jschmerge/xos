@@ -10,7 +10,7 @@ INCLUDES         = $(INCLUDES_$(BUILD))
 
 DEFINES_base     =
 DEFINES_release  = $(DEFINES_base) -DNDEBUG
-DEFINES_debug    = $(DEFINES_base) -D_GLIBCXX_DEBUG
+DEFINES_debug    = $(DEFINES_base) -D_GLIBCXX_DEBUG --coverage
 DEFINES          = $(DEFINES_$(BUILD))
 
 CFLAGS_base      = -Wall -Wextra -pthread -O3 -g3
@@ -28,9 +28,9 @@ LDFLAGS_release  = $(LDFLAGS_base)
 LDFLAGS_debug    = $(LDFLAGS_base) -rdynamic
 LDFLAGS          = $(LDFLAGS_$(BUILD))
 
-LIBS_base        = ../filesystem/lib/libfilesystem.a -lcppunit -lrt -ldl
-LIBS_release     = $(LIBS_base)
-LIBS_debug       = $(LIBS_base)
+LIBS_base        = -lcppunit -lrt -ldl
+LIBS_release     = ../filesystem/lib/libfilesystem.a $(LIBS_base)
+LIBS_debug       = ../filesystem/lib/libfilesystem.dbg.a $(LIBS_base)
 LIBS             = $(LIBS_$(BUILD))
 
 TARGETS            = unittest
@@ -46,3 +46,6 @@ include ../Makefile.include
 
 check: $(TARGETS)
 	bin/unittest -p brief
+
+debugcheck: $(DBG_TARGETS)
+	bin/unittest.debug -p brief

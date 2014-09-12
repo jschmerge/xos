@@ -10,6 +10,7 @@ LD     ?= ld
 OBJCPY ?= objcopy
 
 DBG_TARGETS = $(TARGETS:%=%.debug)
+DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.dbg)
 
 #
 # Print out our settings
@@ -117,7 +118,8 @@ all: release
 
 release: $(TARGETS) $(LIB_TARGETS)
 
-debug: $(DBG_TARGETS)
+debug: $(DBG_TARGETS) $(DBG_LIB_TARGETS)
+	echo $^
 
 libs: 
 
@@ -180,6 +182,7 @@ define MAKE_LIBRARY
   #
   LIBNAME = $(1)
   STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).a
+  DBG_STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).dbg.a
   #
   # Place compiled objects in $(OBJDIR)
   #
@@ -190,8 +193,14 @@ define MAKE_LIBRARY
   $$(LIBNAME)_DBG_OBJS = $$($$(LIBNAME)_OBJS:%.o=%.debug.o)
 
   $$(LIBNAME): $$(STATIC_LIB)
+  $$(LIBNAME).dbg: $$(DBG_STATIC_LIB)
 
   $$(STATIC_LIB): $$($$(LIBNAME)_OBJS)
+	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+	$$(QAR)ar -cSurv $$@ $$^
+	$$(QRANLIB)ranlib $$@
+
+  $$(DBG_STATIC_LIB): $$($$(LIBNAME)_DBG_OBJS)
 	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
