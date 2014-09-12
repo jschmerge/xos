@@ -1,3 +1,4 @@
+#include "path.h"
 #include "filesystem_error.h"
 
 namespace filesystem {

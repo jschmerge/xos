@@ -9,12 +9,12 @@
 #include <chrono>
 #include <system_error>
 
+#include "path_traits.h"
 #include "path.h"
+#include "filesystem_error.h"
 
 namespace filesystem {
 inline namespace v1 {
-
-	class path;
 
 	void swap(path& lhs, path& rhs) noexcept;
 	size_t hash_value(const path& p) noexcept;
@@ -41,8 +41,6 @@ inline namespace v1 {
 
 	template <class InputIterator>
 	path u8path(InputIterator first, InputIterator last);
-
-	class filesystem_error;
 
 	class directory_entry;
 

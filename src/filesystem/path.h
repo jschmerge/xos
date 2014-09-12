@@ -5,6 +5,7 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
+#include <system_error>
 #include <vector>
 
 #include "path_traits.h"
@@ -12,6 +13,8 @@
 
 namespace filesystem {
 inline namespace v1 {
+
+class filesystem_error;
 
 class path
 {
@@ -188,8 +191,9 @@ class path
 			                   + pathname.length()), to_next);
 
 			if (r != std::codecvt_base::ok)
-				throw std::runtime_error(
-				        "Could not convert pathname encoding");
+				throw filesystem_error(
+				        "Could not convert pathname encoding",
+				         std::error_code());
 
 			pathname.erase(to_next - pathname.data());
 		} else

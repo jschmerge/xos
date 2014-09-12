@@ -168,6 +168,7 @@ define MAKE_PROGRAM
   # Make target for debug build
   #
   $$(EXE).debug: $$($$(PROG)_DBG_OBJS)
+	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
 	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
 		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
   #

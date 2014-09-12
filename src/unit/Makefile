@@ -10,7 +10,7 @@ INCLUDES         = $(INCLUDES_$(BUILD))
 
 DEFINES_base     =
 DEFINES_release  = $(DEFINES_base) -DNDEBUG
-DEFINES_debug    = $(DEFINES_base) -D_GLIBCXX_DEBUG --coverage
+DEFINES_debug    = $(DEFINES_base) -D_GLIBCXX_DEBUG -fprofile-arcs -ftest-coverage
 DEFINES          = $(DEFINES_$(BUILD))
 
 CFLAGS_base      = -Wall -Wextra -pthread -O3 -g3
@@ -38,14 +38,18 @@ TARGETS            = unittest
 unittest_OBJS = cppunit-main.o \
                 unit_bithacks.o \
                 unit_average.o \
+                unit_unicode.o \
                 unit_filesystem_error.o \
                 unit_path_traits.o \
                 unit_path.o
 
+PROGRESS ?= brief
+
 include ../Makefile.include
 
 check: $(TARGETS)
-	bin/unittest -p brief
+	bin/unittest -p $(PROGRESS)
+
 
 debugcheck: $(DBG_TARGETS)
-	bin/unittest.debug -p brief
+	bin/unittest.debug -p $(PROGRESS)
