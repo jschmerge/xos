@@ -70,6 +70,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(constructors<wchar_t>);
 	CPPUNIT_TEST(constructors<char16_t>);
 	CPPUNIT_TEST(constructors<char32_t>);
+	CPPUNIT_TEST(valueConstructors);
 	CPPUNIT_TEST(assignmentOperators);
 	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST(plusEqualOperators);
@@ -203,6 +204,14 @@ class Test_Path : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(! p2.empty());
 			CPPUNIT_ASSERT(p2.native() == value);
 			CPPUNIT_ASSERT(strcmp(p2.c_str(), value) == 0);
+		}
+
+		{
+			path p1("/foo/bar");
+			path p2(std::move(p1));
+
+			CPPUNIT_ASSERT(strcmp("/foo/bar", p2.c_str()) == 0);
+			CPPUNIT_ASSERT(p1.empty());
 		}
 	}
 
