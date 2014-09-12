@@ -185,6 +185,9 @@ int main(int argc, char ** argv)
 
 	if (outputter) outputter->write();
 
+	allOutputters.clear();
+	allListeners.clear();
+
 	return collector.testErrors() + collector.testFailures();
 }
 
