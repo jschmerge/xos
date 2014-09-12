@@ -17,7 +17,7 @@ const char32_t * string_utf32
   = U"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068\u6559\u6388"
      "\U0010FF00  \U00011111 \U0010FFFF";
 
-typedef std::codecvt<char32_t, char, std::mbstate_t>::result result;
+typedef std::codecvt_base::result result;
 
 template <class CHAR_T = char32_t, unsigned int limit = 0x10FFFF>
 void testStuff()

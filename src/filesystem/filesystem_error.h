@@ -4,10 +4,11 @@
 #include <memory>
 #include <string>
 #include <system_error>
-#include "path.h"
 
 namespace filesystem {
 inline namespace v1 {
+
+class path;
 
 class filesystem_error : public std::system_error
 {

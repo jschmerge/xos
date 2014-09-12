@@ -173,6 +173,10 @@ class Test_Path : public CppUnit::TestFixture
 			                       string_constant<char>::array_value2) == 0);
 		}
 
+		const unsigned int bad_str[] = { 0x80000000, 0x80 };
+		CPPUNIT_ASSERT_THROW({
+			path bad{reinterpret_cast<const char32_t*>(bad_str)};
+		}, filesystem::filesystem_error);
 	}
 
 	void valueConstructors()
