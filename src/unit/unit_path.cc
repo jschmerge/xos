@@ -303,10 +303,37 @@ class Test_Path : public CppUnit::TestFixture
 
 	void plusEqualOperators()
 	{
+		const std::string s1 = "/foo/bar";
+		const std::string s2 = "/another/path";
+		const path::value_type ch = 'x';
+		
 		// path
+		{
+			path tmp(s1);
+			tmp += path(s2);
+			CPPUNIT_ASSERT( static_cast<std::string>(tmp) == ( s1 + s2) );
+		}
+
 		// string_type
+		{
+			path tmp(s1);
+			tmp += s2;
+			CPPUNIT_ASSERT( static_cast<std::string>(tmp) == ( s1 + s2) );
+		}
+
 		// value_type *
+		{
+			path tmp(s1);
+			tmp += s2.c_str();
+			CPPUNIT_ASSERT( static_cast<std::string>(tmp) == ( s1 + s2) );
+		}
+
 		// value_type
+		{
+			path tmp(s1);
+			tmp += ch;
+			CPPUNIT_ASSERT( static_cast<std::string>(tmp) == ( s1 + ch ) );
+		}
 	}
 
 	void conversionOperators()
@@ -328,6 +355,12 @@ class Test_Path : public CppUnit::TestFixture
 
 		p2.clear();
 		CPPUNIT_ASSERT(p2.empty());
+
+		p2 = "/something/different";
+		p.swap(p2);
+
+		CPPUNIT_ASSERT(p.compare("/something/different") == 0
+		              && p2.compare("/foo/bar") == 0);
 	}
 
 	void compareFunctions()
