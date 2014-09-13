@@ -15,8 +15,8 @@ DEFINES_debug     = $(DEFINES_base) -D_GLIBCXX_DEBUG
 DEFINES_coverage  = $(DEFINES_base)
 DEFINES           = $(DEFINES_$(BUILD))
 
-CFLAGS_base       = -Wall -Wextra -pthread -O3 -g3
-CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES)
+CFLAGS_base       = -Wall -Wextra -pthread -g3
+CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES) -O3
 CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug)
 CFLAGS_coverage   = $(CFLAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) \
                     -fprofile-arcs -ftest-coverage

@@ -12,7 +12,6 @@ INCLUDES         = $(INCLUDES_$(BUILD))
 
 DEFINES_base     =
 DEFINES_release  = $(DEFINES_base) -DNDEBUG
-#DEFINES_release  = $(DEFINES_base)
 DEFINES_debug    = $(DEFINES_base) -D_GLIBCXX_DEBUG -fprofile-arcs -ftest-coverage
 DEFINES          = $(DEFINES_$(BUILD))
 

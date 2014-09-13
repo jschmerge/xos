@@ -6,17 +6,19 @@ BUILD            ?= release
 INCLUDES_base     =
 INCLUDES_release  = $(INCLUDES_base)
 INCLUDES_debug    = $(INCLUDES_base)
+INCLUDES_coverage = $(INCLUDES_base)
 INCLUDES          = $(INCLUDES_$(BUILD))
 
 DEFINES_base      =
 DEFINES_release   = $(DEFINES_base) -DNDEBUG
 DEFINES_debug     = $(DEFINES_base) -D_GLIBCXX_DEBUG
+DEFINES_coverage  = $(DEFINES_base)
 DEFINES           = $(DEFINES_$(BUILD))
 
-CFLAGS_base       = -Wall -Wextra -pthread -O3 -g3
-CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES)
+CFLAGS_base       = -Wall -Wextra -pthread -g3
+CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES) -O3
 CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug)
-CFLAGS_coverage   = $(CLFAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) \
+CFLAGS_coverage   = $(CFLAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) \
                     -fprofile-arcs -ftest-coverage
 CFLAGS            = $(CFLAGS_$(BUILD))
 
@@ -26,9 +28,10 @@ CXXFLAGS_debug    = $(CXXFLAGS_base) $(CFLAGS_debug)
 CXXFLAGS_coverage = $(CXXFLAGS_base) $(CFLAGS_coverage)
 CXXFLAGS          = $(CXXFLAGS_$(BUILD))
 
-LDFLAGS_base      =
-LDFLAGS_release   = $(LDFLAGS_base)
-LDFLAGS_debug     = $(LDFLAGS_base) -rdynamic
+LDFLAGS_base      = 
+LDFLAGS_release   = $(CFLAGG_release) $(LDFLAGS_base)
+LDFLAGS_debug     = $(CFLAGG_debug) $(LDFLAGS_base) -rdynamic
+LDFLAGS_coverage  = $(CFLAGG_coverage) $(LDFLAGS_base)
 LDFLAGS           = $(LDFLAGS_$(BUILD))
 
 LIBS_base         = -lcppunit -lrt -ldl
