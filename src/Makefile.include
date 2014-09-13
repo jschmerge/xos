@@ -10,7 +10,10 @@ LD     ?= ld
 OBJCPY ?= objcopy
 
 DBG_TARGETS = $(TARGETS:%=%.debug)
-DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.dbg)
+COV_TARGETS = $(TARGETS:%=%.coverage)
+
+DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
+COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
 
 #
 # Print out our settings
@@ -50,14 +53,23 @@ QRANLIB_0    = @echo "    RANLIB" $@;
 QRANLIB      = $(QRANLIB_$(V))
 
 
-QDEPDBG_0    = @echo "       DEP $< [dbg]";
+QDEPDBG_0    = @echo "       DEP $< [debug]";
 QDEPDBG      = $(QDEPDBG_$(V))
-QCCDBG_0     = @echo "        CC $< [dbg]";
+QCCDBG_0     = @echo "        CC $< [debug]";
 QCCDBG       = $(QCCDBG_$(V))
-QCXXDBG_0    = @echo "       CXX $< [dbg]";
+QCXXDBG_0    = @echo "       CXX $< [debug]";
 QCXXDBG      = $(QCXXDBG_$(V))
-QLINKDBG_0   = @echo "      LINK $@ [dbg]";
+QLINKDBG_0   = @echo "      LINK $@ [debug]";
 QLINKDBG     = $(QLINKDBG_$(V))
+
+QDEPCOV_0    = @echo "       DEP $< [coverage]";
+QDEPCOV      = $(QDEPCOV_$(V))
+QCCCOV_0     = @echo "        CC $< [coverage]";
+QCCCOV       = $(QCCCOV_$(V))
+QCXXCOV_0    = @echo "       CXX $< [coverage]";
+QCXXCOV      = $(QCXXCOV_$(V))
+QLINKCOV_0   = @echo "      LINK $@ [coverage]";
+QLINKCOV     = $(QLINKCOV_$(V))
 
 HIDEOUTPUT_0 = "/dev/null"
 HIDEOUTPUT_1 = "/dev/stdout"
@@ -83,6 +95,11 @@ $(DEPDIR)/%.debug.d: %.cc
 	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
 		$(CXXFLAGS_debug) $< > $@
 
+$(DEPDIR)/%.coverage.d: %.cc
+	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+	$(QDEPCOV)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
+		$(CXXFLAGS_coverage) $< > $@
+
 $(DEPDIR)/%.d: %.c
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
 	$(QDEP)$(CC) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CFLAGS) $< > $@
@@ -91,6 +108,11 @@ $(DEPDIR)/%.debug.d: %.c
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
 	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
 		$(CFLAGS_debug) $< > $@
+
+$(DEPDIR)/%.coverage.d: %.c
+	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+	$(QDEPCOV)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
+		$(CFLAGS_coverage) $< > $@
 
 #
 # Source unit compilation
@@ -103,13 +125,21 @@ $(OBJDIR)/%.debug.o: %.cc
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
 	$(QCXXDBG)$(CXX) $(CXXFLAGS_debug) -c $< -o $@
 
+$(OBJDIR)/%.coverage.o: %.cc
+	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(QCXXCOV)$(CXX) $(CXXFLAGS_coverage) -c $< -o $@
+
 $(OBJDIR)/%.o: %.c
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
 	$(QCC)$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.debug.o: %.c
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
-	$(QCCDBG)$(CC) $(CFLAGS_debug) -c $< -o $@
+	$(QCC)$(CC) $(CFLAGS_debug) -c $< -o $@
+
+$(OBJDIR)/%.coverage.o: %.c
+	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(QCCCOV)$(CC) $(CFLAGS_coverage) -c $< -o $@
 
 #
 # TARGETS
@@ -119,7 +149,8 @@ all: release
 release: $(TARGETS) $(LIB_TARGETS)
 
 debug: $(DBG_TARGETS) $(DBG_LIB_TARGETS)
-	echo $^
+
+coverage: $(COV_TARGETS) $(COV_LIB_TARGETS)
 
 libs: 
 
@@ -137,14 +168,19 @@ define MAKE_PROGRAM
   #
   PROG = $(1)
   EXE = $$(BINDIR)/$$(PROG)
+
   #
   # Place compiled objects in $(OBJDIR)
   #
   $$(PROG)_OBJS := $$($$(PROG)_OBJS:%.o=$$(OBJDIR)/%.o)
-  #
-  # Generate object list for the debug build
-  #
   $$(PROG)_DBG_OBJS = $$($$(PROG)_OBJS:%.o=%.debug.o)
+  $$(PROG)_COV_OBJS = $$($$(PROG)_OBJS:%.o=%.coverage.o)
+
+  $$(PROG): $$(EXE)
+  $$(PROG).debug: $$(EXE).debug
+  $$(PROG).coverage: $$(EXE).coverage
+
+  .PHONY: $$(PROG) $$(PROG).debug $$(PROG).coverage
 
   #
   # Link the release build, then strip it, preserving debug symbols in
@@ -157,24 +193,23 @@ define MAKE_PROGRAM
 	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
 	$$(QLNKSYM)$$(OBJCPY) --add-gnu-debuglink $$@.symbols $$@
 	$$(Q)chmod 644 $$@.symbols
-
-  $$(PROG): $$(EXE)
-
-  $$(PROG).debug: $$(EXE).debug
-
-  .PHONY: $$(PROG) $$(PROG).debug
-
-  #
-  # Make target for debug build
-  #
+  # Debug
   $$(EXE).debug: $$($$(PROG)_DBG_OBJS)
 	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
 	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
 		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
+  # Coverage
+  $$(EXE).coverage: $$($$(PROG)_COV_OBJS)
+	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
+	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
+		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
+
   #
   # a normal equal here causes recursive expansion
   #
-  OBJS := $$(OBJS) $$($$(PROG)_OBJS) $$($$(PROG)_DBG_OBJS)
+  OBJS := $$(OBJS) $$($$(PROG)_OBJS)
+  OBJS := $$(OBJS) $$($$(PROG)_DBG_OBJS)
+  OBJS := $$(OBJS) $$($$(PROG)_COV_OBJS)
 endef
 
 define MAKE_LIBRARY
@@ -182,33 +217,44 @@ define MAKE_LIBRARY
   # We need this to eat the whitespace in the parameter expansion
   #
   LIBNAME = $(1)
+
   STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).a
-  DBG_STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).dbg.a
+  DBG_STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).debug.a
+  COV_STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).coverage.a
+
   #
-  # Place compiled objects in $(OBJDIR)
+  # Library objects to build
   #
   $$(LIBNAME)_OBJS := $$($$(LIBNAME)_OBJS:%.o=$$(OBJDIR)/%.o)
-  #
-  # Generate object list for the debug build
-  #
   $$(LIBNAME)_DBG_OBJS = $$($$(LIBNAME)_OBJS:%.o=%.debug.o)
+  $$(LIBNAME)_COV_OBJS = $$($$(LIBNAME)_OBJS:%.o=%.coverage.o)
 
   $$(LIBNAME): $$(STATIC_LIB)
-  $$(LIBNAME).dbg: $$(DBG_STATIC_LIB)
+  $$(LIBNAME).debug: $$(DBG_STATIC_LIB)
+  $$(LIBNAME).coverage: $$(COV_STATIC_LIB)
 
   $$(STATIC_LIB): $$($$(LIBNAME)_OBJS)
 	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
-
+  # Debug
   $$(DBG_STATIC_LIB): $$($$(LIBNAME)_DBG_OBJS)
 	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
+  # Coverage
+  $$(COV_STATIC_LIB): $$($$(LIBNAME)_COV_OBJS)
+	echo $$(OBJS)
+	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+	$$(QAR)ar -cSurv $$@ $$^
+	$$(QRANLIB)ranlib $$@
+
   #
   # a normal equal here causes recursive expansion
   #
-  OBJS := $$(OBJS) $$($$(LIBNAME)_OBJS) $$($$(LIBNAME)_DBG_OBJS)
+  OBJS := $$(OBJS) $$($$(LIBNAME)_OBJS)
+  OBJS := $$(OBJS) $$($$(LIBNAME)_DBG_OBJS)
+  OBJS := $$(OBJS) $$($$(LIBNAME)_COV_OBJS)
 endef
 
 #

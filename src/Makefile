@@ -9,20 +9,23 @@ debug:
 	$(MAKE) -C filesystem $@
 	$(MAKE) -C unit $@
 
-debugcheck:
-	$(MAKE) -C filesystem debug
-	$(MAKE) -C unit debug
-	$(MAKE) -C unit debugcheck PROGRESS="dots"
-	-./unit/bin/unittest.debug -p foo > /dev/null 2>&1
-	-./unit/bin/unittest.debug -o foo > /dev/null 2>&1
-	-./unit/bin/unittest.debug -t foo > /dev/null 2>&1
-	-./unit/bin/unittest.debug -h > /dev/null 2>&1
-	-./unit/bin/unittest.debug -r 1 -o none -l > /dev/null 2>&1
-	$(MAKE) -C unit debugcheck PROGRESS=verbose
-	$(MAKE) -C unit debugcheck PROGRESS=brief
+coverage:
+	$(MAKE) -C filesystem $@
+	$(MAKE) -C unit $@
 
-coverage.info: debugcheck
+debugcheck:
+	$(MAKE) -C unit debugcheck PROGRESS=verbose
+
+coverage.info: coverage
+	@./unit/bin/unittest.coverage -p foo > /dev/null 2>&1 || true
+	@./unit/bin/unittest.coverage -o foo > /dev/null 2>&1 || true
+	@./unit/bin/unittest.coverage -t foo > /dev/null 2>&1 || true
+	@./unit/bin/unittest.coverage -h > /dev/null 2>&1 || true
+	@./unit/bin/unittest.coverage -r 1 -o none -l > /dev/null 2>&1
+	@./unit/bin/unittest.coverage -p brief
+	./unit/bin/unittest.coverage -p verbose
 	lcov --no-external --capture --directory . --output-file $@ > /dev/null
+	#lcov --capture --directory . --output-file $@ > /dev/null
 
 covreport: coverage.info
 	rm -rf coverage-report
