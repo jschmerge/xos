@@ -8,7 +8,7 @@ check: all
 debug:
 	$(MAKE) -C filesystem $@
 	$(MAKE) -C unit $@
-	./unit/bin/unittest.coverage -p verbose
+	./unit/bin/unittest.debug -p verbose
 
 coverage:
 	$(MAKE) -C filesystem $@
