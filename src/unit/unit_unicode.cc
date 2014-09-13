@@ -19,6 +19,10 @@ const char32_t * string_utf32
 class Test_Unicode : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Unicode);
+	CPPUNIT_TEST(trivialTests<char>);
+	CPPUNIT_TEST(trivialTests<wchar_t>);
+	CPPUNIT_TEST(trivialTests<char32_t>);
+
 	CPPUNIT_TEST(testStuff<char>);
 	CPPUNIT_TEST(testStuff<wchar_t>);
 	CPPUNIT_TEST(testStuff<char32_t>);
@@ -27,13 +31,18 @@ class Test_Unicode : public CppUnit::TestFixture
 	typedef std::codecvt_base::result result;
 
 	template <class CHAR_T = char32_t, unsigned int limit = 0x10FFFF>
+	void trivialTests()
+	{
+		codecvt_utf8<CHAR_T, limit> cnv;
+		if (std::is_same<CHAR_T, char>::value)
+			CPPUNIT_ASSERT(cnv.encoding() == 1);
+		else
+			CPPUNIT_ASSERT(cnv.encoding() == 0);
+	}
+
+	template <class CHAR_T = char32_t, unsigned int limit = 0x10FFFF>
 	void testStuff()
 	{
-#if 0
-		static_assert(std::numeric_limits<CHAR_T>::max() >= limit,
-		              "Upper limit for char values must be less "
-		              "than charater type max");
-#endif
 		CHAR_T wc[4];
 		char nc[8];
 
@@ -47,9 +56,12 @@ class Test_Unicode : public CppUnit::TestFixture
 			if (config::verbose && ((wc[0] & 0xFFFF) == 0))
 				printf("Processing plane 0x%08x\n", wc[0]);
 
-			std::mbstate_t mbs = std::mbstate_t();
+			std::mbstate_t mbs;
+			
+			memset(&mbs, 0, sizeof(mbs));
 			memset(nc, 0, 8);
 			result r = cnv.out(mbs, wc, wc + 1, last_in, nc, nc + 8, last_out);
+
 
 			CPPUNIT_ASSERT(  r == std::codecvt_base::ok
 			              || (r == std::codecvt_base::noconv
@@ -59,8 +71,13 @@ class Test_Unicode : public CppUnit::TestFixture
 			const char * last_in2 = nullptr;
 			CHAR_T * last_out2 = nullptr;
 			memset(&mbs, 0, sizeof(mbs));
+			int len = cnv.length(mbs, nc, last_out, 20);
+
+			memset(&mbs, 0, sizeof(mbs));
 
 			r = cnv.in(mbs, nc, last_out, last_in2, wc + 1, wc + 2, last_out2);
+
+			CPPUNIT_ASSERT(len == (last_in2 - nc));
 
 			CPPUNIT_ASSERT(  r == std::codecvt_base::ok
 			              || (r == std::codecvt_base::noconv
