@@ -26,8 +26,8 @@ coverage.info: coverage
 
 covreport: coverage.info
 	rm -rf coverage-report
-	genhtml $< --legend --output-directory coverage-report
-	xdg-open coverage-report/index.html
+	genhtml $< --demangle-cpp --legend --output-directory coverage-report
+	xdg-open coverage-report/index.html 2> /dev/null &
 
 clean:
 	$(MAKE) -C filesystem clean
