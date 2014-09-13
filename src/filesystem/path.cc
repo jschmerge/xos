@@ -184,12 +184,12 @@ bool path::has_extension() const
 
 bool path::is_absolute() const
 {
-	return false;
+	return (*pathname.begin() == preferred_separator);
 }
 
 bool path::is_relative() const
 {
-	return false;
+	return (*pathname.begin() != preferred_separator);
 }
 
 } /*v1*/
