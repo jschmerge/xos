@@ -72,9 +72,12 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(constructors<char32_t>);
 	CPPUNIT_TEST(valueConstructors);
 	CPPUNIT_TEST(assignmentOperators);
+	CPPUNIT_TEST(conversionOperators);
 	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST(plusEqualOperators);
+	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
+	CPPUNIT_TEST(interegatorFunctions);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -291,6 +294,11 @@ class Test_Path : public CppUnit::TestFixture
 		p1 = p2;
 
 		CPPUNIT_ASSERT(p1.compare(p2) == 0);
+
+		path p3;
+		p3 = std::move(p2);
+
+		CPPUNIT_ASSERT(p2.empty() && (p3.compare(p1) == 0));
 	}
 
 	void plusEqualOperators()
@@ -299,6 +307,27 @@ class Test_Path : public CppUnit::TestFixture
 		// string_type
 		// value_type *
 		// value_type
+	}
+
+	void conversionOperators()
+	{
+		std::string s("/foo/bar");
+		path p(s);
+
+		path::string_type s2 = p;
+
+		CPPUNIT_ASSERT(s2 == s);
+	}
+
+	void modifierFunctions()
+	{
+		path p("/foo/bar");
+
+		path p2(p);
+		CPPUNIT_ASSERT(p2.make_preferred().compare(p) == 0);
+
+		p2.clear();
+		CPPUNIT_ASSERT(p2.empty());
 	}
 
 	void compareFunctions()
@@ -314,6 +343,15 @@ class Test_Path : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(path("a").compare("a") == 0);
 		CPPUNIT_ASSERT(path("a").compare("b") < 0);
 		CPPUNIT_ASSERT(path("b").compare("a") > 0);
+	}
+
+	void interegatorFunctions()
+	{
+		path p1("foo/bar");
+		path p2("/foo/bar");
+
+		CPPUNIT_ASSERT(p1.is_relative() && !p1.is_absolute());
+		CPPUNIT_ASSERT(!p2.is_relative() && p2.is_absolute());
 	}
 
 };
