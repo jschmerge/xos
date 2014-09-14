@@ -102,10 +102,26 @@ path & path::make_preferred()
 
 path & path::remove_filename()
 {
-	string_type::size_type i = (pathname.length() - 1);
+	bool modified = false;
 
-	if (pathname[i] == preferred_separator)
-		pathname.erase(i);
+	while (!pathname.empty() && (*pathname.rbegin() == preferred_separator))
+	{
+		pathname.pop_back();
+		modified = true;
+	}
+
+	while (  ! modified
+	      && ! pathname.empty()
+	      && *pathname.rbegin() != preferred_separator)
+	{
+		pathname.pop_back();
+	}
+
+	while (  pathname.length() > 1
+	      && (*pathname.rbegin() == preferred_separator))
+	{
+		pathname.pop_back();
+	}
 
 	return *this;
 }

@@ -376,18 +376,22 @@ class Test_Path : public CppUnit::TestFixture
 		const std::vector<operands_and_result<std::string>> paths = {
 			{ "", "" },
 			{ "/", "" },
-			{ "/foo/bar/", "/foo/bar" },
 			{ "/foo", "/" },
 			{ "/foo/", "/foo" },
 			{ "/foo/bar", "/foo" },
+			{ "/foo/bar/", "/foo/bar" },
+
+			{ "///", "" },
+			{ "///foo", "/" },
+			{ "///foo///", "///foo" },
+			{ "///foo///bar", "///foo" },
+			{ "///foo///bar///", "///foo///bar" },
 		};
 
 		for (auto & i : paths)
 		{
-			printf("====> %s", i.operand1.c_str());
 			path tmp(i.operand1);
 			tmp.remove_filename();
-			printf(" -> %s (%s)\n ", tmp.c_str(), i.result.c_str());
 			CPPUNIT_ASSERT(tmp.compare(i.result) == 0);
 		}
 	}
