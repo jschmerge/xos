@@ -97,6 +97,16 @@ void path::clear() noexcept
 
 path & path::make_preferred()
 {
+	return *this; // no-op on posix
+}
+
+path & path::remove_filename()
+{
+	string_type::size_type i = (pathname.length() - 1);
+
+	if (pathname[i] == preferred_separator)
+		pathname.erase(i);
+
 	return *this;
 }
 

@@ -11,6 +11,8 @@ struct operands_and_result
 {
 	operands_and_result(const T & _o1, const T & _o2, const T & _result)
 	  : operand1(_o1), operand2(_o2), result(_result) { }
+	operands_and_result(const T & _o1, const T & _result)
+	  : operand1(_o1), operand2(), result(_result) { }
 
 	const T operand1;
 	const T operand2;
@@ -178,8 +180,16 @@ class Test_Path : public CppUnit::TestFixture
 		}
 
 		const unsigned int bad_str[] = { 0x80000000, 0x80 };
+		const char32_t * bad_str_ptr
+		  = reinterpret_cast<const char32_t*>(bad_str);
+
 		CPPUNIT_ASSERT_THROW({
-			path bad{reinterpret_cast<const char32_t*>(bad_str)};
+			path bad{bad_str_ptr};
+		}, filesystem::filesystem_error);
+
+		std::basic_string<char32_t> bad_std_str(bad_str_ptr);
+		CPPUNIT_ASSERT_THROW({
+			path bad{bad_std_str};
 		}, filesystem::filesystem_error);
 	}
 
@@ -361,6 +371,25 @@ class Test_Path : public CppUnit::TestFixture
 
 		CPPUNIT_ASSERT(p.compare("/something/different") == 0
 		              && p2.compare("/foo/bar") == 0);
+
+		putchar('\n');
+		const std::vector<operands_and_result<std::string>> paths = {
+			{ "", "" },
+			{ "/", "" },
+			{ "/foo/bar/", "/foo/bar" },
+			{ "/foo", "/" },
+			{ "/foo/", "/foo" },
+			{ "/foo/bar", "/foo" },
+		};
+
+		for (auto & i : paths)
+		{
+			printf("====> %s", i.operand1.c_str());
+			path tmp(i.operand1);
+			tmp.remove_filename();
+			printf(" -> %s (%s)\n ", tmp.c_str(), i.result.c_str());
+			CPPUNIT_ASSERT(tmp.compare(i.result) == 0);
+		}
 	}
 
 	void compareFunctions()

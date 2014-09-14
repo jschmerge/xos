@@ -62,8 +62,8 @@ class path
 #endif
 	// appends
 	path & operator /= (const path & p);
-#if 0
 
+#if 0
 	template <class Source>
 	 path & operator /= (const Source & source);
 	template <class Source>
@@ -92,8 +92,8 @@ class path
 	// modifiers
 	void clear() noexcept;
 	path & make_preferred();
-#if 0
 	path & remove_filename();
+#if 0
 	path & replace_filename(const path & replacement);
 	path & replace_extension(const path & replacement = path());
 #endif
@@ -223,8 +223,9 @@ class path
 			                   + pathname.length()), to_next);
 
 			if (r != std::codecvt_base::ok)
-				throw std::runtime_error(
-				        "Could not convert pathname encoding");
+				throw filesystem_error(
+				        "Could not convert pathname encoding",
+				         std::error_code());
 
 			pathname.erase(to_next - pathname.data());
 		} else
