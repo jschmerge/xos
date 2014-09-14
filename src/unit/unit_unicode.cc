@@ -19,6 +19,9 @@ const char32_t * string_utf32
 class Test_Unicode : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Unicode);
+
+	CPPUNIT_TEST(utf8_error_sequences);
+
 	CPPUNIT_TEST(trivialTests<char>);
 	CPPUNIT_TEST(trivialTests<wchar_t>);
 	CPPUNIT_TEST(trivialTests<char16_t>);
@@ -44,6 +47,7 @@ class Test_Unicode : public CppUnit::TestFixture
 		if (std::is_same<CHAR_T, char>::value)
 		{
 			CPPUNIT_ASSERT(cnv.encoding() == 1);
+			CPPUNIT_ASSERT(cnv.max_length() == 1);
 
 			char buf[] = "xxxxx";
 			char * end = buf + sizeof(buf), * last = nullptr;
@@ -57,6 +61,24 @@ class Test_Unicode : public CppUnit::TestFixture
 		}
 	}
 
+	void utf8_error_sequences()
+	{
+		std::mbstate_t mbs = std::mbstate_t();
+
+		unsigned char c = 0;
+		do {
+			if (is_utf8_codepoint_start(c))
+				CPPUNIT_ASSERT(utf8_codepoint_length(c) != 0);
+			++c;
+		} while (c != 0);
+
+		mbs.__count = 1;
+		CPPUNIT_ASSERT(utf8_update_mbstate(mbs, '\xC0') == false);
+
+		mbs.__count = -1;
+		CPPUNIT_ASSERT(utf8_update_mbstate(mbs, '\xFF') == false);
+	}
+
 	template <class CHAR_T = char32_t, unsigned int limit = 0x10FFFF>
 	void test_utf8_utf32_conversions()
 	{
@@ -66,6 +88,8 @@ class Test_Unicode : public CppUnit::TestFixture
 		const CHAR_T * last_in = nullptr;
 		char * last_out = nullptr;
 		codecvt_utf8<CHAR_T, limit> cnv;
+
+		trivialTests<CHAR_T, limit>();
 
 		for (wc[0] = 0;
 		     static_cast<unsigned int>(wc[0]) < (limit + 1); ++wc[0])
@@ -119,6 +143,8 @@ class Test_Unicode : public CppUnit::TestFixture
 		const CHAR_T * last_in = nullptr;
 		char * last_out = nullptr;
 		codecvt_utf8<CHAR_T, limit> cnv;
+
+		trivialTests<CHAR_T, limit>();
 
 		//printf("----> %d\n", cnv.max_length());
 		CPPUNIT_ASSERT(cnv.always_noconv() || cnv.max_length() > 1);

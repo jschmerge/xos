@@ -19,7 +19,8 @@ inline bool is_utf8_codepoint_start (char c)
 {
 	bool rc = false;
 	
-	if ((static_cast<unsigned char>(c) & 0xc0ul) != 0x80ul)
+	if (  (static_cast<unsigned char>(c) < 0xfe)
+	   && ( (static_cast<unsigned char>(c) & 0xc0ul) != 0x80ul) )
 		rc = true;
 
 	return rc;
@@ -81,9 +82,6 @@ inline bool utf8_update_mbstate(std::mbstate_t & s, const char c)
 		{
 			s.__value.__wch = c;
 			s.__count = 0;
-		} else if (s.__count == 0)
-		{
-			return false;
 		} else
 		{
 			s.__value.__wch = utf8_leader_bits(c, s.__count);
