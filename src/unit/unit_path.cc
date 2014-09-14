@@ -75,7 +75,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(valueConstructors);
 	CPPUNIT_TEST(assignmentOperators);
 	CPPUNIT_TEST(conversionOperators);
-	CPPUNIT_TEST(slashEqualOperator);
+	CPPUNIT_TEST(appendFunctions);
 	CPPUNIT_TEST(plusEqualOperators);
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
@@ -232,9 +232,9 @@ class Test_Path : public CppUnit::TestFixture
 		}
 	}
 
-	void slashEqualOperator()
+	void appendFunctions()
 	{
-		std::vector<operands_and_result<std::string>> path_set {
+		std::vector<operands_and_result<const char *>> path_set {
 			{ ""      , ""      , "" },
 			{ ""      , "/"     , "/" },
 			{ ""      , "/bar"  , "/bar" },
@@ -280,7 +280,7 @@ class Test_Path : public CppUnit::TestFixture
 
 		for (const auto & i : path_set)
 		{
-			path p1(i.operand1);
+			path p1(std::string(i.operand1));
 			path p2(i.operand2);
 
 			p1 /= p2;
@@ -288,12 +288,31 @@ class Test_Path : public CppUnit::TestFixture
 			if (config::verbose)
 			{
 				printf("'%s' + '%s' = '%s' (expected '%s')\n",
-				       i.operand1.c_str(), i.operand2.c_str(),
-				       p1.native().c_str(), i.result.c_str());
+				       i.operand1, i.operand2,
+				       p1.native().c_str(), i.result);
 			}
 
 			CPPUNIT_ASSERT(p1.native() == i.result);
+
+			p1 = i.operand1;
+			p1 /= i.operand2;
+			CPPUNIT_ASSERT(p1.native() == i.result);
+
+			p1 = i.operand1;
+			p1.append(i.operand2);
+			CPPUNIT_ASSERT(p1.native() == i.result);
 		}
+
+/*
+		for (const auto & i : path_set)
+		{
+			const int limit_len = 30;
+			char s1[limit_len]; strncpy(s1, i.operand1, limit_len);
+			char s2[limit_len]; strncpy(s2, i.operand2, limit_len);
+			char s3[limit_len]; strncpy(s3, i.result, limit_len);
+
+		}
+*/
 	}
 
 	void assignmentOperators()

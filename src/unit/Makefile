@@ -52,6 +52,9 @@ unittest_OBJS     = cppunit-main.o \
                     unit_path.o
 
 PROGRESS ?= brief
+bin/unittest: ../filesystem/lib/libfilesystem.a
+bin/unittest.debug: ../filesystem/lib/libfilesystem.debug.a
+bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a
 
 include ../Makefile.include
 
@@ -61,5 +64,5 @@ check: $(TARGETS)
 debug-check: $(DBG_TARGETS)
 	bin/unittest.debug -p $(PROGRESS)
 
-coverage-check: $(DBG_TARGETS)
-	bin/unittest.debug -p $(PROGRESS)
+coverage-check: $(COV_TARGETS)
+	bin/unittest.coverage -p $(PROGRESS)

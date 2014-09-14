@@ -2,16 +2,21 @@ all:
 	$(MAKE) -C filesystem
 	$(MAKE) -C unit
 
-check: all
-	$(MAKE) -C unit check
-
 debug:
 	$(MAKE) -C filesystem $@
 	$(MAKE) -C unit $@
-	./unit/bin/unittest.debug -p verbose
 
 coverage:
 	$(MAKE) -C filesystem $@
+	$(MAKE) -C unit $@
+
+check: all
+	$(MAKE) -C unit $@
+
+debug-check: debug
+	$(MAKE) -C unit $@
+
+coverage-check: coverage
 	$(MAKE) -C unit $@
 
 coverage.info: coverage
@@ -27,6 +32,7 @@ coverage.info: coverage
 covreport: coverage.info
 	rm -rf coverage-report
 	genhtml $< --demangle-cpp --legend --output-directory coverage-report
+	#genhtml $< --legend --output-directory coverage-report
 	xdg-open coverage-report/index.html 2> /dev/null &
 
 clean:

@@ -126,6 +126,12 @@ path & path::remove_filename()
 	return *this;
 }
 
+path & path::replace_filename(const path & replacement)
+{
+	remove_filename() /= replacement;
+	return *this;
+}
+
 void path::swap(path & rhs) noexcept
 {
 	std::swap(pathname, rhs.pathname);
@@ -144,6 +150,34 @@ const path::value_type * path::c_str() const noexcept
 path::operator string_type() const
 {
 	return pathname;
+}
+
+std::string path::string() const
+{
+	return pathname;
+}
+
+std::wstring path::wstring() const
+{
+	assert(0);
+	return L"";
+}
+
+std::string path::u8string() const
+{
+	return pathname;
+}
+
+std::u16string path::u16string() const
+{
+	assert(0);
+	return u"";
+}
+
+std::u32string path::u32string() const
+{
+	assert(0);
+	return U"";
 }
 
 //////////////////////////////////////////////////////////////////////

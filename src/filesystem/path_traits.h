@@ -44,6 +44,9 @@ constexpr bool iterable()
 
 namespace filesystem {
 inline namespace v1 {
+
+class path;
+
 namespace path_traits {
 
 /// [8.2.2] - encodable path character types [path.type.cvt]
