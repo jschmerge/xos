@@ -50,43 +50,61 @@ struct utf8length {
 struct utf8length2 {
 	size_t operator () (char c) const
 	{
+		signed char shiftval = 0x80;
 		unsigned char val = static_cast<unsigned char>(c);
-		if (val <= 0x7f)
-			return 1;
-		else if (val <= 0xb7) // 10xxxxxx
-			throw std::runtime_error("bad encoding");
-		else if (val <= 0xdf)
-			return 2;
-		else if (val <= 0xef)
-			return 3;
-		else if (val <= 0xf7)
-			return 4;
-		else if (val <= 0xfb)
-			return 5;
-		else if (val <= 0xfd)
-			return 6;
 
+
+#if 0
+		if (val < static_cast<unsigned char>(shiftval))           // 0xxxxxxx
+			return 1;
+		else if (val < static_cast<unsigned char>(shiftval >> 1)) // 10xxxxxx
+			throw std::runtime_error("bad encoding");
+		else if (val < static_cast<unsigned char>(shiftval >> 2)) // 110xxxxx
+			return 2;
+		else if (val < static_cast<unsigned char>(shiftval >> 3)) // 1110xxxx
+			return 3;
+		else if (val < static_cast<unsigned char>(shiftval >> 4)) // 11110xxx
+			return 4;
+		else if (val < static_cast<unsigned char>(shiftval >> 5)) // 111110xx
+			return 5;
+		else if (val < static_cast<unsigned char>(shiftval >> 6)) // 1111110x
+			return 6;
 		throw std::runtime_error("bad encoding");
+#endif
+		int i = 0;
+		for (i = 0; i < 7 && val >= static_cast<unsigned char>(shiftval >> i);
+		     ++i)
+		{ }
+
+		if (i == 1 || i > 6) {
+			throw std::runtime_error("bad encoding");
+		}
+
+		//if (i == 0) i = 1;
+		i += (i == 0);
+
+		return i;
 	}
 };
 
 struct utf8length3 {
 	inline size_t operator () (char c) const
 	{
+		signed char shiftval = 0x80;
 		unsigned char val = static_cast<unsigned char>(c);
-		if (val <= 0x7f)
+		if (val < static_cast<unsigned char>(shiftval))
 			return 1;
-		else if (val <= 0xb7) // 10xxxxxx
+		else if (val < static_cast<unsigned char>(shiftval >> 1)) // 10xxxxxx
 			{ }
-		else if (val <= 0xdf)
+		else if (val < static_cast<unsigned char>(shiftval >> 2))
 			return 2;
-		else if (val <= 0xef)
+		else if (val < static_cast<unsigned char>(shiftval >> 3))
 			return 3;
-		else if (val <= 0xf7)
+		else if (val < static_cast<unsigned char>(shiftval >> 4))
 			return 4;
-		else if (val <= 0xfb)
+		else if (val < static_cast<unsigned char>(shiftval >> 5))
 			return 5;
-		else if (val <= 0xfd)
+		else if (val < static_cast<unsigned char>(shiftval >> 6))
 			return 6;
 
 		throw std::runtime_error("bad encoding");
@@ -137,16 +155,18 @@ int main()
 
 	stringInfo(complexString);
 
-	for (int q = 0; q < 10; ++q)
+	for (int q = 0; q < 3; ++q)
 	{
 		const unsigned reps = 100000000;
 		size_t x = 0;
 		auto begin = PosixClock<CLOCK_REALTIME>::now();
+#if 0
 		for (unsigned i = 0; i < reps; ++i)
 		{
 			x += utf8strlen<utf8length>(simpleString);
 			x += utf8strlen<utf8length>(complexString);
 		}
+#endif
 		auto end = PosixClock<CLOCK_REALTIME>::now();
 
 		auto d = (end - begin);

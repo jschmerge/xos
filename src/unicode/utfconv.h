@@ -291,7 +291,8 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 		for (to_next = to; (  (to_next < to_limit)
 		                   && (state.__count != 0) ); ++to_next)
 		{
-			intern_type outValue = (intern_type(0x3f) << ((state.__count - 1) * 6));
+			intern_type outValue =
+				(intern_type(0x3f) << ((state.__count - 1) * 6));
 			outValue &= state.__value.__wch;
 			outValue >>= ((state.__count -1) * 6);
 			*to_next = static_cast<extern_type>(outValue & extern_type(~0));
@@ -356,9 +357,12 @@ class codecvt_utf8<char, max_code, Mode>
 	}
 
 	//////////////////////////////////////////////////////////////////
-	result do_unshift(state_type &, extern_type *, extern_type *,
-	                  extern_type * &) const override
-	{ return std::codecvt_base::noconv; }
+	result do_unshift(state_type &, extern_type * to_start, extern_type *,
+	                  extern_type * & to_limit) const override
+	{
+		to_limit = to_start;
+		return std::codecvt_base::noconv;
+	}
 };
 
 #if 0 
