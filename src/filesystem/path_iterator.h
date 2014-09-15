@@ -1,9 +1,11 @@
 #ifndef PATH_ITERATOR_H
 #define PATH_ITERATOR_H 1
 
-#include <iostream> // XXX remove me
+#include <iostream> // XXX
 
 #include <iterator>
+#include <utility>
+#include <vector>
 
 #include "path.h"
 
@@ -19,27 +21,71 @@ class path_iterator
 	typedef path::string_type::size_type offset_t;
 	static constexpr offset_t npos = std::string::npos;
 
+ private:
+	static
+	std::vector<std::pair<offset_t, offset_t>> build_elements(const path * p)
+	{
+		std::vector<std::pair<offset_t, offset_t>> elem;
+		const std::string & s = p->generic_string();
+		offset_t begin = 0, end = 0;
+
+		if (! p->empty() )
+		{
+			// deal with any leading path separators
+			if (s.at(begin) == path::preferred_separator)
+			{
+				end = 1;
+				elem.push_back(std::make_pair(begin, end));
+
+//				begin = s.find_first_not_of(path::preferred_separator, end);
+//				end = s.find_first_of(path::preferred_separator, begin);
+			}
+
+			do {
+
+				begin = s.find_first_not_of(path::preferred_separator, end);
+				end = s.find_first_of(path::preferred_separator, begin);
+
+				elem.push_back(std::make_pair(begin, end));
+			}
+			while (end != npos);
+
+			std::cout << "---> (" << begin << ", " << end << ")\n";
+		}
+
+		for (auto & x : elem)
+		{
+			std::cout << '(' << x.first << ", " << x.second << "): ";
+			if (x.first == npos && x.second == npos)
+				std::cout << "\'.\'" << std::endl;
+			else if (x.second == npos)
+				std::cout << s.substr(x.first) << std::endl;
+			else
+				std::cout << s.substr(x.first, x.second) << std::endl;
+		}
+
+		return elem;
+	}
+
+ public:
 	path_iterator()
 	  : underlying(nullptr)
-	  , element_offset(0)
 	  , element_value()
 		{ }
 
-	path_iterator(const path * p, offset_t off = 0)
+	path_iterator(const path * p)
 	  : underlying(p)
-	  , element_offset(off)
+	  , elements(build_elements(underlying))
 	  , element_value()
 		{ }
 
 	path_iterator(const path_iterator & other)
 	  : underlying(other.underlying)
-	  , element_offset(other.element_offset)
 	  , element_value(other.element_value)
 		{ }
 
 	path_iterator(path_iterator && other)
 	  : underlying(std::move(other.underlying))
-	  , element_offset(std::move(other.element_offset))
 	  , element_value(std::move(other.element_value))
 		{ }
 
@@ -48,7 +94,6 @@ class path_iterator
 		if (this != &other)
 		{
 			underlying = other.underlying;
-			element_offset = other.element_offset;
 			element_value = other.element_value;
 		}
 		return *this;
@@ -59,7 +104,6 @@ class path_iterator
 		if (this != &other)
 		{
 			underlying = std::move(other.underlying);
-			element_offset = std::move(other.element_offset);
 			element_value = std::move(other.element_value);
 		}
 		return *this;
@@ -68,18 +112,16 @@ class path_iterator
 	~path_iterator()
 	{
 		underlying = nullptr;
-		element_offset = 0;
 	}
 
-	bool operator == (const path_iterator & other)
+	bool operator == (const path_iterator & )
 	{
-		return (  (underlying == other.underlying)
-		       && (element_offset == other.element_offset) );
+		return false;
 	}
 
-	bool operator != (const path_iterator & other)
+	bool operator != (const path_iterator & )
 	{
-		return !(*this == other);
+		return true;
 	}
 
 	path_iterator & operator ++ ()
@@ -96,57 +138,6 @@ class path_iterator
  private:
 	path_iterator & increment()
 	{
-		//offset_t next = npos;
-		const path::string_type & asString = underlying->native();
-
-		if (  (element_offset == 0)
-		   && (*(asString.begin()) == path::preferred_separator) )
-		{
-			std::cout << "-> A <-" << std::endl;
-			element_value.clear();
-			element_value += path::preferred_separator;
-
-			element_offset =
-			  asString.find_first_not_of(path::preferred_separator);
-
-			std::cout << element_value.c_str() << std::endl;
-		} else
-		{
-			std::cout << "-> B <-" << std::endl;
-			offset_t new_offset =
-			  asString.find_first_of(path::preferred_separator,
-			                         element_offset);
-
-			std::cout << element_offset << ' ' << new_offset << ": ";
-
-			if (new_offset != element_offset)
-			{
-
-				element_value = asString.substr(element_offset,
-				                                new_offset - element_offset);
-			} else
-			{
-				element_value = ".";
-				new_offset = npos;
-			}
-
-			//while (asString[new_offset] == path::preferred_separator)
-			//	++new_offset;
-
-			element_offset = new_offset;
-
-			if (element_offset != npos)
-			{
-				new_offset = asString.find_first_not_of(
-				                 path::preferred_separator, element_offset + 1);
-
-				if (new_offset != npos)
-					element_offset = new_offset;
-			}
-
-			std::cout << element_value.c_str() << std::endl;
-		}
-
 		return *this;
 	}
 
@@ -156,7 +147,7 @@ class path_iterator
 	}
 
 	const path * underlying;
-	offset_t element_offset;
+	std::vector<std::pair<offset_t, offset_t>> elements;
 	path element_value;
 };
 

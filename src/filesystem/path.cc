@@ -212,7 +212,7 @@ bool path::has_root_name() const
 
 bool path::has_root_directory() const
 {
-	return false;
+	return (pathname[0] == preferred_separator);
 }
 
 bool path::has_root_path() const

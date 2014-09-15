@@ -14,6 +14,8 @@
 namespace filesystem {
 inline namespace v1 {
 
+class path_iterator;
+
 class path
 {
  public:
@@ -184,88 +186,22 @@ class path
 	bool has_extension() const;
 	bool is_absolute() const;
 	bool is_relative() const;
-#if 0
 
 	// iterators
-	class iterator;
-	typedef iterator const_iterator;
+	typedef path_iterator iterator;
+	typedef path_iterator const_iterator;
+
 	iterator begin() const;
 	iterator end() const;
-#endif
-
  private:
 
 	template <class ECharT>
 	enable_if_t<char_encodable_t<ECharT>::value>
 	dispatch_initialization(const ECharT * src);
-#if 0
-	{
-		using result = std::codecvt_base::result;
-		size_t len = 0;
-		codecvt_utf8<ECharT> cvt;
-
-		for (len = 0; src[len] != 0; ++len) { }
-
-		pathname.resize((len * cvt.max_length()) + 1, '\0');
-		if ( ! cvt.always_noconv())
-		{
-
-			const ECharT * from_next = nullptr;
-			char * to_next = nullptr;
-			std::mbstate_t mbs = std::mbstate_t();
-			result r = cvt.out(mbs, src, src + len, from_next,
-					           const_cast<char*>(pathname.data()),
-					           const_cast<char*>(pathname.data()
-			                   + pathname.length()), to_next);
-
-			if (r != std::codecvt_base::ok)
-				throw filesystem_error(
-				        "Could not convert pathname encoding",
-				         std::error_code());
-
-			pathname.erase(to_next - pathname.data());
-		} else
-		{
-			memcpy(const_cast<char*>(pathname.data()), src, len);
-			pathname.resize(len);
-		}
-	}
-#endif
 
 	template <class ECharT, class T, class A>
 	enable_if_t<char_encodable_t<ECharT>::value>
 	dispatch_initialization(const std::basic_string<ECharT, T, A> & src);
-#if 0
-	{
-		using result = std::codecvt_base::result;
-		codecvt_utf8<ECharT> cvt;
-
-		pathname.resize((src.length() * cvt.max_length()) + 1, '\0');
-		if ( ! cvt.always_noconv())
-		{
-
-			const ECharT * from_next = nullptr;
-			char * to_next = nullptr;
-			std::mbstate_t mbs = std::mbstate_t();
-			result r = cvt.out(mbs, src.data(), src.data() + src.length(),
-			                   from_next, const_cast<char*>(pathname.data()),
-					           const_cast<char*>(pathname.data()
-			                   + pathname.length()), to_next);
-
-			if (r != std::codecvt_base::ok)
-				throw filesystem_error(
-				        "Could not convert pathname encoding",
-				         std::error_code());
-
-			pathname.erase(to_next - pathname.data());
-		} else
-		{
-			memcpy(const_cast<char*>(pathname.data()),
-			       src.data(), src.length());
-			pathname.resize(src.length());
-		}
-	}
-#endif
 
 	string_type pathname;
 };
@@ -274,6 +210,7 @@ class path
 }/*filesystem*/
 
 #include "filesystem_error.h"
+#include "path_iterator.h"
 
 namespace filesystem {
 inline namespace v1 {
@@ -346,6 +283,12 @@ path::dispatch_initialization(const std::basic_string<ECharT, T, A> & src)
 		pathname.resize(src.length());
 	}
 }
+
+inline path::iterator path::begin() const
+	{ return iterator(this); }
+
+inline path::iterator path::end() const
+	{ return iterator(this); }
 
 } /*v1*/
 }/*filesystem*/

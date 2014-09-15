@@ -42,13 +42,8 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			std::cout << "Iterating through '" << s << "'\n";
 			path p(s);
 
-			path_iterator i(&p, 0);
-			const filesystem::path_iterator end(&p, path_iterator::npos);
+			path::iterator i = p.begin();
 
-			while (i != end)
-			{
-				++i;
-			}
 			std::cout << "--------------------------------\n";
 		}
 	}
