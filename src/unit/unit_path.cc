@@ -391,7 +391,7 @@ class Test_Path : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(p.compare("/something/different") == 0
 		              && p2.compare("/foo/bar") == 0);
 
-		putchar('\n');
+		if (config::verbose) putchar('\n');
 		const std::vector<operands_and_result<std::string>> paths = {
 			{ "", "" },
 			{ "/", "" },
