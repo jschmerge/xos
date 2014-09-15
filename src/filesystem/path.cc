@@ -8,6 +8,9 @@
 namespace filesystem {
 inline namespace v1 {
 
+constexpr path::value_type path::preferred_separator;
+
+
 path::path() noexcept : pathname() { }
 
 path::path(const path & other) : pathname(other.pathname) { }
