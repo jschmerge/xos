@@ -34,6 +34,10 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			{ "foo/bar" },
 			{ "/foo/bar" },
 			{ "/foo/bar/" },
+			{ "/a/b/c/d/e/f" },
+			{ "/a/b/c/d/e/f/" },
+			{ "a/b/c/d/e/f" },
+			{ "a/b/c/d/e/f/" },
 		};
 
 		putchar('\n');

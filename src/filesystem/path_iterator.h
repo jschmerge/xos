@@ -51,8 +51,6 @@ class path_iterator
 				begin = s.find_first_not_of(path::preferred_separator, end);
 				end = s.find_first_of(path::preferred_separator, begin);
 
-				std::cout << "\n------> " << (end - begin) << std::endl;
-
 				if (  (elem.size() != 1) || (! p->has_root_directory())
 				   || (begin != npos) || (end != npos) )
 				{
@@ -62,6 +60,28 @@ class path_iterator
 		}
 
 		elem.shrink_to_fit();
+
+		for (auto & x : elem)
+		{
+			std::cout << "---> (" << static_cast<int64_t>(x.first) << ", "
+			          << static_cast<int64_t>(x.second) << ")\t";
+
+			if (x.first != npos)
+			{
+				if (x.second != npos)
+				{
+					std::cout << s.substr(x.first, x.second - x.first);
+				} else
+				{
+					std::cout << s.substr(x.first, s.length() - x.first);
+				}
+			} else
+			{
+				std::cout << ".";
+			}
+			std::cout << std::endl;
+		}
+
 
 		return elem;
 	}
