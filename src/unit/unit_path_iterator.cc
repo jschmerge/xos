@@ -14,11 +14,11 @@
 class Test_Path_Iterator : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Path_Iterator);
-	CPPUNIT_TEST(testSomething);
+	CPPUNIT_TEST(testIncrementDecrement);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
-	void testSomething()
+	void testIncrementDecrement()
 	{
 		using namespace filesystem;
 
@@ -46,12 +46,17 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			std::cout << "Iterating through '" << s << "'\n";
 			path p(s);
 
-//			path::iterator i = p.begin();
-			for (const auto & e : p)
+			path::iterator i(p.begin());
+			for (auto e = p.begin(); e != p.end(); e++, ++i)
 			{
-				std::cout << e.c_str() << std::endl;
+				std::cout << (*e).c_str() << std::endl;
+				CPPUNIT_ASSERT((*e).generic_string() == i->generic_string());
 			}
 
+			for (auto x = --p.end(); x != --p.begin(); x--)
+			{
+				std::cout << x->c_str() << std::endl;
+			}
 			std::cout << "--------------------------------\n";
 		}
 	}
