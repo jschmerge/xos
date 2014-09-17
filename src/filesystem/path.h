@@ -285,10 +285,10 @@ path::dispatch_initialization(const std::basic_string<ECharT, T, A> & src)
 }
 
 inline path::iterator path::begin() const
-	{ return iterator(this); }
+	{ return path_iterator(this, path_iterator::state::set_to_begin); }
 
 inline path::iterator path::end() const
-	{ return iterator(this); }
+	{ return path_iterator(this, path_iterator::state::set_to_end); }
 
 } /*v1*/
 }/*filesystem*/
