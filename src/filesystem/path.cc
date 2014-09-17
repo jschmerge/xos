@@ -260,7 +260,7 @@ bool path::has_parent_path() const
 
 bool path::has_filename() const
 {
-	return !filename.empty();
+	return !filename().empty();
 }
 
 bool path::has_stem() const
