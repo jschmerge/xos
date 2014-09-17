@@ -34,6 +34,10 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			{ "foo/bar" },
 			{ "/foo/bar" },
 			{ "/foo/bar/" },
+			{ "/a/b/c/d/e/f" },
+			{ "/a/b/c/d/e/f/" },
+			{ "a/b/c/d/e/f" },
+			{ "a/b/c/d/e/f/" },
 		};
 
 		putchar('\n');
@@ -42,7 +46,11 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			std::cout << "Iterating through '" << s << "'\n";
 			path p(s);
 
-			path::iterator i = p.begin();
+//			path::iterator i = p.begin();
+			for (const auto & e : p)
+			{
+				std::cout << e.c_str() << std::endl;
+			}
 
 			std::cout << "--------------------------------\n";
 		}

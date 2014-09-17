@@ -51,8 +51,6 @@ class path_iterator
 				begin = s.find_first_not_of(path::preferred_separator, end);
 				end = s.find_first_of(path::preferred_separator, begin);
 
-				std::cout << "\n------> " << (end - begin) << std::endl;
-
 				if (  (elem.size() != 1) || (! p->has_root_directory())
 				   || (begin != npos) || (end != npos) )
 				{
@@ -63,6 +61,29 @@ class path_iterator
 
 		elem.shrink_to_fit();
 
+		for (auto & x : elem)
+		{
+			std::cout << "#---> (" << static_cast<int64_t>(x.first) << ", "
+			          << static_cast<int64_t>(x.second) << ")\t";
+
+			if (x.first != npos)
+			{
+				if (x.second != npos)
+				{
+					std::cout << s.substr(x.first, x.second - x.first);
+				} else
+				{
+					std::cout << s.substr(x.first, s.length() - x.first);
+				}
+			} else
+			{
+				std::cout << ".";
+			}
+			std::cout << std::endl;
+		}
+
+		std::cout << "=====" << std::endl;
+
 		return elem;
 	}
 
@@ -70,18 +91,19 @@ class path_iterator
 	path_iterator()
 	  : underlying(nullptr)
 	  , elements()
-	  , cursor()
+	  , cursor(0)
 	  , element_value()
 		{ }
 
 	path_iterator(const path * p, state _state = state::set_to_begin)
 	  : underlying(p)
 	  , elements(build_elements(underlying))
-	  , cursor(_state == state::set_to_begin ?
-	           elements.begin() :
-	           elements.end())
+	  , cursor((_state == state::set_to_begin) ?
+	           0 : underlying->generic_string().length())
 	  , element_value()
-		{ }
+	{
+		std::cout << "####====> " << cursor << std::endl;
+	}
 
 	path_iterator(const path_iterator & other)
 	  : underlying(other.underlying)
@@ -93,7 +115,7 @@ class path_iterator
 	path_iterator(path_iterator && other)
 	  : underlying(std::move(other.underlying))
 	  , elements(std::move(other.elements))
-	  , cursor(std::move(other.cursor))
+	  , cursor(other.cursor)
 	  , element_value(std::move(other.element_value))
 		{ }
 
@@ -115,7 +137,7 @@ class path_iterator
 		{
 			underlying = std::move(other.underlying);
 			elements = std::move(other.elements);
-			cursor = std::move(other.cursor);
+			cursor = other.cursor;
 			element_value = std::move(other.element_value);
 		}
 		return *this;
@@ -125,9 +147,10 @@ class path_iterator
 
 	bool operator == (const path_iterator & other)
 	{
+		std::cout << "-> " << std::boolalpha << (underlying == other.underlying)
+		          << " " << (cursor == other.cursor) << std::endl;
 		return (  (underlying == other.underlying)
-		       && (cursor == other.cursor)
-		       && (elements == other.elements) );
+		       && (cursor == other.cursor) );
 	}
 
 	bool operator != (const path_iterator & other)
@@ -161,7 +184,32 @@ class path_iterator
 		return tmp;
 	}
 
-	const path & operator * () const;
+	const path & operator * () const
+	{
+		range r = elements.at(cursor);
+		const path::string_type & s = underlying->generic_string();
+
+		std::cout << "---> (" << static_cast<int64_t>(r.first) << ", "
+				  << static_cast<int64_t>(r.second) << ")\t";
+
+		if (r.first != npos)
+		{
+			if (r.second != npos)
+			{
+				std::cout << s.substr(r.first, r.second - r.first);
+			} else
+			{
+				std::cout << s.substr(r.first, s.length() - r.first);
+			}
+		} else
+		{
+			std::cout << ".";
+		}
+		std::cout << std::endl;
+
+		return element_value;
+	}
+
 
 	const path & operator -> () const;
 
@@ -169,7 +217,7 @@ class path_iterator
 
 	const path * underlying;
 	range_list elements;
-	range_list::iterator cursor;
+	std::size_t cursor;
 	path element_value;
 };
 
