@@ -49,8 +49,8 @@ unittest_OBJS     = cppunit-main.o \
                     unit_unicode.o \
                     unit_filesystem_error.o \
                     unit_path_traits.o \
-                    unit_path_iterator.o \
-                    unit_path.o
+                    unit_path.o \
+                    unit_path_iterator.o
 
 PROGRESS ?= brief
 bin/unittest: ../filesystem/lib/libfilesystem.a

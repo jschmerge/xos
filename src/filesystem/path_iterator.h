@@ -61,6 +61,7 @@ class path_iterator
 
 		elem.shrink_to_fit();
 
+#if 0
 		for (auto & x : elem)
 		{
 			std::cout << "#---> (" << static_cast<int64_t>(x.first) << ", "
@@ -82,7 +83,8 @@ class path_iterator
 			std::cout << std::endl;
 		}
 
-		std::cout << "=====" << std::endl;
+		std::cout << "--- End of range build ---" << std::endl;
+#endif
 
 		return elem;
 	}
@@ -99,16 +101,14 @@ class path_iterator
 	  : underlying(p)
 	  , elements(build_elements(underlying))
 	  , cursor((_state == state::set_to_begin) ?
-	           0 : underlying->generic_string().length())
+	           0 : elements.size())
 	  , element_value()
-	{
-		std::cout << "####====> " << cursor << std::endl;
-	}
+		{ }
 
 	path_iterator(const path_iterator & other)
 	  : underlying(other.underlying)
 	  , elements(other.elements)
-	  , cursor(other.cursor)                // ERROR!
+	  , cursor(other.cursor)
 	  , element_value(other.element_value)
 		{ }
 
@@ -147,8 +147,6 @@ class path_iterator
 
 	bool operator == (const path_iterator & other)
 	{
-		std::cout << "-> " << std::boolalpha << (underlying == other.underlying)
-		          << " " << (cursor == other.cursor) << std::endl;
 		return (  (underlying == other.underlying)
 		       && (cursor == other.cursor) );
 	}
@@ -167,7 +165,7 @@ class path_iterator
 	path_iterator operator ++ (int)
 	{
 		path_iterator tmp(*this);
-		++cursor;
+		++(*this);
 		return tmp;
 	}
 
@@ -180,45 +178,50 @@ class path_iterator
 	path_iterator operator -- (int)
 	{
 		path_iterator tmp(*this);
-		--cursor;
+		--(*this);
 		return tmp;
 	}
 
 	const path & operator * () const
 	{
+		create_element_value();
+		return element_value;
+	}
+
+	const path * operator -> () const
+	{
+		create_element_value();
+		return &element_value;
+	}
+
+ private:
+	void create_element_value() const
+	{
 		range r = elements.at(cursor);
 		const path::string_type & s = underlying->generic_string();
 
-		std::cout << "---> (" << static_cast<int64_t>(r.first) << ", "
-				  << static_cast<int64_t>(r.second) << ")\t";
+//		std::cout << "---> (" << static_cast<int64_t>(r.first) << ", "
+//				  << static_cast<int64_t>(r.second) << ")\t";
 
 		if (r.first != npos)
 		{
 			if (r.second != npos)
 			{
-				std::cout << s.substr(r.first, r.second - r.first);
+				element_value = s.substr(r.first, r.second - r.first);
 			} else
 			{
-				std::cout << s.substr(r.first, s.length() - r.first);
+				element_value = s.substr(r.first, s.length() - r.first);
 			}
 		} else
 		{
-			std::cout << ".";
+			element_value = ".";
 		}
-		std::cout << std::endl;
-
-		return element_value;
 	}
-
-
-	const path & operator -> () const;
-
- private:
 
 	const path * underlying;
 	range_list elements;
 	std::size_t cursor;
-	path element_value;
+	mutable path element_value;
 };
 
 
