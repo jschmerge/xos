@@ -161,19 +161,21 @@ class path
 	int compare(const path & p) const noexcept;
 	int compare(const string_type & s) const;
 	int compare(const value_type * s) const;
-#if 0
 
+#if 0
 	// decomposition
 	path root_name() const;
 	path root_directory() const;
 	path root_path() const;
 	path relative_path() const;
+#endif
 	path parent_path() const;
 	path filename() const;
+#if 0
 	path stem() const;
 	path extension() const;
-
 #endif
+
 	// query
 	bool empty() const noexcept;
 	bool has_root_name() const;

@@ -200,6 +200,34 @@ int path::compare(const value_type * s) const
 	return strcmp(c_str(), s);
 }
 
+
+//////////////////////////////////////////////////////////////////////
+// decomposition
+// path path::root_name() const;
+// path path::root_directory() const;
+// path path::root_path() const;
+// path path::relative_path() const;
+path path::parent_path() const
+{
+	path ret;
+
+	if (!empty() && begin() != --end())
+	{
+		for (auto & e : *this)
+			ret /= e;
+	}
+
+	return ret;
+}
+
+path path::filename() const
+{
+	return empty() ? path() : *--end();
+}
+
+// path path::stem() const;
+// path path::extension() const;
+
 bool path::empty() const noexcept
 {
 	return pathname.empty();
@@ -232,7 +260,7 @@ bool path::has_parent_path() const
 
 bool path::has_filename() const
 {
-	return false;
+	return !filename.empty();
 }
 
 bool path::has_stem() const
