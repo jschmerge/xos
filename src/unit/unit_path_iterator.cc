@@ -18,6 +18,7 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
+	// FIXME - This test needs work
 	void testIncrementDecrement()
 	{
 		using namespace filesystem;
@@ -40,22 +41,26 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			{ "a/b/c/d/e/f/" },
 		};
 
-		putchar('\n');
+		if (config::verbose) putchar('\n');
 		for (auto & s : values)
 		{
-			std::cout << "Iterating through '" << s << "'\n";
+			if (config::verbose)
+				std::cout << "Iterating through '" << s << "'\n";
+
 			path p(s);
 
 			path::iterator i(p.begin());
 			for (auto e = p.begin(); e != p.end(); e++, ++i)
 			{
-				std::cout << (*e).c_str() << std::endl;
+				if (config::verbose)
+					std::cout << (*e).c_str() << std::endl;
 				CPPUNIT_ASSERT((*e).generic_string() == i->generic_string());
 			}
 
 			for (auto x = --p.end(); x != --p.begin(); x--)
 			{
-				std::cout << x->c_str() << std::endl;
+				if (config::verbose)
+					std::cout << x->c_str() << std::endl;
 			}
 			std::cout << "--------------------------------\n";
 		}
