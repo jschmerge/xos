@@ -211,10 +211,10 @@ path path::parent_path() const
 {
 	path ret;
 
-	if (!empty() && begin() != --end())
+	if (!empty())
 	{
-		for (auto & e : *this)
-			ret /= e;
+		for (auto i = begin(); i != --end(); ++i)
+			ret /= *i;
 	}
 
 	return ret;
