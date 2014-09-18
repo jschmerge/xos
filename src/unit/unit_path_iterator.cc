@@ -62,6 +62,7 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 				if (config::verbose)
 					std::cout << x->c_str() << std::endl;
 			}
+			std::cout << p.parent_path().c_str() << std::endl;
 			std::cout << "--------------------------------\n";
 		}
 	}
