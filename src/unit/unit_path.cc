@@ -80,6 +80,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
+	CPPUNIT_TEST(extension);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -437,6 +438,23 @@ class Test_Path : public CppUnit::TestFixture
 
 		CPPUNIT_ASSERT(p1.is_relative() && !p1.is_absolute());
 		CPPUNIT_ASSERT(!p2.is_relative() && p2.is_absolute());
+	}
+
+	void extension()
+	{
+		path p1("foo/bar.txt");
+		path p2("bar.txt/foo");
+		path p3("..");
+		path p4(".");
+		path p5("foo/bar.txt.txt");
+		path p6("foo/bar..txt");
+
+		CPPUNIT_ASSERT(p1.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p2.extension().empty());
+		CPPUNIT_ASSERT(p3.extension().empty());
+		CPPUNIT_ASSERT(p4.extension().empty());
+		CPPUNIT_ASSERT(p5.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p6.extension().string() == ".txt");
 	}
 
 };

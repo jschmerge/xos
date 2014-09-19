@@ -47,23 +47,9 @@ class path
 
 	template <class Source>
 	void dispatch_initialization(Source & src);
+	template <class EcharT>
+	void do_construction(const EcharT * src, std::size_t len);
 
-#if 0
-	template <class InputIterator>
-	 path(InputIterator first, InputIterator last);
-	template <class Source>
-	 path(const Source & source, const std::locale & loc);
-	template <class InputIterator>
-	 path(InputIterator first, InputIterator last, const std::locale & loc);
-
-	template <class Source>
-	 path & operator = (const Source & source);
-	template <class Source>
-	 path & assign(const Source & source);
-	template <class InputIterator>
-	 path & assign(InputIterator first, InputIterator last);
-
-#endif
 	// appends
 	path & operator /= (const path & p);
 
@@ -81,11 +67,6 @@ class path
 		path p(source);
 		return (*this /= p);
 	}
-
-#if 0
-	template <class InputIterator>
-	 path & append(InputIterator first, InputIterator last);
-#endif
 
 	// concatenation
 	path & operator += (const path & other);
@@ -108,21 +89,11 @@ class path
 		return (*this += p);
 	}
 
-#if 0
-	template <class EcharT>
-	 path & operator += (EcharT x);
-	template <class InputIterator>
-	 path & concat(InputIterator first, InputIterator last);
-#endif
-
 	// modifiers
 	void clear() noexcept;
 	path & make_preferred();
 	path & remove_filename();
 	path & replace_filename(const path & replacement);
-#if 0
-	path & replace_extension(const path & replacement = path());
-#endif
 	void swap(path & rhs) noexcept;
 
 	// native format observers
@@ -130,27 +101,13 @@ class path
 	const value_type * c_str() const noexcept;
 	operator string_type() const;
 
-#if 0
-	template <class EcharT,
-			  class traits = std::char_traits<EcharT>,
-			  class Allocator = std::allocator<EcharT> >
-	 std::basic_string<EcharT, traits, Allocator>
-	  string(const Allocator & a = Allocator()) const;
-#endif
-
 	std::string string() const;
 	std::wstring wstring() const;
 	std::string u8string() const;
 	std::u16string u16string() const;
 	std::u32string u32string() const;
 
-#if 0
 	// generic format observers
-	template <class EcharT, class traits = std::char_traits<EcharT>,
-			  class Allocator = std::allocator<EcharT> >
-	 std::basic_string<EcharT, traits, Allocator>
-	  generic_string(const Allocator & a = Allocator()) const;
-#endif
 	std::string generic_string() const { return string(); }
 	std::wstring generic_wstring() const { return wstring(); }
 	std::string generic_u8string() const { return u8string(); }
@@ -162,19 +119,9 @@ class path
 	int compare(const string_type & s) const;
 	int compare(const value_type * s) const;
 
-#if 0
 	// decomposition
-	path root_name() const;
-	path root_directory() const;
-	path root_path() const;
-	path relative_path() const;
-#endif
 	path parent_path() const;
 	path filename() const;
-#if 0
-	path stem() const;
-	path extension() const;
-#endif
 
 	// query
 	bool empty() const noexcept;
@@ -195,6 +142,60 @@ class path
 
 	iterator begin() const;
 	iterator end() const;
+#if 0
+	template <class InputIterator>
+	 path(InputIterator first, InputIterator last);
+
+	template <class Source>
+	 path(const Source & source, const std::locale & loc);
+	template <class InputIterator>
+	 path(InputIterator first, InputIterator last, const std::locale & loc);
+
+	template <class InputIterator>
+	 path & append(InputIterator first, InputIterator last);
+	template <class EcharT>
+	 path & operator += (EcharT x);
+	template <class InputIterator>
+	 path & concat(InputIterator first, InputIterator last);
+
+	template <class Source>
+	 path & operator = (const Source & source);
+	template <class Source>
+	 path & assign(const Source & source);
+	template <class InputIterator>
+	 path & assign(InputIterator first, InputIterator last);
+
+	template <class EcharT, class traits = std::char_traits<EcharT>,
+			  class Allocator = std::allocator<EcharT> >
+	 std::basic_string<EcharT, traits, Allocator>
+	  string(const Allocator & a = Allocator()) const;
+
+	template <class EcharT, class traits = std::char_traits<EcharT>,
+			  class Allocator = std::allocator<EcharT> >
+	 std::basic_string<EcharT, traits, Allocator>
+	  generic_string(const Allocator & a = Allocator()) const;
+
+	path & replace_extension(const path & replacement = path());
+	path root_name() const;
+	path root_directory() const;
+	path root_path() const;
+	path relative_path() const;
+	path stem() const;
+#endif
+	path extension() const
+	{
+		path ext;
+		std::string s = filename();
+		std::string::size_type n = 0;
+
+		if (  ( (s.length() != 1) || s[0] != '.') // "."
+		   && ( (s.length() != 2) || (s[0] != '.') || (s[1] != '.') ) // ".."
+		   && ( (n = s.find_last_of('.')) != std::string::npos ) )
+			ext = s.substr(n);
+
+		return ext;
+	}
+
  private:
 
 	template <class ECharT>
@@ -222,11 +223,25 @@ template <class ECharT>
 enable_if_t<path::char_encodable_t<ECharT>::value>
 path::dispatch_initialization(const ECharT * src)
 {
-	using result = std::codecvt_base::result;
 	size_t len = 0;
-	codecvt_utf8<ECharT> cvt;
 
 	for (len = 0; src[len] != 0; ++len) { }
+
+	do_construction(src, len);
+}
+
+template <class ECharT, class T, class A>
+enable_if_t<path::char_encodable_t<ECharT>::value>
+path::dispatch_initialization(const std::basic_string<ECharT, T, A> & src)
+{
+	do_construction(src.c_str(), src.length());
+}
+
+template <class ECharT>
+void path::do_construction(const ECharT * src, std::size_t len)
+{
+	using result = std::codecvt_base::result;
+	codecvt_utf8<ECharT> cvt;
 
 	pathname.resize((len * cvt.max_length()) + 1, '\0');
 	if ( ! cvt.always_noconv())
@@ -250,39 +265,6 @@ path::dispatch_initialization(const ECharT * src)
 	{
 		memcpy(const_cast<char*>(pathname.data()), src, len);
 		pathname.resize(len);
-	}
-}
-
-template <class ECharT, class T, class A>
-enable_if_t<path::char_encodable_t<ECharT>::value>
-path::dispatch_initialization(const std::basic_string<ECharT, T, A> & src)
-{
-	using result = std::codecvt_base::result;
-	codecvt_utf8<ECharT> cvt;
-
-	pathname.resize((src.length() * cvt.max_length()) + 1, '\0');
-	if ( ! cvt.always_noconv())
-	{
-
-		const ECharT * from_next = nullptr;
-		char * to_next = nullptr;
-		std::mbstate_t mbs = std::mbstate_t();
-		result r = cvt.out(mbs, src.data(), src.data() + src.length(),
-						   from_next, const_cast<char*>(pathname.data()),
-						   const_cast<char*>(pathname.data()
-						   + pathname.length()), to_next);
-
-		if (r != std::codecvt_base::ok)
-			throw filesystem_error(
-					"Could not convert pathname encoding",
-					 std::make_error_code(std::errc::invalid_argument));
-
-		pathname.erase(to_next - pathname.data());
-	} else
-	{
-		memcpy(const_cast<char*>(pathname.data()),
-			   src.data(), src.length());
-		pathname.resize(src.length());
 	}
 }
 
