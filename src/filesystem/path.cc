@@ -259,12 +259,12 @@ bool path::has_root_path() const
 
 bool path::has_relative_path() const
 {
-	return false;
+	return ( ! has_root_directory());
 }
 
 bool path::has_parent_path() const
 {
-	return false;
+	return ( ! parent_path().empty() );
 }
 
 bool path::has_filename() const

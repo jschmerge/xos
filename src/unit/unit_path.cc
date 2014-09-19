@@ -80,6 +80,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
+	CPPUNIT_TEST(has_root_directory);
 	CPPUNIT_TEST(stem);
 	CPPUNIT_TEST(extension);
 	CPPUNIT_TEST_SUITE_END();
@@ -491,6 +492,30 @@ class Test_Path : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(p6.has_extension());
 		CPPUNIT_ASSERT(p7.extension().string() == ".txt");
 		CPPUNIT_ASSERT(p7.has_extension());
+	}
+
+	void has_root_directory()
+	{
+		std::vector<std::string> paths = {
+			"", "/", "//", "///",
+			"a", "a/", "/a/", "//a/", "/a", "//a", "///a/",
+		    "/", "a/b", "/a/b", "//a/b", "/", "a/", "/a/", "//a/",
+		};
+
+		for (const auto & s : paths)
+		{
+			path p(s);
+
+			std::cout << "----> " << s << " "
+			          << p.has_root_directory() <<  std::endl;
+
+			if (p.empty())
+				CPPUNIT_ASSERT( ! p.has_root_directory());
+			else
+				CPPUNIT_ASSERT(
+					! ( p.has_root_directory()
+				      ^ (p.c_str()[0] == path::preferred_separator) ) );
+		}
 	}
 };
 
