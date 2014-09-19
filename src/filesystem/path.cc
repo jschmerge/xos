@@ -4,6 +4,18 @@
 #include "path.h"
 #include "filesystem_error.h"
 
+namespace {
+	
+static inline
+bool is_special_directory(const filesystem::path & p)
+{
+	const std::string & s = p.filename();
+
+	return (  ( (s.length() == 1) && s[0] == '.')                        // "."
+	       || ( (s.length() == 2) && (s[0] == '.') && (s[1] == '.') ) ); // ".."
+}
+
+} // namespace
 
 namespace filesystem {
 inline namespace v1 {
@@ -225,9 +237,6 @@ path path::filename() const
 	return empty() ? path() : *--end();
 }
 
-// path path::stem() const;
-// path path::extension() const;
-
 bool path::empty() const noexcept
 {
 	return pathname.empty();
@@ -265,12 +274,12 @@ bool path::has_filename() const
 
 bool path::has_stem() const
 {
-	return false;
+	return !stem().empty();
 }
 
 bool path::has_extension() const
 {
-	return false;
+	return !extension().empty();
 }
 
 bool path::is_absolute() const
@@ -289,8 +298,7 @@ path path::stem() const
 	path st(s);
 	std::string::size_type n = 0;
 
-	if (  ( (s.length() != 1) || s[0] != '.') // "."
-	   && ( (s.length() != 2) || (s[0] != '.') || (s[1] != '.') ) // ".."
+	if (  ( ! is_special_directory(*this) )
 	   && ( (n = s.find_last_of('.')) != std::string::npos ) )
 		st = s.substr(0, n);
 
@@ -303,8 +311,7 @@ path path::extension() const
 	std::string s = filename();
 	std::string::size_type n = 0;
 
-	if (  ( (s.length() != 1) || s[0] != '.') // "."
-	   && ( (s.length() != 2) || (s[0] != '.') || (s[1] != '.') ) // ".."
+	if (  ( ! is_special_directory(*this) )
 	   && ( (n = s.find_last_of('.')) != std::string::npos ) )
 		ext = s.substr(n);
 

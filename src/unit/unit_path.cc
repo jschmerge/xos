@@ -452,12 +452,19 @@ class Test_Path : public CppUnit::TestFixture
 		path p7("foo/.txt");
 
 		CPPUNIT_ASSERT(p1.stem().string() == "bar");
+		CPPUNIT_ASSERT(p1.has_stem());
 		CPPUNIT_ASSERT(p2.stem().string() == "foo");
+		CPPUNIT_ASSERT(p2.has_stem());
 		CPPUNIT_ASSERT(p3.stem().string() == "..");
+		CPPUNIT_ASSERT(p3.has_stem());
 		CPPUNIT_ASSERT(p4.stem().string() == ".");
+		CPPUNIT_ASSERT(p4.has_stem());
 		CPPUNIT_ASSERT(p5.stem().string() == "bar.txt");
+		CPPUNIT_ASSERT(p5.has_stem());
 		CPPUNIT_ASSERT(p6.stem().string() == "bar.");
+		CPPUNIT_ASSERT(p6.has_stem());
 		CPPUNIT_ASSERT(p7.stem().empty());
+		CPPUNIT_ASSERT(!p7.has_stem());
 	}
 
 	void extension()
@@ -471,12 +478,19 @@ class Test_Path : public CppUnit::TestFixture
 		path p7("foo/.txt");
 
 		CPPUNIT_ASSERT(p1.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p1.has_extension());
 		CPPUNIT_ASSERT(p2.extension().empty());
+		CPPUNIT_ASSERT(!p2.has_extension());
 		CPPUNIT_ASSERT(p3.extension().empty());
+		CPPUNIT_ASSERT(!p3.has_extension());
 		CPPUNIT_ASSERT(p4.extension().empty());
+		CPPUNIT_ASSERT(!p4.has_extension());
 		CPPUNIT_ASSERT(p5.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p5.has_extension());
 		CPPUNIT_ASSERT(p6.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p6.has_extension());
 		CPPUNIT_ASSERT(p7.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p7.has_extension());
 	}
 };
 

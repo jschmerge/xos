@@ -50,10 +50,25 @@ class Test_Path_Iterator : public CppUnit::TestFixture
 			path p(s);
 
 			path::iterator i(p.begin());
+			path::iterator j;
+
+			j = i;
+
+			CPPUNIT_ASSERT(j == i);
+			++j;
+			CPPUNIT_ASSERT(j != i);
+			j = std::move(i);
+
+			path::iterator k(std::move(j));
+
+			i = k;
+
 			for (auto e = p.begin(); e != p.end(); e++, ++i)
 			{
 				if (config::verbose)
+				{
 					std::cout << (*e).c_str() << std::endl;
+				}
 				CPPUNIT_ASSERT((*e).generic_string() == i->generic_string());
 			}
 
