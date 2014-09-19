@@ -283,5 +283,33 @@ bool path::is_relative() const
 	return (*pathname.begin() != preferred_separator);
 }
 
+path path::stem() const
+{
+	std::string s = filename();
+	path st(s);
+	std::string::size_type n = 0;
+
+	if (  ( (s.length() != 1) || s[0] != '.') // "."
+	   && ( (s.length() != 2) || (s[0] != '.') || (s[1] != '.') ) // ".."
+	   && ( (n = s.find_last_of('.')) != std::string::npos ) )
+		st = s.substr(0, n);
+
+	return st;
+}
+
+path path::extension() const
+{
+	path ext;
+	std::string s = filename();
+	std::string::size_type n = 0;
+
+	if (  ( (s.length() != 1) || s[0] != '.') // "."
+	   && ( (s.length() != 2) || (s[0] != '.') || (s[1] != '.') ) // ".."
+	   && ( (n = s.find_last_of('.')) != std::string::npos ) )
+		ext = s.substr(n);
+
+	return ext;
+}
+
 } /*v1*/
 } /*filesystem*/

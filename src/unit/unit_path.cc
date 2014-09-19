@@ -80,6 +80,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
+	CPPUNIT_TEST(stem);
 	CPPUNIT_TEST(extension);
 	CPPUNIT_TEST_SUITE_END();
 
@@ -440,6 +441,25 @@ class Test_Path : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(!p2.is_relative() && p2.is_absolute());
 	}
 
+	void stem()
+	{
+		path p1("foo/bar.txt");
+		path p2("bar.txt/foo");
+		path p3("..");
+		path p4(".");
+		path p5("foo/bar.txt.txt");
+		path p6("foo/bar..txt");
+		path p7("foo/.txt");
+
+		CPPUNIT_ASSERT(p1.stem().string() == "bar");
+		CPPUNIT_ASSERT(p2.stem().string() == "foo");
+		CPPUNIT_ASSERT(p3.stem().string() == "..");
+		CPPUNIT_ASSERT(p4.stem().string() == ".");
+		CPPUNIT_ASSERT(p5.stem().string() == "bar.txt");
+		CPPUNIT_ASSERT(p6.stem().string() == "bar.");
+		CPPUNIT_ASSERT(p7.stem().empty());
+	}
+
 	void extension()
 	{
 		path p1("foo/bar.txt");
@@ -448,6 +468,7 @@ class Test_Path : public CppUnit::TestFixture
 		path p4(".");
 		path p5("foo/bar.txt.txt");
 		path p6("foo/bar..txt");
+		path p7("foo/.txt");
 
 		CPPUNIT_ASSERT(p1.extension().string() == ".txt");
 		CPPUNIT_ASSERT(p2.extension().empty());
@@ -455,8 +476,8 @@ class Test_Path : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(p4.extension().empty());
 		CPPUNIT_ASSERT(p5.extension().string() == ".txt");
 		CPPUNIT_ASSERT(p6.extension().string() == ".txt");
+		CPPUNIT_ASSERT(p7.extension().string() == ".txt");
 	}
-
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_Path);

@@ -180,21 +180,9 @@ class path
 	path root_directory() const;
 	path root_path() const;
 	path relative_path() const;
-	path stem() const;
 #endif
-	path extension() const
-	{
-		path ext;
-		std::string s = filename();
-		std::string::size_type n = 0;
-
-		if (  ( (s.length() != 1) || s[0] != '.') // "."
-		   && ( (s.length() != 2) || (s[0] != '.') || (s[1] != '.') ) // ".."
-		   && ( (n = s.find_last_of('.')) != std::string::npos ) )
-			ext = s.substr(n);
-
-		return ext;
-	}
+	path stem() const;
+	path extension() const;
 
  private:
 
