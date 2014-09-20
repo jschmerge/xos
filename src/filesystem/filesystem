@@ -42,11 +42,14 @@ inline namespace v1 {
 	template <class InputIterator>
 	path u8path(InputIterator first, InputIterator last);
 
+#if 0
+	enum class directory_options;
 	class directory_entry;
 	class directory_iterator;
 	// enable directory_iterator range-based for statements
 	directory_iterator begin(directory_iterator iter) noexcept;
 	directory_iterator end(const directory_iterator &) noexcept;
+#endif
 
 	class file_status;
 
@@ -60,7 +63,6 @@ inline namespace v1 {
 	enum class file_type;
 	enum class perms;
 	enum class copy_options;
-	enum class directory_options;
 
 	typedef std::chrono::time_point<std::chrono::system_clock> file_time_type;
 
