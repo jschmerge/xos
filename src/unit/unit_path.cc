@@ -80,9 +80,11 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
+	CPPUNIT_TEST(has_root_name);
 	CPPUNIT_TEST(has_root_directory);
 	CPPUNIT_TEST(stem);
 	CPPUNIT_TEST(extension);
+	CPPUNIT_TEST(replace_filename);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -516,6 +518,20 @@ class Test_Path : public CppUnit::TestFixture
 					! ( p.has_root_directory()
 				      ^ (p.c_str()[0] == path::preferred_separator) ) );
 		}
+	}
+
+	void replace_filename()
+	{
+
+		path p("foo/bar");
+		p.replace_filename("baz");
+		CPPUNIT_ASSERT(p.string() == "foo/baz");
+	}
+
+	void has_root_name()
+	{
+		path p;
+		CPPUNIT_ASSERT(p.has_root_name() == false);
 	}
 };
 

@@ -43,12 +43,9 @@ inline namespace v1 {
 	path u8path(InputIterator first, InputIterator last);
 
 	class directory_entry;
-
 	class directory_iterator;
-
 	// enable directory_iterator range-based for statements
 	directory_iterator begin(directory_iterator iter) noexcept;
-
 	directory_iterator end(const directory_iterator &) noexcept;
 
 	class file_status;
