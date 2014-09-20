@@ -24,27 +24,26 @@ enum class perms : unsigned int
 {
 	none         = 0,
 
-	owner_read   = 0400,
-	owner_write  = 0200,
-	owner_exec   = 0100,
-	owner_all    = owner_read | owner_write | owner_exec,
-	
-	group_read   = 0040,
-	group_write  = 0020,
-	group_exec   = 0010,
-	group_all    = group_read | group_write | group_exec,
+	owner_read   = 00400,
+	owner_write  = 00200,
+	owner_exec   = 00100,
 
-	others_read  = 0040,
-	others_write = 0020,
-	others_exec  = 0010,
-	others_all   = others_read | others_write | others_exec,
+	group_read   = 00040,
+	group_write  = 00020,
+	group_exec   = 00010,
 
-	all          = owner_all | group_all | others_all,
+	others_read  = 00040,
+	others_write = 00020,
+	others_exec  = 00010,
 
 	set_uid      = 04000,
 	set_gid      = 02000,
 	sticky_bit   = 01000,
 
+	owner_all    = owner_read | owner_write | owner_exec,
+	group_all    = group_read | group_write | group_exec,
+	others_all   = others_read | others_write | others_exec,
+	all          = owner_all | group_all | others_all,
 	mask         = all | set_uid | set_gid | sticky_bit,
 
 	unknown      = 0xffff,
@@ -59,15 +58,15 @@ class file_status
 	                     perms p = perms::unknown) noexcept
 	  : m_type(t) , m_permissions(p) { }
 
-	file_status(const file_status&) noexcept = default;
+	file_status(const file_status &) noexcept = default;
 
-	file_status(file_status&&) noexcept = default;
+	file_status(file_status &&) noexcept = default;
 
 	~file_status() { }
 
-	file_status& operator=(const file_status&) noexcept = default;
+	file_status& operator = (const file_status &) noexcept = default;
 
-	file_status& operator=(file_status&&) noexcept = default;
+	file_status& operator = (file_status &&) noexcept = default;
 
 	// observers
 	file_type type() const noexcept { return m_type; }
