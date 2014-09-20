@@ -17,6 +17,8 @@ enum class directory_options
 	skip_permission_denied = 2,
 };
 
+class directory_entry;
+
 class directory_iterator
 {
 public:
@@ -57,7 +59,60 @@ public:
 	directory_iterator& increment(std::error_code& ec) noexcept;
 };
 
-class recursive_directory_iterator;
+class recursive_directory_iterator
+{
+public:
+	typedef directory_entry         value_type;
+	typedef ptrdiff_t               difference_type;
+	typedef const directory_entry * pointer;
+	typedef const directory_entry & reference;
+	typedef std::input_iterator_tag iterator_category;
+
+	// constructors and destructor
+	recursive_directory_iterator() noexcept;
+
+	explicit recursive_directory_iterator(const path& p);
+
+	recursive_directory_iterator(const path& p, directory_options options);
+
+	recursive_directory_iterator(const path& p, directory_options options,
+	                             std::error_code& ec) noexcept;
+
+	recursive_directory_iterator(const path& p, std::error_code& ec) noexcept;
+
+	recursive_directory_iterator(const recursive_directory_iterator& rhs);
+
+	recursive_directory_iterator(recursive_directory_iterator&& rhs) noexcept;
+
+	~recursive_directory_iterator();
+
+	// observers
+	directory_options options() const;
+
+	int depth() const;
+
+	bool recursion_pending() const;
+
+	const directory_entry& operator*() const;
+
+	const directory_entry* operator->() const;
+
+	// modifiers
+	recursive_directory_iterator &
+	  operator = (const recursive_directory_iterator & rhs);
+
+	recursive_directory_iterator &
+	  operator = (recursive_directory_iterator && rhs) noexcept;
+
+	recursive_directory_iterator& operator++();
+
+	recursive_directory_iterator& increment(std::error_code & ec) noexcept;
+
+	void pop();
+
+	void disable_recursion_pending();
+};
+
 
 directory_iterator begin(directory_iterator iter) noexcept;
 

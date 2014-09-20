@@ -21,6 +21,8 @@ class filesystem_error : public std::system_error
 	filesystem_error(const std::string & what_arg, const path & p1,
 	                 const path & p2, std::error_code ec);
 
+	~filesystem_error() = default;
+
 	const path & path1() const noexcept;
 
 	const path & path2() const noexcept;
