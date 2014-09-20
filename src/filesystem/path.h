@@ -120,6 +120,8 @@ class path
 	int compare(const value_type * s) const;
 
 	// decomposition
+	path root_name() const;
+	path root_directory() const;
 	path parent_path() const;
 	path filename() const;
 
@@ -176,8 +178,6 @@ class path
 	  generic_string(const Allocator & a = Allocator()) const;
 
 	path & replace_extension(const path & replacement = path());
-	path root_name() const;
-	path root_directory() const;
 	path root_path() const;
 	path relative_path() const;
 #endif

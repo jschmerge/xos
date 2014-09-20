@@ -85,6 +85,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(stem);
 	CPPUNIT_TEST(extension);
 	CPPUNIT_TEST(replace_filename);
+	CPPUNIT_TEST(has_root_path);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -307,17 +308,6 @@ class Test_Path : public CppUnit::TestFixture
 			p1.append(i.operand2);
 			CPPUNIT_ASSERT(p1.native() == i.result);
 		}
-
-/*
-		for (const auto & i : path_set)
-		{
-			const int limit_len = 30;
-			char s1[limit_len]; strncpy(s1, i.operand1, limit_len);
-			char s2[limit_len]; strncpy(s2, i.operand2, limit_len);
-			char s3[limit_len]; strncpy(s3, i.result, limit_len);
-
-		}
-*/
 	}
 
 	void assignmentOperators()
@@ -508,9 +498,6 @@ class Test_Path : public CppUnit::TestFixture
 		{
 			path p(s);
 
-			std::cout << "----> " << s << " "
-			          << p.has_root_directory() <<  std::endl;
-
 			if (p.empty())
 				CPPUNIT_ASSERT( ! p.has_root_directory());
 			else
@@ -532,6 +519,13 @@ class Test_Path : public CppUnit::TestFixture
 	{
 		path p;
 		CPPUNIT_ASSERT(p.has_root_name() == false);
+	}
+
+	void has_root_path()
+	{
+		path p("foo");
+
+		CPPUNIT_ASSERT(p.has_root_path() == false);
 	}
 };
 
