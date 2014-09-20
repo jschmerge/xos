@@ -35,6 +35,12 @@ covreport: coverage.info
 	#genhtml $< --legend --output-directory coverage-report
 	xdg-open coverage-report/index.html 2> /dev/null &
 
+codecount:
+	@echo "HEADERS:"
+	@find . -name '*.h' | xargs wc -l
+	@echo "SOURCE:"
+	@find . -name '*.cc' | xargs wc -l
+
 clean:
 	$(MAKE) -C filesystem clean
 	$(MAKE) -C unit clean
