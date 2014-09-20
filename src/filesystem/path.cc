@@ -215,10 +215,23 @@ int path::compare(const value_type * s) const
 
 //////////////////////////////////////////////////////////////////////
 // decomposition
-// path path::root_name() const;
-// path path::root_directory() const;
 // path path::root_path() const;
 // path path::relative_path() const;
+
+path path::root_name() const
+{
+	return path();
+}
+
+path path::root_directory() const
+{
+	path ret;
+	if (has_root_directory())
+		ret += preferred_separator;
+
+	return ret;
+}
+
 path path::parent_path() const
 {
 	path ret;
