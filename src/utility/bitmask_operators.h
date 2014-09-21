@@ -14,11 +14,11 @@
 		static_cast<int_type>(a) ^ static_cast<int_type>(b)); }      \
 	inline constexpr enum_type operator ~ (enum_type a)              \
 	{ return static_cast<enum_type>(~static_cast<int_type>(a)); }    \
-	inline enum_type & operator &= (enum_type & a, enum_type & b)    \
+	inline enum_type & operator &= (enum_type & a, const enum_type & b)    \
 	{ a = (a & b); return a; }                                       \
-	inline enum_type & operator |= (enum_type & a, enum_type & b)    \
+	inline enum_type & operator |= (enum_type & a, const enum_type & b)    \
 	{ a = (a | b); return a; }                                       \
-	inline enum_type & operator ^= (enum_type & a, enum_type & b)    \
+	inline enum_type & operator ^= (enum_type & a, const enum_type & b)    \
 	{ a = (a ^ b); return a; }
 
 
