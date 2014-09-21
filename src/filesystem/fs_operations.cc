@@ -78,77 +78,52 @@ void current_path(const path & p, std::error_code & ec) noexcept
 }
 
 bool is_block_file(const path & p)
-{
-	return is_block_file(status(p));
-}
+	{ return is_block_file(status(p)); }
 
 bool is_block_file(const path & p, std::error_code & ec) noexcept
-{
-	return is_block_file(status(p, ec));
-}
+	{ return is_block_file(status(p, ec)); }
 
 bool is_character_file(const path & p)
-{
-	return is_character_file(status(p));
-}
+	{ return is_character_file(status(p)); }
 
 bool is_character_file(const path & p, std::error_code & ec) noexcept
-{
-	return is_character_file(status(p, ec));
-}
+	{ return is_character_file(status(p, ec)); }
 
 bool is_directory(const path & p)
-{
-	return is_directory(status(p));
-}
+	{ return is_directory(status(p)); }
 
 bool is_directory(const path & p, std::error_code & ec) noexcept
-{
-	return is_directory(status(p, ec));
-}
+	{ return is_directory(status(p, ec)); }
 
 bool is_fifo(const path & p)
-{
-	return is_fifo(status(p));
-}
+	{ return is_fifo(status(p)); }
 
 bool is_fifo(const path & p, std::error_code & ec) noexcept
-{
-	return is_fifo(status(p, ec));
-}
+	{ return is_fifo(status(p, ec)); }
 
-bool is_other(const path & p);
-bool is_other(const path & p, std::error_code & ec) noexcept;
+bool is_other(const path & p)
+	{ return is_other(symlink_status(p)); }
+
+bool is_other(const path & p, std::error_code & ec) noexcept
+	{ return is_other(symlink_status(p, ec)); }
 
 bool is_regular_file(const path & p)
-{
-	return is_regular_file(status(p));
-}
+	{ return is_regular_file(status(p)); }
 
 bool is_regular_file(const path & p, std::error_code & ec) noexcept
-{
-	return is_regular_file(status(p, ec));
-}
+	{ return is_regular_file(status(p, ec)); }
 
 bool is_socket(const path & p)
-{
-	return is_socket(status(p));
-}
+	{ return is_socket(status(p)); }
 
 bool is_socket(const path & p, std::error_code & ec) noexcept
-{
-	return is_socket(status(p, ec));
-}
+	{ return is_socket(status(p, ec)); }
 
 bool is_symlink(const path & p)
-{
-	return is_symlink(symlink_status(p));
-}
+	{ return is_symlink(symlink_status(p)); }
 
 bool is_symlink(const path & p, std::error_code & ec) noexcept
-{
-	return is_symlink(symlink_status(p, ec));
-}
+	{ return is_symlink(symlink_status(p, ec)); }
 
 file_status status(const path & p, std::error_code & ec) noexcept
 {
