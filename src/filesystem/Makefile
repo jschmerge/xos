@@ -45,6 +45,7 @@ LIB_TARGETS        = libfilesystem
 libfilesystem_OBJS = path.o \
                      directory_entry.o \
                      path_iterator.o \
+                     fs_operations.o \
                      filesystem_error.o
 
 include ../Makefile.include
