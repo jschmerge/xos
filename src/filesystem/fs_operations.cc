@@ -4,8 +4,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <cstdio>  // _P_tmpdir is defined here
 #include <climits> // PATH_MAX is defined through this
-
 
 namespace filesystem {
 inline namespace v1 {
@@ -61,8 +61,94 @@ path current_path(std::error_code & ec)
 	return retval;
 }
 
-void current_path(const path& p);
-void current_path(const path& p, std::error_code& ec) noexcept;
+void current_path(const path & p)
+{
+	std::error_code ec;
+	current_path(p, ec);
+	if (ec)
+		throw filesystem_error("Could not change working directory", p, ec);
+}
+
+void current_path(const path & p, std::error_code & ec) noexcept
+{
+	ec.clear();
+
+	if (chdir(p.c_str()) != 0)
+		ec = make_errno_ec();
+}
+
+bool is_block_file(const path & p)
+{
+	return is_block_file(status(p));
+}
+
+bool is_block_file(const path & p, std::error_code & ec) noexcept
+{
+	return is_block_file(status(p, ec));
+}
+
+bool is_character_file(const path & p)
+{
+	return is_character_file(status(p));
+}
+
+bool is_character_file(const path & p, std::error_code & ec) noexcept
+{
+	return is_character_file(status(p, ec));
+}
+
+bool is_directory(const path & p)
+{
+	return is_directory(status(p));
+}
+
+bool is_directory(const path & p, std::error_code & ec) noexcept
+{
+	return is_directory(status(p, ec));
+}
+
+bool is_fifo(const path & p)
+{
+	return is_fifo(status(p));
+}
+
+bool is_fifo(const path & p, std::error_code & ec) noexcept
+{
+	return is_fifo(status(p, ec));
+}
+
+bool is_other(const path & p);
+bool is_other(const path & p, std::error_code & ec) noexcept;
+
+bool is_regular_file(const path & p)
+{
+	return is_regular_file(status(p));
+}
+
+bool is_regular_file(const path & p, std::error_code & ec) noexcept
+{
+	return is_regular_file(status(p, ec));
+}
+
+bool is_socket(const path & p)
+{
+	return is_socket(status(p));
+}
+
+bool is_socket(const path & p, std::error_code & ec) noexcept
+{
+	return is_socket(status(p, ec));
+}
+
+bool is_symlink(const path & p)
+{
+	return is_symlink(symlink_status(p));
+}
+
+bool is_symlink(const path & p, std::error_code & ec) noexcept
+{
+	return is_symlink(symlink_status(p, ec));
+}
 
 file_status status(const path & p, std::error_code & ec) noexcept
 {
@@ -91,8 +177,69 @@ file_status status(const path & p)
 	return ret;
 }
 
-path temp_directory_path();
-path temp_directory_path(std::error_code& ec);
+file_status symlink_status(const path & p)
+{
+	std::error_code  ec;
+	file_status ret = symlink_status(p, ec);
+	if (ec) throw filesystem_error("Could not stat file", p, ec);
+	return ret;
+}
+
+file_status symlink_status(const path & p, std::error_code & ec) noexcept
+{
+	struct stat st;
+	file_status ret;
+
+	ec.clear();
+
+	if (lstat(p.c_str(), &st) == 0)
+	{
+		ret.type(st_mode_to_file_type(st.st_mode));
+		ret.permissions(st_mode_to_perms(st.st_mode));
+	} else if (errno == ENOENT)
+		ret.type(file_type::not_found);
+	else
+		ec = make_errno_ec();
+
+	return ret;
+}
+
+path temp_directory_path()
+{
+	std::error_code  ec;
+	path ret = temp_directory_path(ec);
+	if (ec) throw filesystem_error("No suitable temp directory found", ec);
+	return ret;
+}
+
+path temp_directory_path(std::error_code & ec)
+{
+	path tmpdir{P_tmpdir};
+	file_status st;
+
+	for (const auto var : { "TMPDIR", "TMP", "TEMP", "TEMPDIR" })
+	{
+		const char * value = getenv(var);
+		if (value != nullptr)
+		{
+			printf("Found var %s = %s\n", var, value);
+			st = status(value, ec);
+
+			if (exists(st) && is_directory(st))
+			{
+				tmpdir = value;
+				break;
+			}
+		}
+	}
+
+	ec.clear();
+	st = status(tmpdir, ec);
+	if (!exists(st) || !is_directory(st))
+		tmpdir.clear();
+
+	return tmpdir;
+}
 
 }
 }

@@ -41,12 +41,13 @@ enum class copy_options
 
 DEFINE_BITMASK_OPERATORS(copy_options, unsigned int);
 
-typedef std::chrono::time_point<std::chrono::system_clock> file_time_type;
+typedef std::chrono::high_resolution_clock clock_type;
+typedef std::chrono::time_point<clock_type> file_time_type;
 
 path current_path();
-path current_path(std::error_code& ec);
-void current_path(const path& p);
-void current_path(const path& p, std::error_code& ec) noexcept;
+path current_path(std::error_code & ec);
+void current_path(const path & p);
+void current_path(const path & p, std::error_code & ec) noexcept;
 
 #if 0
 path absolute(const path & p, const path & base = current_path());
@@ -73,109 +74,113 @@ void copy_symlink(const path & existing, const path & newborn,
                   std::error_code & ec) noexcept;
 
 bool create_directories(const path & p);
-bool create_directories(const path & p, std::error_code& ec) noexcept;
+bool create_directories(const path & p, std::error_code & ec) noexcept;
 
-bool create_directory(const path& p);
-bool create_directory(const path& p, std::error_code& ec) noexcept;
+bool create_directory(const path & p);
+bool create_directory(const path & p, std::error_code & ec) noexcept;
 
-bool create_directory(const path& p, const path& attributes);
-bool create_directory(const path& p, const path& attributes,
-                      std::error_code& ec) noexcept;
+bool create_directory(const path & p, const path & attributes);
+bool create_directory(const path & p, const path & attributes,
+                      std::error_code & ec) noexcept;
 
-void create_directory_symlink(const path& to, const path& new_symlink);
-void create_directory_symlink(const path& to, const path& new_symlink,
-                              std::error_code& ec) noexcept;
+void create_directory_symlink(const path & to, const path & new_symlink);
+void create_directory_symlink(const path & to, const path & new_symlink,
+                              std::error_code & ec) noexcept;
 
-void create_hard_link(const path& to, const path& new_hard_link);
-void create_hard_link(const path& to, const path& new_hard_link,
-                      std::error_code& ec) noexcept;
+void create_hard_link(const path & to, const path & new_hard_link);
+void create_hard_link(const path & to, const path & new_hard_link,
+                      std::error_code & ec) noexcept;
 
-void create_symlink(const path& to, const path& new_symlink);
-void create_symlink(const path& to, const path& new_symlink,
-                    std::error_code& ec) noexcept;
+void create_symlink(const path & to, const path & new_symlink);
+void create_symlink(const path & to, const path & new_symlink,
+                    std::error_code & ec) noexcept;
 
-bool exists(const path& p);
-bool exists(const path& p, std::error_code& ec) noexcept;
+bool exists(const path & p);
+bool exists(const path & p, std::error_code & ec) noexcept;
 
-bool equivalent(const path& p1, const path& p2);
-bool equivalent(const path& p1, const path& p2,
-                std::error_code& ec) noexcept;
+bool equivalent(const path & p1, const path & p2);
+bool equivalent(const path & p1, const path & p2,
+                std::error_code & ec) noexcept;
 
-uintmax_t file_size(const path& p);
-uintmax_t file_size(const path& p, std::error_code& ec) noexcept;
+uintmax_t file_size(const path & p);
+uintmax_t file_size(const path & p, std::error_code & ec) noexcept;
 
-uintmax_t hard_link_count(const path& p);
-uintmax_t hard_link_count(const path& p, std::error_code& ec) noexcept;
+uintmax_t hard_link_count(const path & p);
+uintmax_t hard_link_count(const path & p, std::error_code & ec) noexcept;
+#endif
 
-bool is_block_file(const path& p);
-bool is_block_file(const path& p, std::error_code& ec) noexcept;
+bool is_block_file(const path & p);
+bool is_block_file(const path & p, std::error_code & ec) noexcept;
 
-bool is_character_file(const path& p);
-bool is_character_file(const path& p, std::error_code& ec) noexcept;
+bool is_character_file(const path & p);
+bool is_character_file(const path & p, std::error_code & ec) noexcept;
 
-bool is_directory(const path& p);
-bool is_directory(const path& p, std::error_code& ec) noexcept;
+bool is_directory(const path & p);
+bool is_directory(const path & p, std::error_code & ec) noexcept;
 
-bool is_empty(const path& p);
-bool is_empty(const path& p, std::error_code& ec) noexcept;
+#if 0
+bool is_empty(const path & p);
+bool is_empty(const path & p, std::error_code & ec) noexcept;
+#endif
 
-bool is_fifo(const path& p);
-bool is_fifo(const path& p, std::error_code& ec) noexcept;
+bool is_fifo(const path & p);
+bool is_fifo(const path & p, std::error_code & ec) noexcept;
 
-bool is_other(const path& p);
-bool is_other(const path& p, std::error_code& ec) noexcept;
+bool is_other(const path & p);
+bool is_other(const path & p, std::error_code & ec) noexcept;
 
-bool is_regular_file(const path& p);
-bool is_regular_file(const path& p, std::error_code& ec) noexcept;
+bool is_regular_file(const path & p);
+bool is_regular_file(const path & p, std::error_code & ec) noexcept;
 
-bool is_socket(const path& p);
-bool is_socket(const path& p, std::error_code& ec) noexcept;
+bool is_socket(const path & p);
+bool is_socket(const path & p, std::error_code & ec) noexcept;
 
-bool is_symlink(const path& p);
-bool is_symlink(const path& p, std::error_code& ec) noexcept;
+bool is_symlink(const path & p);
+bool is_symlink(const path & p, std::error_code & ec) noexcept;
 
-file_time_type last_write_time(const path& p);
-file_time_type last_write_time(const path& p, std::error_code& ec) noexcept;
+#if 0
+file_time_type last_write_time(const path & p);
+file_time_type last_write_time(const path & p, std::error_code & ec) noexcept;
 
-void last_write_time(const path& p, file_time_type new_time);
-void last_write_time(const path& p, file_time_type new_time,
-                      std::error_code& ec) noexcept;
+void last_write_time(const path & p, file_time_type new_time);
+void last_write_time(const path & p, file_time_type new_time,
+                      std::error_code & ec) noexcept;
 
-void permissions(const path& p, perms prms);
-void permissions(const path& p, perms prms, std::error_code& ec) noexcept;
+void permissions(const path & p, perms prms);
+void permissions(const path & p, perms prms, std::error_code & ec) noexcept;
 
-path read_symlink(const path& p);
-path read_symlink(const path& p, std::error_code& ec);
+path read_symlink(const path & p);
+path read_symlink(const path & p, std::error_code & ec);
 
-bool remove(const path& p);
-bool remove(const path& p, std::error_code& ec) noexcept;
+bool remove(const path & p);
+bool remove(const path & p, std::error_code & ec) noexcept;
 
-uintmax_t remove_all(const path& p);
-uintmax_t remove_all(const path& p, std::error_code& ec) noexcept;
+uintmax_t remove_all(const path & p);
+uintmax_t remove_all(const path & p, std::error_code & ec) noexcept;
 
-void rename(const path& from, const path& to);
-void rename(const path& from, const path& to, std::error_code& ec) noexcept;
+void rename(const path & from, const path & to);
+void rename(const path & from, const path & to, std::error_code & ec) noexcept;
 
-void resize_file(const path& p, uintmax_t size);
-void resize_file(const path& p, uintmax_t size, std::error_code& ec) noexcept;
+void resize_file(const path & p, uintmax_t size);
+void resize_file(const path & p, uintmax_t size, std::error_code & ec) noexcept;
 
-space_info space(const path& p);
-space_info space(const path& p, std::error_code& ec) noexcept;
+space_info space(const path & p);
+space_info space(const path & p, std::error_code & ec) noexcept;
 #endif
 
 file_status status(const path & p);
 file_status status(const path & p, std::error_code & ec) noexcept;
 
-#if 0
-file_status symlink_status(const path& p);
-file_status symlink_status(const path& p, std::error_code& ec) noexcept;
+file_status symlink_status(const path & p);
+file_status symlink_status(const path & p, std::error_code & ec) noexcept;
 
-path system_complete(const path& p);
-path system_complete(const path& p, std::error_code& ec);
+#if 0
+path system_complete(const path & p);
+path system_complete(const path & p, std::error_code & ec);
 #endif
 
 path temp_directory_path();
-path temp_directory_path(std::error_code& ec);
+path temp_directory_path(std::error_code & ec);
 
 inline bool status_known(file_status s) noexcept
 	{ return (s.type() != file_type::none); }
