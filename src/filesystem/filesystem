@@ -17,18 +17,6 @@
 namespace filesystem {
 inline namespace v1 {
 
-	void swap(path& lhs, path& rhs) noexcept;
-	size_t hash_value(const path& p) noexcept;
-
-	bool operator == (const path & lhs, const path & rhs) noexcept;
-	bool operator != (const path & lhs, const path & rhs) noexcept;
-	bool operator < (const path & lhs, const path & rhs) noexcept;
-	bool operator <= (const path & lhs, const path & rhs) noexcept;
-	bool operator > (const path & lhs, const path & rhs) noexcept;
-	bool operator >= (const path & lhs, const path & rhs) noexcept;
-
-	path & operator / (const path & lhs, const path & rhs);
-
 	template <class charT, class traits>
 	std::basic_ostream<charT, traits> &
 	operator << (std::basic_ostream<charT, traits> & os, const path & p);

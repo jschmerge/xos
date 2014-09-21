@@ -5,6 +5,7 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
+#include <functional>
 #include <system_error>
 #include <vector>
 
@@ -196,6 +197,35 @@ class path
 
 	string_type pathname;
 };
+
+inline void swap(path& lhs, path& rhs) noexcept
+	{ lhs.swap(rhs); }
+
+inline size_t hash_value(const path& p) noexcept
+{
+	std::hash<std::string> hash_func;
+	return hash_func(p.generic_string());
+}
+
+inline bool operator == (const path & lhs, const path & rhs) noexcept
+	{ return (lhs.compare(rhs) == 0); }
+inline bool operator != (const path & lhs, const path & rhs) noexcept
+	{ return (lhs.compare(rhs) != 0); }
+inline bool operator < (const path & lhs, const path & rhs) noexcept
+	{ return (lhs.compare(rhs) < 0); }
+inline bool operator <= (const path & lhs, const path & rhs) noexcept
+	{ return (lhs.compare(rhs) <= 0); }
+inline bool operator > (const path & lhs, const path & rhs) noexcept
+	{ return (lhs.compare(rhs) > 0); }
+inline bool operator >= (const path & lhs, const path & rhs) noexcept
+	{ return (lhs.compare(rhs) >= 0); }
+
+inline path operator / (const path & lhs, const path & rhs)
+{
+	path p(lhs);
+	p /= rhs;
+	return p;
+}
 
 } /*v1*/
 }/*filesystem*/

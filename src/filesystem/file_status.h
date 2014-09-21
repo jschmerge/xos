@@ -62,7 +62,7 @@ class file_status
 
 	file_status(file_status &&) noexcept = default;
 
-	~file_status() { }
+	~file_status() = default;
 
 	file_status& operator = (const file_status &) noexcept = default;
 
