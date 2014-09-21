@@ -22,31 +22,34 @@ enum class file_type
 
 enum class perms : unsigned int
 {
-	none         = 0,
+	none             = 0,
 
-	owner_read   = 00400,
-	owner_write  = 00200,
-	owner_exec   = 00100,
+	owner_read       = 00400,
+	owner_write      = 00200,
+	owner_exec       = 00100,
 
-	group_read   = 00040,
-	group_write  = 00020,
-	group_exec   = 00010,
+	group_read       = 00040,
+	group_write      = 00020,
+	group_exec       = 00010,
 
-	others_read  = 00040,
-	others_write = 00020,
-	others_exec  = 00010,
+	others_read      = 00040,
+	others_write     = 00020,
+	others_exec      = 00010,
 
-	set_uid      = 04000,
-	set_gid      = 02000,
-	sticky_bit   = 01000,
+	set_uid          = 04000,
+	set_gid          = 02000,
+	sticky_bit       = 01000,
 
-	owner_all    = owner_read | owner_write | owner_exec,
-	group_all    = group_read | group_write | group_exec,
-	others_all   = others_read | others_write | others_exec,
-	all          = owner_all | group_all | others_all,
-	mask         = all | set_uid | set_gid | sticky_bit,
+	owner_all        = owner_read | owner_write | owner_exec,
+	group_all        = group_read | group_write | group_exec,
+	others_all       = others_read | others_write | others_exec,
+	all              = owner_all | group_all | others_all,
+	mask             = all | set_uid | set_gid | sticky_bit,
 
-	unknown      = 0xffff,
+	unknown          = 0xffff,
+	add_perms        = 0x10000,
+	remove_perms     = 0x20000,
+	resolve_symlinks = 0x40000,
 };
 
 DEFINE_BITMASK_OPERATORS(perms, unsigned int);
