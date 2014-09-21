@@ -5,6 +5,8 @@
 #include <string>
 #include <system_error>
 
+#include "path.h"
+
 namespace filesystem {
 inline namespace v1 {
 
@@ -34,6 +36,16 @@ class filesystem_error : public std::system_error
 	const path p2;
 	mutable std::shared_ptr<std::string> xxx;
 };
+
+inline std::error_code make_errno_ec()
+	{ return std::error_code(errno, std::system_category()); }
+
+inline filesystem_error make_fs_error(const std::string & msg, const path & p)
+	{ return filesystem_error(msg, p, make_errno_ec()); }
+
+inline filesystem_error make_fs_error(const std::string & msg,
+                                      const path & p1, const path & p2)
+	{ return filesystem_error(msg, p1, p2, make_errno_ec()); }
 
 } // inline namespace v1
 } // namespace filesystem

@@ -12,7 +12,7 @@
 #include "path_traits.h"
 #include "path.h"
 #include "filesystem_error.h"
-#include "fs_funcs.h"
+#include "fs_operations.h"
 
 namespace filesystem {
 inline namespace v1 {

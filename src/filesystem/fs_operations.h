@@ -170,8 +170,8 @@ void resize_file(const path& p, uintmax_t size, std::error_code& ec) noexcept;
 space_info space(const path& p);
 space_info space(const path& p, std::error_code& ec) noexcept;
 
-file_status status(const path& p);
-file_status status(const path& p, std::error_code& ec) noexcept;
+file_status status(const path & p);
+file_status status(const path & p, std::error_code & ec) noexcept;
 
 bool status_known(file_status s) noexcept;
 
