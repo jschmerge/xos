@@ -48,6 +48,7 @@ path current_path(std::error_code& ec);
 void current_path(const path& p);
 void current_path(const path& p, std::error_code& ec) noexcept;
 
+#if 0
 path absolute(const path & p, const path & base = current_path());
 path canonical(const path & p, const path & base, std::error_code & ec);
 path canonical(const path & p, std::error_code & ec);
@@ -93,7 +94,6 @@ void create_symlink(const path& to, const path& new_symlink);
 void create_symlink(const path& to, const path& new_symlink,
                     std::error_code& ec) noexcept;
 
-bool exists(file_status s) noexcept;
 bool exists(const path& p);
 bool exists(const path& p, std::error_code& ec) noexcept;
 
@@ -107,38 +107,30 @@ uintmax_t file_size(const path& p, std::error_code& ec) noexcept;
 uintmax_t hard_link_count(const path& p);
 uintmax_t hard_link_count(const path& p, std::error_code& ec) noexcept;
 
-bool is_block_file(file_status s) noexcept;
 bool is_block_file(const path& p);
 bool is_block_file(const path& p, std::error_code& ec) noexcept;
 
-bool is_character_file(file_status s) noexcept;
 bool is_character_file(const path& p);
 bool is_character_file(const path& p, std::error_code& ec) noexcept;
 
-bool is_directory(file_status s) noexcept;
 bool is_directory(const path& p);
 bool is_directory(const path& p, std::error_code& ec) noexcept;
 
 bool is_empty(const path& p);
 bool is_empty(const path& p, std::error_code& ec) noexcept;
 
-bool is_fifo(file_status s) noexcept;
 bool is_fifo(const path& p);
 bool is_fifo(const path& p, std::error_code& ec) noexcept;
 
-bool is_other(file_status s) noexcept;
 bool is_other(const path& p);
 bool is_other(const path& p, std::error_code& ec) noexcept;
 
-bool is_regular_file(file_status s) noexcept;
 bool is_regular_file(const path& p);
 bool is_regular_file(const path& p, std::error_code& ec) noexcept;
 
-bool is_socket(file_status s) noexcept;
 bool is_socket(const path& p);
 bool is_socket(const path& p, std::error_code& ec) noexcept;
 
-bool is_symlink(file_status s) noexcept;
 bool is_symlink(const path& p);
 bool is_symlink(const path& p, std::error_code& ec) noexcept;
 
@@ -169,19 +161,54 @@ void resize_file(const path& p, uintmax_t size, std::error_code& ec) noexcept;
 
 space_info space(const path& p);
 space_info space(const path& p, std::error_code& ec) noexcept;
+#endif
 
 file_status status(const path & p);
 file_status status(const path & p, std::error_code & ec) noexcept;
 
-bool status_known(file_status s) noexcept;
-
+#if 0
 file_status symlink_status(const path& p);
 file_status symlink_status(const path& p, std::error_code& ec) noexcept;
 
 path system_complete(const path& p);
 path system_complete(const path& p, std::error_code& ec);
+#endif
+
 path temp_directory_path();
 path temp_directory_path(std::error_code& ec);
+
+inline bool status_known(file_status s) noexcept
+	{ return (s.type() != file_type::none); }
+
+inline bool exists(file_status s) noexcept
+	{ return (status_known(s) && s.type() != file_type::not_found); }
+
+inline bool is_regular_file(file_status s) noexcept
+	{ return (s.type() == file_type::regular); }
+
+inline bool is_symlink(file_status s) noexcept
+	{ return (s.type() == file_type::symlink); }
+
+inline bool is_block_file(file_status s) noexcept
+	{ return (s.type() == file_type::block); }
+
+inline bool is_character_file(file_status s) noexcept
+	{ return (s.type() == file_type::character); }
+
+inline bool is_directory(file_status s) noexcept
+	{ return (s.type() == file_type::directory); }
+
+inline bool is_fifo(file_status s) noexcept
+	{ return (s.type() == file_type::fifo); }
+
+inline bool is_other(file_status s) noexcept
+	{ return (  exists(s)
+	         && !is_regular_file(s)
+	         && !is_directory(s)
+	         && !is_symlink(s)); }
+
+inline bool is_socket(file_status s) noexcept
+	{ return (s.type() == file_type::socket); }
 
 
 } // inline namespace v1
