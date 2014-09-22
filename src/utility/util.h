@@ -16,17 +16,29 @@
 ///
 /// Simple functor for freeing malloc-allocated memory
 ///
-struct MallocDeleter { void operator () (void * p) { free(p); } };
+struct MallocDeleter
+{
+	MallocDeleter() = default;
+	void operator () (void * p) const { free(p); }
+};
  
 ///
 /// Simple functor for closing a C stdio FILE*
 ///
-struct FCloseFunctor { void operator () (FILE * f) { fclose(f); } };
+struct FCloseFunctor
+{
+	FCloseFunctor() = default;
+	void operator () (FILE * f) const { fclose(f); }
+};
 
 ///
 /// Simple functor for closing a C stdio DIR*
 ///
-struct DirCloseFunctor { void operator () (DIR * f) { closedir(f); } };
+struct DirCloseFunctor
+{
+	DirCloseFunctor() = default;
+	void operator () (DIR * f) const { closedir(f); }
+};
 
 ///
 /// RAII Wrapper for C stdio FILE* objects

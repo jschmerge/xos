@@ -65,7 +65,9 @@ public:
 	directory_iterator & increment(std::error_code & ec) noexcept;
 
  private:
-	std::unique_ptr<DIR, DirCloseFunctor> handle;
+	static const DirCloseFunctor directory_closer;
+
+	std::shared_ptr<DIR> handle;
 	struct dirent buffer;
 	directory_options m_options;
 };
