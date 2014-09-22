@@ -102,12 +102,12 @@ bool equivalent(const path & p1, const path & p2);
 bool equivalent(const path & p1, const path & p2,
                 std::error_code & ec) noexcept;
 
+#endif
 uintmax_t file_size(const path & p);
 uintmax_t file_size(const path & p, std::error_code & ec) noexcept;
 
 uintmax_t hard_link_count(const path & p);
 uintmax_t hard_link_count(const path & p, std::error_code & ec) noexcept;
-#endif
 
 bool is_block_file(const path & p);
 bool is_block_file(const path & p, std::error_code & ec) noexcept;
@@ -163,10 +163,10 @@ void rename(const path & from, const path & to, std::error_code & ec) noexcept;
 
 void resize_file(const path & p, uintmax_t size);
 void resize_file(const path & p, uintmax_t size, std::error_code & ec) noexcept;
+#endif
 
 space_info space(const path & p);
 space_info space(const path & p, std::error_code & ec) noexcept;
-#endif
 
 file_status status(const path & p);
 file_status status(const path & p, std::error_code & ec) noexcept;

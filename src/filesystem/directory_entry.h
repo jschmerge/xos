@@ -13,29 +13,28 @@ class file_status;
 class directory_entry
 {
  public:
-	// For disambiguating the path() member function from the class
-	typedef path path_entry;
-
 	directory_entry() noexcept                                 = default;
+
 	directory_entry(const directory_entry &)                   = default;
+
 	directory_entry(directory_entry &&) noexcept               = default;
+
 	directory_entry & operator = (const directory_entry &)     = default;
+
 	directory_entry & operator = (directory_entry &&) noexcept = default;
 
-	explicit directory_entry(const path_entry & p);
+	explicit directory_entry(const class path & p);
 
 	~directory_entry();
 
-	void assign(const path_entry & p);
+	void assign(const class path & p);
 
-	void replace_filename(const path_entry & p);
+	void replace_filename(const class path & p);
 
-	// XXX - 'path' as the function name here doesn't compile with gcc 4.8.x
-	// ...clang doesn't seem to have problems with it however
-	const filesystem::v1::path & _path() const noexcept
+	const class path & path() const noexcept
 		{ return pathname; }
 
-	operator const path_entry & () const noexcept
+	operator const class path & () const noexcept
 		{ return pathname; }
 
 	// XXX
@@ -60,7 +59,7 @@ class directory_entry
 		{ return pathname >= rhs.pathname; }
 
  private:
-	path_entry pathname;
+	class path pathname;
 };
 
 } // inline namespace v1
