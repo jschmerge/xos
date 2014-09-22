@@ -75,17 +75,11 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(valueConstructors);
 	CPPUNIT_TEST(assignmentOperators);
 	CPPUNIT_TEST(conversionOperators);
-	CPPUNIT_TEST(appendFunctions);
+	CPPUNIT_TEST(slashEqualOperator);
 	CPPUNIT_TEST(plusEqualOperators);
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
-	CPPUNIT_TEST(has_root_name);
-	CPPUNIT_TEST(has_root_directory);
-	CPPUNIT_TEST(stem);
-	CPPUNIT_TEST(extension);
-	CPPUNIT_TEST(replace_filename);
-	CPPUNIT_TEST(has_root_path);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -238,7 +232,7 @@ class Test_Path : public CppUnit::TestFixture
 		}
 	}
 
-	void appendFunctions()
+	void slashEqualOperator()
 	{
 		std::vector<operands_and_result<const char *>> path_set {
 			{ ""      , ""      , "" },
@@ -390,6 +384,7 @@ class Test_Path : public CppUnit::TestFixture
 		const std::vector<operands_and_result<std::string>> paths = {
 			{ "", "" },
 			{ "/", "" },
+			{ "/foo/bar/", "/foo/bar" },
 			{ "/foo", "/" },
 			{ "/foo/", "/foo" },
 			{ "/foo/bar", "/foo" },

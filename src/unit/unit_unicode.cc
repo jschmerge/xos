@@ -91,6 +91,8 @@ class Test_Unicode : public CppUnit::TestFixture
 
 		trivialTests<CHAR_T, limit>();
 
+		if (config::verbose) putchar('\n');
+
 		for (wc[0] = 0;
 		     static_cast<unsigned int>(wc[0]) < (limit + 1); ++wc[0])
 		{
