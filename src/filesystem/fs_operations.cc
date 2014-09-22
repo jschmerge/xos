@@ -2,6 +2,7 @@
 #include "filesystem_error.h"
 
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 
 #include <cstdio>  // _P_tmpdir is defined here
@@ -77,6 +78,56 @@ void current_path(const path & p, std::error_code & ec) noexcept
 		ec = make_errno_ec();
 }
 
+uintmax_t file_size(const path & p)
+{
+	std::error_code  ec;
+	uintmax_t ret = file_size(p, ec);
+	if (ec) throw filesystem_error("Could not read file size", p, ec);
+	return ret;
+}
+
+uintmax_t file_size(const path & p, std::error_code & ec) noexcept
+{
+	struct stat st;
+	uintmax_t ret = static_cast<uintmax_t>(-1);
+
+	ec.clear();
+
+	if (stat(p.c_str(), &st) == 0)
+	{
+		if (S_ISREG(st.st_mode))
+			ret = st.st_size;
+		else
+			ec = std::make_error_code(std::errc::not_supported);
+	} else
+		ec = make_errno_ec();
+
+	return ret;
+}
+
+uintmax_t hard_link_count(const path & p)
+{
+	std::error_code  ec;
+	uintmax_t ret = hard_link_count(p, ec);
+	if (ec) throw filesystem_error("Could not read link count", p, ec);
+	return ret;
+}
+
+uintmax_t hard_link_count(const path & p, std::error_code & ec) noexcept
+{
+	struct stat st;
+	uintmax_t ret = static_cast<uintmax_t>(-1);
+
+	ec.clear();
+
+	if (stat(p.c_str(), &st) == 0)
+		ret = st.st_nlink;
+	else
+		ec = make_errno_ec();
+
+	return ret;
+}
+
 bool is_block_file(const path & p)
 	{ return is_block_file(status(p)); }
 
@@ -124,6 +175,42 @@ bool is_symlink(const path & p)
 
 bool is_symlink(const path & p, std::error_code & ec) noexcept
 	{ return is_symlink(symlink_status(p, ec)); }
+
+space_info space(const path & p)
+{
+	std::error_code ec;
+	space_info info = space(p, ec);
+	if (ec) throw filesystem_error("Could not determine size information "
+	                               "for filesystem", p, ec);
+	return info;
+}
+
+space_info space(const path & p, std::error_code & ec) noexcept
+{
+	struct statvfs stvfs;
+	space_info info = { static_cast<uintmax_t>(-1),
+	                    static_cast<uintmax_t>(-1),
+	                    static_cast<uintmax_t>(-1) };
+
+
+	memset(&stvfs, 0, sizeof(stvfs));
+
+	ec.clear();
+
+	if (statvfs(p.c_str(), &stvfs) == 0)
+	{
+		info.capacity = stvfs.f_blocks;
+		info.free = stvfs.f_bfree;
+		info.available = stvfs.f_bavail;
+
+		info.capacity *= stvfs.f_frsize;
+		info.free *= stvfs.f_frsize;
+		info.available *= stvfs.f_frsize;
+	} else
+		ec = make_errno_ec();
+
+	return info;
+}
 
 file_status status(const path & p, std::error_code & ec) noexcept
 {
