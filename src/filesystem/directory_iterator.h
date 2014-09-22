@@ -1,15 +1,21 @@
 #ifndef GUARD_DIRECTORY_ITERATOR_H
 #define GUARD_DIRECTORY_ITERATOR_H 1
 
+#include <dirent.h>
+
 #include <system_error>
 #include <iterator>
+
+#include "../utility/util.h"
+#include "../utility/bitmask_operators.h"
 
 #include "path.h"
 
 namespace filesystem {
 inline namespace v1 {
 
-// XXX - need bitmask operators
+class directory_entry;
+
 enum class directory_options
 {
 	none = 0,
@@ -17,7 +23,7 @@ enum class directory_options
 	skip_permission_denied = 2,
 };
 
-class directory_entry;
+DEFINE_BITMASK_OPERATORS(directory_options, unsigned int);
 
 class directory_iterator
 {
@@ -31,96 +37,42 @@ public:
 	// member functions
 	directory_iterator() noexcept;
 
-	explicit directory_iterator(const path& p);
+	explicit directory_iterator(const path & p);
 
-	directory_iterator(const path& p, directory_options options);
+	directory_iterator(const path & p, directory_options options);
 
-	directory_iterator(const path& p, std::error_code& ec) noexcept;
+	directory_iterator(const path & p, std::error_code & ec) noexcept;
 
-	directory_iterator(const path& p, directory_options options,
-	                   std::error_code& ec) noexcept;
+	directory_iterator(const path & p, directory_options options,
+	                   std::error_code & ec) noexcept;
 
-	directory_iterator(const directory_iterator& rhs);
+	directory_iterator(const directory_iterator & rhs);
 
-	directory_iterator(directory_iterator&& rhs) noexcept;
+	directory_iterator(directory_iterator && rhs) noexcept;
 
 	~directory_iterator();
 
-	directory_iterator& operator=(const directory_iterator& rhs);
+	directory_iterator & operator = (const directory_iterator & rhs);
 
-	directory_iterator& operator=(directory_iterator&& rhs) noexcept;
+	directory_iterator & operator = (directory_iterator && rhs) noexcept;
 
-	const directory_entry& operator*() const;
+	const directory_entry & operator * () const;
 
-	const directory_entry* operator->() const;
+	const directory_entry * operator -> () const;
 
-	directory_iterator& operator++();
+	directory_iterator & operator ++ ();
 
-	directory_iterator& increment(std::error_code& ec) noexcept;
+	directory_iterator & increment(std::error_code & ec) noexcept;
+
+ private:
+	std::unique_ptr<DIR, DirCloseFunctor> handle;
+	struct dirent buffer;
+	directory_options m_options;
 };
-
-class recursive_directory_iterator
-{
-public:
-	typedef directory_entry         value_type;
-	typedef ptrdiff_t               difference_type;
-	typedef const directory_entry * pointer;
-	typedef const directory_entry & reference;
-	typedef std::input_iterator_tag iterator_category;
-
-	// constructors and destructor
-	recursive_directory_iterator() noexcept;
-
-	explicit recursive_directory_iterator(const path& p);
-
-	recursive_directory_iterator(const path& p, directory_options options);
-
-	recursive_directory_iterator(const path& p, directory_options options,
-	                             std::error_code& ec) noexcept;
-
-	recursive_directory_iterator(const path& p, std::error_code& ec) noexcept;
-
-	recursive_directory_iterator(const recursive_directory_iterator& rhs);
-
-	recursive_directory_iterator(recursive_directory_iterator&& rhs) noexcept;
-
-	~recursive_directory_iterator();
-
-	// observers
-	directory_options options() const;
-
-	int depth() const;
-
-	bool recursion_pending() const;
-
-	const directory_entry& operator*() const;
-
-	const directory_entry* operator->() const;
-
-	// modifiers
-	recursive_directory_iterator &
-	  operator = (const recursive_directory_iterator & rhs);
-
-	recursive_directory_iterator &
-	  operator = (recursive_directory_iterator && rhs) noexcept;
-
-	recursive_directory_iterator& operator++();
-
-	recursive_directory_iterator& increment(std::error_code & ec) noexcept;
-
-	void pop();
-
-	void disable_recursion_pending();
-};
-
 
 directory_iterator begin(directory_iterator iter) noexcept;
 
 directory_iterator end(const directory_iterator &) noexcept;
-
-recursive_directory_iterator begin(recursive_directory_iterator iter) noexcept;
-
-recursive_directory_iterator end(const recursive_directory_iterator&) noexcept;
 
 } // inline namespace v1
 } // namespace filesystem

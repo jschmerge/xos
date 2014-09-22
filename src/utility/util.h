@@ -1,6 +1,8 @@
 #ifndef GUARD_UTIL_H
 #define GUARD_UTIL_H 1
 
+#include <dirent.h>
+
 #include <string>
 #include <cstdio>
 
@@ -20,6 +22,11 @@ struct MallocDeleter { void operator () (void * p) { free(p); } };
 /// Simple functor for closing a C stdio FILE*
 ///
 struct FCloseFunctor { void operator () (FILE * f) { fclose(f); } };
+
+///
+/// Simple functor for closing a C stdio DIR*
+///
+struct DirCloseFunctor { void operator () (DIR * f) { closedir(f); } };
 
 ///
 /// RAII Wrapper for C stdio FILE* objects
