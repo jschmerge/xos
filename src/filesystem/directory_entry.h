@@ -37,24 +37,29 @@ class directory_entry
 	operator const class path & () const noexcept
 		{ return pathname; }
 
-	// XXX
 	file_status status() const;
+
 	file_status status(std::error_code & ec) const noexcept;
 
-	// XXX
 	file_status symlink_status() const;
+
 	file_status symlink_status(std::error_code & ec) const noexcept;
 
 	bool operator == (const directory_entry & rhs) const noexcept
 		{ return pathname == rhs.pathname; }
+
 	bool operator != (const directory_entry & rhs) const noexcept
 		{ return pathname != rhs.pathname; }
+
 	bool operator < (const directory_entry & rhs) const noexcept
 		{ return pathname < rhs.pathname; }
+
 	bool operator <= (const directory_entry & rhs) const noexcept
 		{ return pathname <= rhs.pathname; }
+
 	bool operator > (const directory_entry & rhs) const noexcept
 		{ return pathname > rhs.pathname; }
+
 	bool operator >= (const directory_entry & rhs) const noexcept
 		{ return pathname >= rhs.pathname; }
 
