@@ -18,6 +18,15 @@ class Test_directory_iterator : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i;);
 		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i("/tmp"););
 
+		putchar('\n');
+		for (fs::directory_iterator i = fs::directory_iterator("/tmp");
+		     i != end(i); ++i)
+		{
+			std::cout << i->path().c_str() << std::endl;
+		}
+
+		CPPUNIT_ASSERT_THROW(fs::directory_iterator i("/root");,
+		                     fs::filesystem_error);
 	}
 };
 
