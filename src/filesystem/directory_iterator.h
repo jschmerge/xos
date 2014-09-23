@@ -105,6 +105,9 @@ public:
 inline directory_iterator begin(directory_iterator iter) noexcept
 	{ return iter; }
 
+inline directory_iterator begin(directory_iterator && iter) noexcept
+	{ return std::forward<directory_iterator>(iter); }
+
 inline directory_iterator end(const directory_iterator &) noexcept
 	{ return directory_iterator(); }
 

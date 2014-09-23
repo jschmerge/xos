@@ -57,6 +57,22 @@ directory_iterator::directory_iterator(const path & p,
 		ec = make_errno_ec();
 }
 
+directory_iterator::directory_iterator(const directory_iterator & other)
+	// XXX - we should really think about opening/dup'ing a new handle to
+	// the directory here
+  : m_handle(other.m_handle)
+  , m_buffer(other.m_buffer)
+  , m_options(other.m_options)
+  , m_entry(other.m_entry)
+	{ }
+
+directory_iterator::directory_iterator(directory_iterator && other) noexcept
+  : m_handle(std::move(other.m_handle))
+  , m_buffer(std::move(other.m_buffer))
+  , m_options(std::move(other.m_options))
+  , m_entry(std::move(other.m_entry))
+	{ }
+
 directory_iterator &
 directory_iterator::increment(std::error_code & ec) noexcept
 {
