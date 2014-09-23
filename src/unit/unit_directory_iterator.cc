@@ -1,32 +1,75 @@
 #include "../filesystem/path.h"
 #include "../filesystem/directory_iterator.h"
 
+#include <cstdio>
 #include <iostream>
+#include <set>
 
 #include "cppunit-header.h"
 
 namespace fs = filesystem::v1;
+
 class Test_directory_iterator : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_directory_iterator);
 	CPPUNIT_TEST(constructors);
+	CPPUNIT_TEST(iteration);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
 	void constructors()
 	{
-		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i;);
-		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i("/tmp"););
+		fs::directory_iterator empty;
 
-		putchar('\n');
-		for (fs::directory_iterator i = fs::directory_iterator("/tmp");
-		     i != end(i); ++i)
+		CPPUNIT_ASSERT(empty == end(fs::directory_iterator()));
+
+		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i;);
+		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i(fs::path{"/tmp"}););
+
+#if 0
+		fs::directory_iterator iter(fs::path("/tmp"));
+		for (auto & i : iter)
 		{
-			std::cout << i->path().c_str() << std::endl;
+			std::cout << " entry of /tmp: "
+			          << i.path().c_str() << std::endl;
+		}
+#endif
+
+		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path("/foo"));},
+		                     fs::filesystem_error);
+
+		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path{"/root"});},
+		                     fs::filesystem_error);
+	}
+
+	void iteration()
+	{
+		std::set<fs::path> paths;
+
+		if (config::verbose)
+			putchar('\n'); 
+
+		fs::directory_iterator i(fs::path("/tmp"));
+		CPPUNIT_ASSERT(i != end(i));
+
+		for (; i != end(i); ++i)
+		{
+			if (config::verbose)
+				std::cout << " entry of /tmp: " << i->path().c_str() << '\n';
+
+			std::set<fs::path>::iterator rv;
+			bool inserted = false;
+
+			std::tie(rv, inserted) = paths.insert(*i);
+
+			CPPUNIT_ASSERT(inserted == true);
 		}
 
-		CPPUNIT_ASSERT_THROW(fs::directory_iterator i("/root");,
-		                     fs::filesystem_error);
+		i = fs::directory_iterator(fs::path("/tmp"));
+		for (auto & j : i)
+		{
+			CPPUNIT_ASSERT(paths.find(j) != paths.end());
+		}
 	}
 };
 
