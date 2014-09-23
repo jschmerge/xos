@@ -20,32 +20,22 @@ template <std::size_t ... SEQ>
 struct index_sequence_generator<0, SEQ...>
 	{ typedef index_sequence<SEQ...> type; };
 
-
-/// Get the return type for a function
-template <class F> struct return_type;
-template <class R, class ...A> struct return_type<R(*)(A...)>
-	{ typedef R type; };
-
 /// helper for apply_function
-template <typename F, typename TUPLE, std::size_t ... INDEXES>
-auto dispatch_function(F f, TUPLE args, const index_sequence<INDEXES...>)
-    -> typename return_type<F>::type
+template <typename Func, typename ... Args, std::size_t ... IDX>
+auto dispatch_function(Func f, std::tuple<Args...> & args,
+                       const index_sequence<IDX...> &)
+	-> typename std::result_of<Func(Args &...)>::type
 {
-	return f(std::get<INDEXES>(args)...);
+	return f(std::get<IDX>(args)...);
 }
 
 /// apply_function calls a function with the arguments supplied as a tuple
-template <typename R, typename ... F_Args, typename ... T_Args>
-R apply_function(R f(F_Args...), std::tuple<T_Args...> args)
+template <typename Func, typename ...Args>
+auto apply_function(Func f, std::tuple<Args...> & args)
+	-> typename std::result_of<Func(Args&...)>::type
 {
-	static_assert(sizeof...(F_Args) == sizeof...(T_Args),
-	              "Function takes a differing number of arguments "
-	              "than are supplied in tuple argument");
-	typename index_sequence_generator<sizeof...(T_Args)>::type indexes;
-
-	R result = dispatch_function(f, args, indexes);
-	return result;
+	typename index_sequence_generator<sizeof...(Args)>::type indexes;
+	return dispatch_function(f, args, indexes);
 }
-
 
 #endif // GUARD_INDEX_SEQUENCE_H
