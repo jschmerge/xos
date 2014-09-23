@@ -48,6 +48,7 @@ unittest_OBJS     = cppunit-main.o \
                     unit_average.o \
                     unit_unicode.o \
                     unit_file_status.o \
+                    unit_directory_iterator.o \
                     unit_fs_operations.o \
                     unit_filesystem_error.o \
                     unit_path_traits.o \

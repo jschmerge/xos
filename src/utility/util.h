@@ -18,7 +18,7 @@
 ///
 struct MallocDeleter
 {
-	MallocDeleter() = default;
+	MallocDeleter() { }
 	void operator () (void * p) const { free(p); }
 };
  
@@ -27,7 +27,7 @@ struct MallocDeleter
 ///
 struct FCloseFunctor
 {
-	FCloseFunctor() = default;
+	FCloseFunctor() { }
 	void operator () (FILE * f) const { fclose(f); }
 };
 
@@ -36,7 +36,7 @@ struct FCloseFunctor
 ///
 struct DirCloseFunctor
 {
-	DirCloseFunctor() = default;
+	DirCloseFunctor() { }
 	void operator () (DIR * f) const { closedir(f); }
 };
 
