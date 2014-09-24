@@ -13,6 +13,7 @@ class Test_directory_iterator : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_directory_iterator);
 	CPPUNIT_TEST(constructors);
+	CPPUNIT_TEST(assignment);
 	CPPUNIT_TEST(iteration);
 	CPPUNIT_TEST_SUITE_END();
 
@@ -52,6 +53,17 @@ class Test_directory_iterator : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(
 			fs::directory_iterator j(fs::path(""), ec););
 		CPPUNIT_ASSERT(ec);
+	}
+
+	void assignment()
+	{
+		fs::directory_iterator i("/tmp");
+		fs::directory_iterator j("/tmp");
+		fs::directory_iterator empty;
+
+		i = fs::directory_iterator{};
+		i = j;
+		i = empty;
 	}
 
 	void iteration()

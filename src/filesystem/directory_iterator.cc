@@ -41,23 +41,6 @@ directory_iterator::directory_iterator(const path & p,
 
 	if (ec)
 		throw filesystem_error("Could not read directory entry", p, ec);
-#if 0
-	if ( ! m_handle)
-		throw filesystem_error("Could not open directory",
-		                       p, make_errno_ec());
-
-	std::error_code ec;
-
-	m_pathname /= '/';
-
-	m_entry.assign(m_pathname);
-
-	increment(ec);
-
-	if (ec)
-		throw filesystem_error("Could not read directory entry",
-		                       p, ec);
-#endif
 }
 
 directory_iterator::directory_iterator(const path & p,
@@ -125,26 +108,31 @@ directory_iterator::operator = (const directory_iterator & other)
 		m_options = other.m_options;
 
 		if (other.m_pathname.empty())
-			throw filesystem_error("Empty directory pathname",
-			                       std::make_error_code(
-			                         std::errc::invalid_argument));
-		m_pathname = other.m_pathname;
+		{
+			
+			m_handle.reset();
+			m_pathname.clear();
+			m_entry.assign(path{});
+		} else
+		{
+			m_pathname = other.m_pathname;
+			m_handle.reset(opendir(m_pathname.c_str()));
 
-		m_handle.reset(opendir(m_pathname.c_str()));
+			if (! m_handle)
+				throw filesystem_error("Could not open directory",
+				                        m_pathname, make_errno_ec());
 
-		if (! m_handle)
-			throw filesystem_error("Could not open directory",
-			                        m_pathname, make_errno_ec());
+			m_pathname /= "/";
+			m_entry.assign(m_pathname);
 
-		m_pathname /= "/";
-		m_entry.assign(m_pathname);
+			std::error_code ec;
+			increment(ec);
 
-		std::error_code ec;
-		increment(ec);
+			if (ec)
+				throw filesystem_error("Could not read directory entry",
+				                       m_pathname, ec);
+		}
 
-		if (ec)
-			throw filesystem_error("Could not read directory entry",
-			                       m_pathname, ec);
 	}
 	return *this;
 }
@@ -153,17 +141,25 @@ directory_iterator::operator = (const directory_iterator & other)
 directory_iterator &
 directory_iterator::operator = (directory_iterator && other) noexcept
 {
+	using std::swap;
 	if (this != &other)
 	{
-		m_handle = std::move(other.m_handle);
-		m_buffer = std::move(other.m_buffer);
+		swap(m_handle, other.m_handle);
+
+		swap(m_buffer, other.m_buffer);
+
 		m_options = other.m_options;
-		m_pathname = std::move(other.m_pathname);
+
+		swap(m_pathname, other.m_pathname);
+
 		m_entry.assign(m_pathname);
 
-		rewinddir(m_handle.get());
-		std::error_code ec;
-		increment(ec);
+		if (m_handle)
+		{
+			rewinddir(m_handle.get());
+			std::error_code ec;
+			increment(ec);
+		}
 	}
 	return *this;
 }
