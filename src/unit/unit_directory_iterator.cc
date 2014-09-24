@@ -19,6 +19,7 @@ class Test_directory_iterator : public CppUnit::TestFixture
  protected:
 	void constructors()
 	{
+		std::error_code ec;
 		fs::directory_iterator empty;
 
 		CPPUNIT_ASSERT(empty == end(fs::directory_iterator()));
@@ -26,20 +27,21 @@ class Test_directory_iterator : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i;);
 		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i(fs::path{"/tmp"}););
 
-#if 0
-		fs::directory_iterator iter(fs::path("/tmp"));
-		for (auto & i : iter)
-		{
-			std::cout << " entry of /tmp: "
-			          << i.path().c_str() << std::endl;
-		}
-#endif
-
 		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path("/foo"));},
 		                     fs::filesystem_error);
 
 		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path{"/root"});},
 		                     fs::filesystem_error);
+
+		ec.clear();
+		CPPUNIT_ASSERT_NO_THROW(
+			fs::directory_iterator j(fs::path("/foo"), ec););
+		CPPUNIT_ASSERT(ec);
+		               
+		ec.clear();
+		CPPUNIT_ASSERT_NO_THROW(
+			fs::directory_iterator j(fs::path("/foo"), ec););
+		CPPUNIT_ASSERT(ec);
 	}
 
 	void iteration()

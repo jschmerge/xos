@@ -80,8 +80,9 @@ class Test_fs_operations : public CppUnit::TestFixture
 	{
 // XXX - How do we get this to fail?
 		fs::path p = fs::current_path();
-		putchar('\n');
-		std::cout << "Current path = '" << p.c_str() << "'" << std::endl;
+
+		if (config::verbose)
+			std::cout << "\nCurrent path = '" << p.c_str() << "'" << std::endl;
 	}
 
 	void set_current_path()

@@ -52,7 +52,7 @@ public:
 
 	directory_iterator(directory_iterator && rhs) noexcept;
 
-	~directory_iterator() { }
+	~directory_iterator();
 
 	directory_iterator & operator = (const directory_iterator & rhs);
 

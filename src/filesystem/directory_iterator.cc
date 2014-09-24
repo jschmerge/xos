@@ -41,8 +41,13 @@ directory_iterator::directory_iterator(const path & p,
 }
 
 directory_iterator::directory_iterator(const path & p,
+                                       std::error_code & ec) noexcept
+  : directory_iterator(p, directory_options::none, ec)
+	{ }
+
+directory_iterator::directory_iterator(const path & p,
                                        directory_options options,
-	                                   std::error_code & ec) noexcept
+                                       std::error_code & ec) noexcept
   : m_handle(opendir(p.c_str()), directory_closer)
   , m_buffer()
   , m_options(options)
@@ -72,6 +77,36 @@ directory_iterator::directory_iterator(directory_iterator && other) noexcept
   , m_options(std::move(other.m_options))
   , m_entry(std::move(other.m_entry))
 	{ }
+
+directory_iterator::~directory_iterator()
+	{ }
+
+directory_iterator &
+directory_iterator::operator = (const directory_iterator & other)
+{
+	if (this != &other)
+	{
+		m_handle = other.m_handle;
+		m_buffer = other.m_buffer;
+		m_options = other.m_options;
+		m_entry = other.m_entry;
+	}
+	return *this;
+}
+
+directory_iterator &
+directory_iterator::operator = (directory_iterator && other) noexcept
+{
+	if (this != &other)
+	{
+		m_handle = std::move(other.m_handle);
+		m_buffer = std::move(other.m_buffer);
+		m_options = std::move(other.m_options);
+		m_entry = std::move(other.m_entry);
+	}
+
+	return *this;
+}
 
 directory_iterator &
 directory_iterator::increment(std::error_code & ec) noexcept

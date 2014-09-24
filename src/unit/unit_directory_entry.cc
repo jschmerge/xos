@@ -51,7 +51,8 @@ class Test_directory_entry : public CppUnit::TestFixture
 
 	void replace_filename()
 	{
-		putchar('\n');
+		if (config::verbose) putchar('\n');
+
 		for (const char * s : { "", "/", "/a", "a/", "/a/b", "/a/b/" })
 		{
 			fs::path p(s);
@@ -65,6 +66,22 @@ class Test_directory_entry : public CppUnit::TestFixture
 		}
 	}
 
+	static fs::file_type regStatus(const char * s)
+	{
+		fs::directory_entry de{fs::path(s)};
+		if (config::verbose) std::cout << s << std::endl;
+		return de.status().type();
+	}
+
+	static fs::file_type symStatus(const char * s)
+	{
+		std::error_code ec;
+		fs::directory_entry de{fs::path(s)};
+		auto rv = de.status(ec).type();
+		CPPUNIT_ASSERT(!ec);
+		return rv;
+	};
+
 	void status()
 	{
 		std::vector<args_and_result<fs::file_type, const char *>> names = {
@@ -76,27 +93,12 @@ class Test_directory_entry : public CppUnit::TestFixture
 			{ "/dev/log", fs::file_type::socket },
 		};
 
-		auto f1 = [] (const char * s) -> fs::file_type {
-			fs::directory_entry de{fs::path(s)};
-			if (config::verbose)
-				std::cout << s << std::endl;
-			return de.status().type();
-		};
-
-		auto f2 = [] (const char * s) -> fs::file_type {
-			std::error_code ec;
-			fs::directory_entry de{fs::path(s)};
-			auto rv = de.status(ec).type();
-			CPPUNIT_ASSERT(!ec);
-			return rv;
-		};
-
 		if (config::verbose) putchar('\n');
 
 		for (auto & e : names)
 		{
-			CPPUNIT_ASSERT(e.result == apply_function(f1, e.operands));
-			CPPUNIT_ASSERT(e.result == apply_function(f2, e.operands));
+			CPPUNIT_ASSERT(e.result == apply_function(regStatus, e.operands));
+			CPPUNIT_ASSERT(e.result == apply_function(symStatus, e.operands));
 		}
 	}
 
