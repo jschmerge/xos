@@ -14,8 +14,15 @@ namespace config {
 	bool verbose = false;
 };
 
+#if 0
 typedef std::map<std::string, CppUnit::Outputter *> OutputterMap;
 typedef std::map<std::string, CppUnit::TestListener *> ListenerMap;
+#else
+typedef std::map<std::string, std::shared_ptr<CppUnit::Outputter>>
+          OutputterMap;
+typedef std::map<std::string, std::shared_ptr<CppUnit::TestListener>>
+          ListenerMap;
+#endif
 
 //////////////////////////////////////////////////////////////////////
 void usage(const char * name)
@@ -74,22 +81,32 @@ int main(int argc, char ** argv)
 
 	result.addListener(&collector);
 
+	using std::make_shared;
+	using CppUnit::CompilerOutputter;
+	using CppUnit::TextOutputter;
+	using CppUnit::XmlOutputter;
+	using CppUnit::TextTestProgressListener;
+	using CppUnit::BriefTestProgressListener;
+	using CppUnit::BriefTestProgressListener;
+
 	OutputterMap allOutputters{
-		{ "compiler", new CppUnit::CompilerOutputter(&collector, std::cout)},
-		{ "text", new CppUnit::TextOutputter(&collector, std::cout) },
-		{ "xml", new CppUnit::XmlOutputter(&collector, std::cout) },
+		{ "compiler", make_shared<CompilerOutputter>(&collector, std::cout)},
+		{ "text", make_shared<TextOutputter>(&collector, std::cout) },
+		{ "xml", make_shared<XmlOutputter>(&collector, std::cout) },
 		{"none", nullptr },
 	};
 
 	ListenerMap allListeners{
-		{ "dots", new CppUnit::TextTestProgressListener() },
-		{ "brief", new CppUnit::BriefTestProgressListener() },
-		{ "verbose", new CppUnit::BriefTestProgressListener() },
+		{ "dots", std::make_shared<CppUnit::TextTestProgressListener>() },
+		{ "brief", std::make_shared<CppUnit::BriefTestProgressListener>() },
+		{ "verbose", std::make_shared<CppUnit::BriefTestProgressListener>() },
 		{ "none", nullptr },
 	};
 
-	CppUnit::Outputter * outputter = allOutputters.find("compiler")->second;
-	CppUnit::TestListener * listener = allListeners.find("dots")->second;
+	std::shared_ptr<CppUnit::Outputter> outputter =
+		allOutputters.find("compiler")->second;
+	std::shared_ptr<CppUnit::TestListener> listener =
+		allListeners.find("dots")->second;
 
 	char flag = 0;
 
@@ -165,9 +182,10 @@ int main(int argc, char ** argv)
 	}
 
 	if (listener != nullptr)
-		result.addListener(listener);
+		result.addListener(listener.get());
 
-	CppUnit::Test * run = find(CppUnit::TestFactoryRegistry::getRegistry().makeTest(), runTest);
+	CppUnit::Test * run =
+		find(CppUnit::TestFactoryRegistry::getRegistry().makeTest(), runTest);
 
 	if (run == nullptr)
 	{
@@ -190,4 +208,3 @@ int main(int argc, char ** argv)
 
 	return collector.testErrors() + collector.testFailures();
 }
-
