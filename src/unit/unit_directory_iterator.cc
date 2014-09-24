@@ -26,11 +26,16 @@ class Test_directory_iterator : public CppUnit::TestFixture
 
 		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i;);
 		CPPUNIT_ASSERT_NO_THROW(fs::directory_iterator i(fs::path{"/tmp"}););
+		CPPUNIT_ASSERT_NO_THROW(
+		   fs::directory_iterator i(fs::path{"/tmp"}, ec););
 
 		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path("/foo"));},
 		                     fs::filesystem_error);
 
 		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path{"/root"});},
+		                     fs::filesystem_error);
+
+		CPPUNIT_ASSERT_THROW({fs::directory_iterator j(fs::path{""});},
 		                     fs::filesystem_error);
 
 		ec.clear();
@@ -40,12 +45,18 @@ class Test_directory_iterator : public CppUnit::TestFixture
 		               
 		ec.clear();
 		CPPUNIT_ASSERT_NO_THROW(
-			fs::directory_iterator j(fs::path("/foo"), ec););
+			fs::directory_iterator j(fs::path("/root"), ec););
+		CPPUNIT_ASSERT(ec);
+		               
+		ec.clear();
+		CPPUNIT_ASSERT_NO_THROW(
+			fs::directory_iterator j(fs::path(""), ec););
 		CPPUNIT_ASSERT(ec);
 	}
 
 	void iteration()
 	{
+		std::error_code ec;
 		std::set<fs::path> paths;
 
 		if (config::verbose)
@@ -67,12 +78,22 @@ class Test_directory_iterator : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(inserted == true);
 		}
 
+		try {
+			fs::directory_iterator x = std::move(i);
+			++i;
+		} catch (...) {
+			std::cout  << "Caught exception" << std::endl;
+		}
+
+		i.increment(ec);
+
 		i = fs::directory_iterator(fs::path("/tmp"));
 		for (auto & j : i)
 		{
 			CPPUNIT_ASSERT(paths.find(j) != paths.end());
 		}
 	}
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_directory_iterator);

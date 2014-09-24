@@ -29,7 +29,7 @@ DEFINE_BITMASK_OPERATORS(directory_options, unsigned int);
 
 class directory_iterator
 {
-public:
+ public:
 	typedef directory_entry         value_type;
 	typedef std::ptrdiff_t          difference_type;
 	typedef const directory_entry * pointer;
@@ -68,9 +68,10 @@ public:
 	{
 		std::error_code ec;
 		increment(ec);
-		// XXX - include directory path in exception
-		if (ec) throw filesystem_error("Could not advance directory cursor",
-		                               ec);
+
+		if (ec)
+			throw filesystem_error("Could not advance directory cursor",
+		                           m_pathname, ec);
 
 		return *this;
 	}
@@ -79,34 +80,22 @@ public:
 
 	bool operator == (const directory_iterator & other) const
 	{
-		if (m_entry.path().empty() && other.m_entry.path().empty())
-			return true;
-		else
-		{
-			// FIXME
-		}
-		return false;
+		return (m_entry.path().empty() && other.m_entry.path().empty());
 	}
 
 	bool operator != (const directory_iterator & other) const
 		{ return !(*this == other); }
 
  private:
-	static const DirCloseFunctor directory_closer;
-
-	std::shared_ptr<DIR> m_handle;
-	struct dirent        m_buffer;
-	directory_options    m_options;
-	directory_entry      m_entry;
-
-//	void readEntry(std::error_code & ec);
+	std::unique_ptr<DIR, DirCloseFunctor> m_handle;
+	struct dirent                         m_buffer;
+	directory_options                     m_options;
+	path                                  m_pathname;
+	directory_entry                       m_entry;
 };
 
 inline directory_iterator begin(directory_iterator iter) noexcept
 	{ return iter; }
-
-inline directory_iterator begin(directory_iterator && iter) noexcept
-	{ return std::forward<directory_iterator>(iter); }
 
 inline directory_iterator end(const directory_iterator &) noexcept
 	{ return directory_iterator(); }
