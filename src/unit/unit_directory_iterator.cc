@@ -1,4 +1,6 @@
 #include "../filesystem/path.h"
+#include "../filesystem/file_status.h"
+#include "../filesystem/fs_operations.h"
 #include "../filesystem/directory_iterator.h"
 
 #include <cstdio>
@@ -109,18 +111,57 @@ class Test_directory_iterator : public CppUnit::TestFixture
 
 	void random_tests()
 	{
-		fs::directory_iterator di(".");
-
-		if (config::verbose) putchar('\n');
-		for (auto & e : di)
+		for (const char * s : { ".", "/tmp", "/dev" })
 		{
-			if (config::verbose)
-				std::cout << "Found dirent: '" << e.path().c_str()
-				          << "\n\tstem = '" << e.path().stem().c_str()
-				          << "' ext = '" << e.path().extension().c_str()
-				          << "'\n";
+			fs::directory_iterator di(s);
 
-			CPPUNIT_ASSERT(e.path().has_filename());
+			if (config::verbose) putchar('\n');
+
+			for (auto & e : di)
+			{
+				if (config::verbose)
+					std::cout << "Found dirent: '" << e.path().c_str()
+					          << "\n\tstem = '" << e.path().stem().c_str()
+					          << "' ext = '" << e.path().extension().c_str()
+					          << "'\n";
+
+				CPPUNIT_ASSERT(  e.path().filename().string()
+				              == ( e.path().stem().string()
+				                 + e.path().extension().string()));
+
+				fs::file_status st = e.symlink_status();
+				uintmax_t links = fs::hard_link_count(e);
+				uintmax_t size = 0;
+
+				if (is_regular_file(st))
+				{
+					size = fs::file_size(e);
+				} else if (fs::is_symlink(e))
+				{
+					size = 0;
+				} else
+				{
+					CPPUNIT_ASSERT_THROW(fs::file_size(e),
+					                     fs::filesystem_error);
+				}
+
+				if (config::verbose)
+					std::cout << "\tNumber of links: " << links << '\n'
+					          << "\tSize: " << size << '\n';
+
+				CPPUNIT_ASSERT(fs::is_other(st)
+				              || fs::is_regular_file(st)
+				              || fs::is_directory(st)
+				              || fs::is_symlink(st));
+
+				if (  fs::is_block_file(st)
+				   || fs::is_character_file(st)
+				   || fs::is_fifo(st)
+				   || fs::is_socket(st))
+					CPPUNIT_ASSERT(fs::is_other(st));
+
+				CPPUNIT_ASSERT(e.path().has_filename());
+			}
 		}
 	}
 };
