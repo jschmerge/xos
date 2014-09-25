@@ -101,8 +101,8 @@ bool exists(const path & p, std::error_code & ec) noexcept;
 bool equivalent(const path & p1, const path & p2);
 bool equivalent(const path & p1, const path & p2,
                 std::error_code & ec) noexcept;
-
 #endif
+
 uintmax_t file_size(const path & p);
 uintmax_t file_size(const path & p, std::error_code & ec) noexcept;
 
@@ -151,19 +151,21 @@ void permissions(const path & p, perms prms, std::error_code & ec) noexcept;
 
 path read_symlink(const path & p);
 path read_symlink(const path & p, std::error_code & ec);
+#endif
 
 bool remove(const path & p);
 bool remove(const path & p, std::error_code & ec) noexcept;
 
+#if 0
 uintmax_t remove_all(const path & p);
 uintmax_t remove_all(const path & p, std::error_code & ec) noexcept;
 
 void rename(const path & from, const path & to);
 void rename(const path & from, const path & to, std::error_code & ec) noexcept;
+#endif
 
 void resize_file(const path & p, uintmax_t size);
 void resize_file(const path & p, uintmax_t size, std::error_code & ec) noexcept;
-#endif
 
 space_info space(const path & p);
 space_info space(const path & p, std::error_code & ec) noexcept;

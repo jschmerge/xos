@@ -176,6 +176,41 @@ bool is_symlink(const path & p)
 bool is_symlink(const path & p, std::error_code & ec) noexcept
 	{ return is_symlink(symlink_status(p, ec)); }
 
+bool remove(const path & p)
+{
+	std::error_code ec;
+	bool rc = remove(p, ec);
+	if (!rc || ec) throw filesystem_error("Could not remove path", p, ec);
+	return rc;
+}
+
+bool remove(const path & p, std::error_code & ec) noexcept
+{
+	int rc = 0;
+	file_status st;
+	st = symlink_status(p, ec);
+
+	if (ec) return false;
+	rc = is_directory(st) ? rmdir(p.c_str()) : unlink(p.c_str());
+	if (rc != 0) ec = make_errno_ec();
+	return (rc == 0);
+}
+
+void resize_file(const path & p, uintmax_t size)
+{
+	std::error_code ec;
+	resize_file(p, size, ec);
+	if (ec)
+		throw filesystem_error("Could not trucate/resize file", p, size);
+}
+
+void resize_file(const path & p, uintmax_t size,
+                 std::error_code & ec) noexcept
+{
+	if (truncate(p.c_str(), size) != 0)
+		ec = make_errno_ec();
+}
+
 space_info space(const path & p)
 {
 	std::error_code ec;
@@ -191,7 +226,6 @@ space_info space(const path & p, std::error_code & ec) noexcept
 	space_info info = { static_cast<uintmax_t>(-1),
 	                    static_cast<uintmax_t>(-1),
 	                    static_cast<uintmax_t>(-1) };
-
 
 	memset(&stvfs, 0, sizeof(stvfs));
 
