@@ -200,8 +200,7 @@ void resize_file(const path & p, uintmax_t size)
 {
 	std::error_code ec;
 	resize_file(p, size, ec);
-	if (ec)
-		throw filesystem_error("Could not trucate/resize file", p, size);
+	if (ec) throw filesystem_error("Could not trucate/resize file", p, ec);
 }
 
 void resize_file(const path & p, uintmax_t size,
