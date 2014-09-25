@@ -15,6 +15,7 @@ class Test_directory_iterator : public CppUnit::TestFixture
 	CPPUNIT_TEST(constructors);
 	CPPUNIT_TEST(assignment);
 	CPPUNIT_TEST(iteration);
+	CPPUNIT_TEST(random_tests);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -106,6 +107,22 @@ class Test_directory_iterator : public CppUnit::TestFixture
 		}
 	}
 
+	void random_tests()
+	{
+		fs::directory_iterator di(".");
+
+		if (config::verbose) putchar('\n');
+		for (auto & e : di)
+		{
+			if (config::verbose)
+				std::cout << "Found dirent: '" << e.path().c_str()
+				          << "\n\tstem = '" << e.path().stem().c_str()
+				          << "' ext = '" << e.path().extension().c_str()
+				          << "'\n";
+
+			CPPUNIT_ASSERT(e.path().has_filename());
+		}
+	}
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_directory_iterator);

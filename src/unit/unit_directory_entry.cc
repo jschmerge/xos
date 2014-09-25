@@ -16,6 +16,7 @@ class Test_directory_entry : public CppUnit::TestFixture
 	CPPUNIT_TEST(replace_filename);
 	CPPUNIT_TEST(status);
 	CPPUNIT_TEST(symlink_status);
+	CPPUNIT_TEST(comparisons);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -73,11 +74,28 @@ class Test_directory_entry : public CppUnit::TestFixture
 		return de.status().type();
 	}
 
-	static fs::file_type symStatus(const char * s)
+	static fs::file_type ecStatus(const char * s)
 	{
 		std::error_code ec;
 		fs::directory_entry de{fs::path(s)};
 		auto rv = de.status(ec).type();
+		CPPUNIT_ASSERT(!ec);
+		return rv;
+	};
+
+	static fs::file_type symStat(const char * s)
+	{
+		fs::directory_entry de{fs::path(s)};
+		if (config::verbose)
+			std::cout << s << std::endl;
+		return de.symlink_status().type();
+	};
+
+	static fs::file_type ecSymStat(const char * s)
+	{
+		std::error_code ec;
+		fs::directory_entry de{fs::path(s)};
+		auto rv = de.symlink_status(ec).type();
 		CPPUNIT_ASSERT(!ec);
 		return rv;
 	};
@@ -98,7 +116,7 @@ class Test_directory_entry : public CppUnit::TestFixture
 		for (auto & e : names)
 		{
 			CPPUNIT_ASSERT(e.result == apply_function(regStatus, e.operands));
-			CPPUNIT_ASSERT(e.result == apply_function(symStatus, e.operands));
+			CPPUNIT_ASSERT(e.result == apply_function(ecStatus, e.operands));
 		}
 	}
 
@@ -113,29 +131,87 @@ class Test_directory_entry : public CppUnit::TestFixture
 			{ "/dev/log", fs::file_type::socket },
 		};
 
-		auto f1 = [] (const char * s) -> fs::file_type {
-			fs::directory_entry de{fs::path(s)};
-			if (config::verbose)
-				std::cout << s << std::endl;
-			return de.symlink_status().type();
-		};
-
-		auto f2 = [] (const char * s) -> fs::file_type {
-			std::error_code ec;
-			fs::directory_entry de{fs::path(s)};
-			auto rv = de.symlink_status(ec).type();
-			CPPUNIT_ASSERT(!ec);
-			return rv;
-		};
-
 		if (config::verbose) putchar('\n');
 
 		for (auto & e : names)
 		{
-			CPPUNIT_ASSERT(e.result == apply_function(f1, e.operands));
-			CPPUNIT_ASSERT(e.result == apply_function(f2, e.operands));
+			CPPUNIT_ASSERT(e.result == apply_function(symStat, e.operands));
+			CPPUNIT_ASSERT(e.result == apply_function(ecSymStat, e.operands));
 		}
 	}
+
+	void comparisons()
+	{
+		typedef fs::directory_entry DE;
+
+		std::vector<args_and_result<bool, const fs::directory_entry,
+		                            const fs::directory_entry>> names = {
+			{ DE("a"), DE("a"), true },
+			{ DE("a"), DE("b"), false },
+			{ DE("b"), DE("a"), false },
+			{ DE("b"), DE("b"), true },
+		};
+
+		std::vector<args_and_result<bool, const fs::directory_entry,
+		                            const fs::directory_entry>> lt_names = {
+			{ DE("a"), DE("a"), false },
+			{ DE("a"), DE("b"), true },
+			{ DE("b"), DE("a"), false },
+			{ DE("b"), DE("b"), false },
+		};
+
+		std::vector<args_and_result<bool, const fs::directory_entry,
+		                            const fs::directory_entry>> gt_names = {
+			{ DE("a"), DE("a"), false },
+			{ DE("a"), DE("b"), false },
+			{ DE("b"), DE("a"), true },
+			{ DE("b"), DE("b"), false },
+		};
+
+		for (auto & e : names)
+		{
+			auto eq = [] (const fs::directory_entry & a,
+			              const fs::directory_entry & b) -> bool
+				{ return (a == b); };
+
+			auto ne = [] (const fs::directory_entry & a,
+			              const fs::directory_entry & b) -> bool
+				{ return (a != b); };
+
+			CPPUNIT_ASSERT(e.result == apply_function(eq, e.operands));
+			CPPUNIT_ASSERT(e.result != apply_function(ne, e.operands));
+
+		}
+
+		for (auto & e : lt_names)
+		{
+			auto lt = [] (const fs::directory_entry & a,
+			              const fs::directory_entry & b) -> bool
+				{ return (a < b); };
+
+			auto ge = [] (const fs::directory_entry & a,
+			              const fs::directory_entry & b) -> bool
+				{ return (a >= b); };
+
+			CPPUNIT_ASSERT(e.result == apply_function(lt, e.operands));
+			CPPUNIT_ASSERT(e.result != apply_function(ge, e.operands));
+		}
+
+		for (auto & e : gt_names)
+		{
+			auto gt = [] (const fs::directory_entry & a,
+			              const fs::directory_entry & b) -> bool
+				{ return (a > b); };
+
+			auto le = [] (const fs::directory_entry & a,
+			              const fs::directory_entry & b) -> bool
+				{ return (a <= b); };
+
+			CPPUNIT_ASSERT(e.result == apply_function(gt, e.operands));
+			CPPUNIT_ASSERT(e.result != apply_function(le, e.operands));
+		}
+	}
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_directory_entry);
