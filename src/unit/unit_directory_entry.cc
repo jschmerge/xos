@@ -140,6 +140,19 @@ class Test_directory_entry : public CppUnit::TestFixture
 		}
 	}
 
+	static bool eq(const fs::directory_entry & a,
+	               const fs::directory_entry & b) { return (a == b); };
+	static bool ne(const fs::directory_entry & a,
+	               const fs::directory_entry & b) { return (a != b); };
+	static bool lt(const fs::directory_entry & a,
+	               const fs::directory_entry & b) { return (a < b); };
+	static bool ge(const fs::directory_entry & a,
+	               const fs::directory_entry & b) { return (a >= b); };
+	static bool gt(const fs::directory_entry & a,
+	               const fs::directory_entry & b) { return (a > b); };
+	static bool le(const fs::directory_entry & a,
+	               const fs::directory_entry & b) { return (a <= b); };
+
 	void comparisons()
 	{
 		typedef fs::directory_entry DE;
@@ -170,43 +183,18 @@ class Test_directory_entry : public CppUnit::TestFixture
 
 		for (auto & e : names)
 		{
-			auto eq = [] (const fs::directory_entry & a,
-			              const fs::directory_entry & b) -> bool
-				{ return (a == b); };
-
-			auto ne = [] (const fs::directory_entry & a,
-			              const fs::directory_entry & b) -> bool
-				{ return (a != b); };
-
 			CPPUNIT_ASSERT(e.result == apply_function(eq, e.operands));
 			CPPUNIT_ASSERT(e.result != apply_function(ne, e.operands));
-
 		}
 
 		for (auto & e : lt_names)
 		{
-			auto lt = [] (const fs::directory_entry & a,
-			              const fs::directory_entry & b) -> bool
-				{ return (a < b); };
-
-			auto ge = [] (const fs::directory_entry & a,
-			              const fs::directory_entry & b) -> bool
-				{ return (a >= b); };
-
 			CPPUNIT_ASSERT(e.result == apply_function(lt, e.operands));
 			CPPUNIT_ASSERT(e.result != apply_function(ge, e.operands));
 		}
 
 		for (auto & e : gt_names)
 		{
-			auto gt = [] (const fs::directory_entry & a,
-			              const fs::directory_entry & b) -> bool
-				{ return (a > b); };
-
-			auto le = [] (const fs::directory_entry & a,
-			              const fs::directory_entry & b) -> bool
-				{ return (a <= b); };
-
 			CPPUNIT_ASSERT(e.result == apply_function(gt, e.operands));
 			CPPUNIT_ASSERT(e.result != apply_function(le, e.operands));
 		}
