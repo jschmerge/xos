@@ -45,7 +45,6 @@ clean:
 	$(MAKE) -C filesystem clean
 	$(MAKE) -C unit clean
 	rm -f *.info
-	rm -rf coverage-report
 
 realclean:
 	$(MAKE) -C filesystem realclean
