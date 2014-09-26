@@ -79,6 +79,85 @@ void current_path(const path & p, std::error_code & ec) noexcept
 		ec = make_errno_ec();
 }
 
+bool create_directories(const path & p)
+{
+	std::error_code ec;
+	bool rc = create_directories(p, ec);
+	if (ec)
+		throw filesystem_error("Could not create directory and ancestors",
+	                           p, ec);
+	return rc;
+}
+
+bool create_directories(const path & p, std::error_code & ec) noexcept
+{
+	path tmp_path;
+	size_t creation_count = 0;
+
+	for (const auto & elem : p)
+	{
+		tmp_path /= elem;
+
+		if (create_directory(tmp_path, ec))
+			++creation_count;
+
+		if (ec)
+			break;
+	}
+
+	return (creation_count > 0);
+}
+
+bool create_directory(const path & p)
+{
+	std::error_code ec;
+	bool rc = create_directory(p, ec);
+	if (ec) throw filesystem_error("Could not create directory", p, ec);
+	return rc;
+}
+
+bool create_directory(const path & p, std::error_code & ec,
+                      perms dir_perms) noexcept
+{
+	bool rc = false;
+	if (mkdir(p.c_str(), static_cast<mode_t>(dir_perms)) == 0)
+	{
+		rc = true;
+	} else if (errno == EEXIST) // failure due to existence is not error
+	{
+		if (is_directory(p, ec))
+			ec.clear();
+		else
+			ec = make_errno_ec(EEXIST);
+	} else
+	{
+		ec = make_errno_ec();
+	}
+
+	return rc;
+}
+
+bool create_directory(const path & p, std::error_code & ec) noexcept
+{
+	return create_directory(p, ec, perms::all);
+}
+
+bool create_directory(const path & p, const path & template_path)
+{
+	std::error_code ec;
+	bool rc = create_directory(p, template_path, ec);
+	if (ec) throw filesystem_error("Could not create directory", p, ec);
+	return rc;
+}
+
+bool create_directory(const path & p, const path & template_path,
+                      std::error_code & ec) noexcept
+{
+	file_status st = status(template_path, ec);
+	if (ec) return false;
+	return create_directory(p, ec, st.permissions() & perms::mask);
+}
+
 void create_directory_symlink(const path & oldpath, const path & newpath)
 {
 	create_symlink(oldpath, newpath);

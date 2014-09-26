@@ -2,6 +2,9 @@
 #include "../filesystem/file_status.h"
 #include "../filesystem/path.h"
 
+#include <unistd.h>
+
+#include <string>
 #include <functional>
 
 #include "cppunit-header.h"
@@ -13,6 +16,7 @@ class Test_fs_operations : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE(Test_fs_operations);
 	CPPUNIT_TEST(get_current_path);
 	CPPUNIT_TEST(set_current_path);
+	CPPUNIT_TEST(create_directories);
 	CPPUNIT_TEST(status);
 	CPPUNIT_TEST(symlink_status);
 	CPPUNIT_TEST(temp_directory_path);
@@ -92,6 +96,27 @@ class Test_fs_operations : public CppUnit::TestFixture
 			non_accessible_file);
 
 		CPPUNIT_ASSERT_NO_THROW(fs::current_path(fs::temp_directory_path()));
+	}
+
+	void create_directories()
+	{
+		bool rc = false;
+		std::error_code ec;
+		fs::path p{"/usr/local/bin"};
+		rc = fs::create_directories(p, ec);
+		if (ec)
+			std::cerr << "Error on /usr/local path = "
+			          << ec.message() << std::endl;
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(rc == false);
+
+		ec.clear();
+		fs::path tmp{"/tmp/foo" + std::to_string(getpid()) + "/bar"};
+		rc = fs::create_directories(tmp, ec);
+		if (ec)
+			std::cerr << "Error on temp path = " << ec.message() << std::endl;
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(rc == true);
 	}
 
 	void status()

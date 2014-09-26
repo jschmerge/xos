@@ -11,7 +11,6 @@
 namespace filesystem {
 inline namespace v1 {
 
-
 class file_status;
 
 struct space_info
@@ -72,6 +71,7 @@ bool copy_file(const path & from, const path & to, copy_options options,
 void copy_symlink(const path & existing, const path & newborn);
 void copy_symlink(const path & existing, const path & newborn,
                   std::error_code & ec) noexcept;
+#endif
 
 bool create_directories(const path & p);
 bool create_directories(const path & p, std::error_code & ec) noexcept;
@@ -82,7 +82,6 @@ bool create_directory(const path & p, std::error_code & ec) noexcept;
 bool create_directory(const path & p, const path & attributes);
 bool create_directory(const path & p, const path & attributes,
                       std::error_code & ec) noexcept;
-#endif
 
 void create_directory_symlink(const path & to, const path & new_symlink);
 void create_directory_symlink(const path & to, const path & new_symlink,
