@@ -1,4 +1,5 @@
 #include "fs_operations.h"
+#include "directory_iterator.h"
 #include "filesystem_error.h"
 
 #include <sys/stat.h>
@@ -78,6 +79,42 @@ void current_path(const path & p, std::error_code & ec) noexcept
 		ec = make_errno_ec();
 }
 
+bool equivalent(const path & p1, const path & p2)
+{
+	std::error_code ec;
+	bool rc = equivalent(p1, p2, ec);
+	if (ec) throw filesystem_error("Could not determine equivalence",
+	                               p1, p2, ec);
+	return rc;
+}
+
+bool equivalent(const path & p1, const path & p2,
+                std::error_code & ec) noexcept
+{
+	bool rc = false;
+	struct stat st1, st2;
+	memset(&st1, 0, sizeof(st1));
+	memset(&st2, 0, sizeof(st2));
+	if ((stat(p1.c_str(), &st1) == 0) && (stat(p2.c_str(), &st2) == 0))
+	{
+		if ((st1.st_dev == st2.st_dev) && (st1.st_ino == st2.st_ino))
+			rc = true;
+	} else
+		ec = make_errno_ec();
+
+	return rc;
+}
+
+bool exists(const path & p)
+{
+	return exists(status(p));
+}
+
+bool exists(const path & p, std::error_code & ec) noexcept
+{
+	return exists(status(p, ec));
+}
+
 uintmax_t file_size(const path & p)
 {
 	std::error_code  ec;
@@ -146,6 +183,29 @@ bool is_directory(const path & p)
 bool is_directory(const path & p, std::error_code & ec) noexcept
 	{ return is_directory(status(p, ec)); }
 
+bool is_empty(const path & p)
+{
+	std::error_code ec;
+	bool rc = is_empty(p, ec);
+	if (ec) throw filesystem_error("Could not get size of directory", p, ec);
+	return rc;
+}
+
+bool is_empty(const path & p, std::error_code & ec) noexcept
+{
+	bool rc = false;
+	if (is_directory(p, ec))
+	{
+		rc = (directory_iterator(p) == directory_iterator());
+	} else
+	{
+		rc = (file_size(p, ec) == 0);
+	}
+
+	if (ec) rc = false;
+	return rc;
+}
+
 bool is_fifo(const path & p)
 	{ return is_fifo(status(p)); }
 
@@ -176,6 +236,30 @@ bool is_symlink(const path & p)
 bool is_symlink(const path & p, std::error_code & ec) noexcept
 	{ return is_symlink(symlink_status(p, ec)); }
 
+path read_symlink(const path & p)
+{
+	std::error_code ec;
+	path retpath = read_symlink(p, ec);
+	if (ec) throw filesystem_error("Could not read symlink", p, ec);
+	return retpath;
+}
+
+path read_symlink(const path & p, std::error_code & ec)
+{
+	char buffer[PATH_MAX];
+	ssize_t sz;
+	path ret;
+
+	sz = readlink(p.c_str(), buffer, PATH_MAX);
+
+	if (sz <= 0)
+		ec = make_errno_ec();
+	else
+		ret = buffer;
+
+	return ret;
+}
+
 bool remove(const path & p)
 {
 	std::error_code ec;
@@ -188,8 +272,8 @@ bool remove(const path & p, std::error_code & ec) noexcept
 {
 	int rc = 0;
 	file_status st;
+	ec.clear();
 	st = symlink_status(p, ec);
-
 	if (ec) return false;
 	rc = is_directory(st) ? rmdir(p.c_str()) : unlink(p.c_str());
 	if (rc != 0) ec = make_errno_ec();

@@ -94,6 +94,7 @@ void create_hard_link(const path & to, const path & new_hard_link,
 void create_symlink(const path & to, const path & new_symlink);
 void create_symlink(const path & to, const path & new_symlink,
                     std::error_code & ec) noexcept;
+#endif
 
 bool exists(const path & p);
 bool exists(const path & p, std::error_code & ec) noexcept;
@@ -101,7 +102,6 @@ bool exists(const path & p, std::error_code & ec) noexcept;
 bool equivalent(const path & p1, const path & p2);
 bool equivalent(const path & p1, const path & p2,
                 std::error_code & ec) noexcept;
-#endif
 
 uintmax_t file_size(const path & p);
 uintmax_t file_size(const path & p, std::error_code & ec) noexcept;
@@ -118,10 +118,8 @@ bool is_character_file(const path & p, std::error_code & ec) noexcept;
 bool is_directory(const path & p);
 bool is_directory(const path & p, std::error_code & ec) noexcept;
 
-#if 0
 bool is_empty(const path & p);
 bool is_empty(const path & p, std::error_code & ec) noexcept;
-#endif
 
 bool is_fifo(const path & p);
 bool is_fifo(const path & p, std::error_code & ec) noexcept;
@@ -148,10 +146,10 @@ void last_write_time(const path & p, file_time_type new_time,
 
 void permissions(const path & p, perms prms);
 void permissions(const path & p, perms prms, std::error_code & ec) noexcept;
+#endif
 
 path read_symlink(const path & p);
 path read_symlink(const path & p, std::error_code & ec);
-#endif
 
 bool remove(const path & p);
 bool remove(const path & p, std::error_code & ec) noexcept;
