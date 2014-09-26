@@ -1,0 +1,6 @@
+15.6 Create directories [fs.op.create_directories]
+--------------------------------------------------
+ if either version succeed in creating a directory, but not all directories
+ in specified path, should the work be undone?
+
+
