@@ -31,15 +31,6 @@ inline namespace v1 {
 	template <class InputIterator>
 	path u8path(InputIterator first, InputIterator last);
 
-#if 0
-	enum class directory_options;
-	class directory_entry;
-	class directory_iterator;
-	// enable directory_iterator range-based for statements
-	directory_iterator begin(directory_iterator iter) noexcept;
-	directory_iterator end(const directory_iterator &) noexcept;
-#endif
-
 } /*v1*/
 }/*filesystem*/
 
