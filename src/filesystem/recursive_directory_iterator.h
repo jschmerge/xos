@@ -1,19 +1,16 @@
 #ifndef GUARD_RECURSIVE_DIRECTORY_ITERATOR_H
 #define GUARD_RECURSIVE_DIRECTORY_ITERATOR_H 1
 
+#include <iterator>
 #include "directory_iterator.h"
 
 namespace filesystem {
 inline namespace v1 {
 
 class recursive_directory_iterator
+  : public std::iterator<std::input_iterator_tag, directory_entry>
 {
-public:
-	typedef directory_entry         value_type;
-	typedef ptrdiff_t               difference_type;
-	typedef const directory_entry * pointer;
-	typedef const directory_entry & reference;
-	typedef std::input_iterator_tag iterator_category;
+ public:
 
 	// constructors and destructor
 	recursive_directory_iterator() noexcept;
@@ -33,17 +30,6 @@ public:
 
 	~recursive_directory_iterator();
 
-	// observers
-	directory_options options() const;
-
-	int depth() const;
-
-	bool recursion_pending() const;
-
-	const directory_entry& operator*() const;
-
-	const directory_entry* operator->() const;
-
 	// modifiers
 	recursive_directory_iterator &
 	  operator = (const recursive_directory_iterator & rhs);
@@ -58,6 +44,17 @@ public:
 	void pop();
 
 	void disable_recursion_pending();
+	// observers
+	directory_options options() const;
+
+	int depth() const;
+
+	bool recursion_pending() const;
+
+	const directory_entry& operator*() const;
+
+	const directory_entry* operator->() const;
+
 };
 
 
