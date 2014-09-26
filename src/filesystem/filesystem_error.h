@@ -40,6 +40,9 @@ class filesystem_error : public std::system_error
 inline std::error_code make_errno_ec()
 	{ return std::error_code(errno, std::system_category()); }
 
+inline std::error_code make_errno_ec(int val)
+	{ return std::error_code(val, std::system_category()); }
+
 inline filesystem_error make_fs_error(const std::string & msg, const path & p)
 	{ return filesystem_error(msg, p, make_errno_ec()); }
 
