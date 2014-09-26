@@ -79,6 +79,49 @@ void current_path(const path & p, std::error_code & ec) noexcept
 		ec = make_errno_ec();
 }
 
+void create_directory_symlink(const path & oldpath, const path & newpath)
+{
+	create_symlink(oldpath, newpath);
+}
+
+void create_directory_symlink(const path & oldpath, const path & newpath,
+                              std::error_code & ec) noexcept
+{
+	create_symlink(oldpath, newpath, ec);
+}
+
+void create_hard_link(const path & oldpath, const path & newpath)
+{
+	std::error_code ec;
+	create_hard_link(oldpath, newpath, ec);
+	if (ec)
+		throw filesystem_error("Could not create hard link",
+		                       oldpath, newpath, ec);
+}
+
+void create_hard_link(const path & oldpath, const path & newpath,
+                      std::error_code & ec) noexcept
+{
+	if (link(oldpath.c_str(), newpath.c_str()))
+		ec = make_errno_ec();
+}
+
+void create_symlink(const path & oldpath, const path & newpath)
+{
+	std::error_code ec;
+	create_symlink(oldpath, newpath, ec);
+	if (ec)
+		throw filesystem_error("Could not create symlink",
+		                       oldpath, newpath, ec);
+}
+
+void create_symlink(const path & oldpath, const path & newpath,
+                    std::error_code & ec) noexcept
+{
+	if (symlink(oldpath.c_str(), newpath.c_str()) != 0)
+		ec = make_errno_ec();
+}
+
 bool equivalent(const path & p1, const path & p2)
 {
 	std::error_code ec;

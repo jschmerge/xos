@@ -82,6 +82,7 @@ bool create_directory(const path & p, std::error_code & ec) noexcept;
 bool create_directory(const path & p, const path & attributes);
 bool create_directory(const path & p, const path & attributes,
                       std::error_code & ec) noexcept;
+#endif
 
 void create_directory_symlink(const path & to, const path & new_symlink);
 void create_directory_symlink(const path & to, const path & new_symlink,
@@ -94,7 +95,6 @@ void create_hard_link(const path & to, const path & new_hard_link,
 void create_symlink(const path & to, const path & new_symlink);
 void create_symlink(const path & to, const path & new_symlink,
                     std::error_code & ec) noexcept;
-#endif
 
 bool exists(const path & p);
 bool exists(const path & p, std::error_code & ec) noexcept;
