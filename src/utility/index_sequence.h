@@ -22,17 +22,17 @@ struct index_sequence_generator<0, SEQ...>
 
 /// helper for apply_function
 template <typename Func, typename ... Args, std::size_t ... IDX>
-auto dispatch_function(Func f, std::tuple<Args...> & args,
-                       const index_sequence<IDX...> &)
-	-> typename std::result_of<Func(Args &...)>::type
+auto dispatch_function(Func f, std::tuple<Args ...> & args,
+                       const index_sequence<IDX ...> &)
+	-> typename std::result_of<Func(Args & ...)>::type
 {
 	return f(std::get<IDX>(args)...);
 }
 
 /// apply_function calls a function with the arguments supplied as a tuple
-template <typename Func, typename ...Args>
+template <typename Func, typename ... Args>
 auto apply_function(Func f, std::tuple<Args...> & args)
-	-> typename std::result_of<Func(Args&...)>::type
+	-> typename std::result_of<Func(Args & ...)>::type
 {
 	typename index_sequence_generator<sizeof...(Args)>::type indexes;
 	return dispatch_function(f, args, indexes);
