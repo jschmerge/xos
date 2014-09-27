@@ -154,14 +154,12 @@ bool is_symlink(const path & p, std::error_code & ec) noexcept;
 file_time_type last_write_time(const path & p);
 file_time_type last_write_time(const path & p, std::error_code & ec) noexcept;
 
-#if 0
 void last_write_time(const path & p, file_time_type new_time);
 void last_write_time(const path & p, file_time_type new_time,
                       std::error_code & ec) noexcept;
 
 void permissions(const path & p, perms prms);
 void permissions(const path & p, perms prms, std::error_code & ec) noexcept;
-#endif
 
 path read_symlink(const path & p);
 path read_symlink(const path & p, std::error_code & ec);
@@ -189,10 +187,8 @@ file_status status(const path & p, std::error_code & ec) noexcept;
 file_status symlink_status(const path & p);
 file_status symlink_status(const path & p, std::error_code & ec) noexcept;
 
-#if 0
 path system_complete(const path & p);
 path system_complete(const path & p, std::error_code & ec);
-#endif
 
 path temp_directory_path();
 path temp_directory_path(std::error_code & ec);

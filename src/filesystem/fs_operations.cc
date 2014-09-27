@@ -5,6 +5,7 @@
 
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <climits> // PATH_MAX is defined through this
@@ -475,6 +476,60 @@ file_time_type last_write_time(const path & p, std::error_code & ec) noexcept
 }
 
 
+void last_write_time(const path & p, file_time_type new_time)
+{
+	std::error_code ec;
+	last_write_time(p, new_time, ec);
+	if (ec) throw filesystem_error("Could not set modification time", p, ec);
+}
+
+void last_write_time(const path & p, file_time_type new_time,
+                      std::error_code & ec) noexcept
+{
+	struct timespec times[2] = { { 0, UTIME_OMIT }, { 0, 0 } };
+	times[1] = to_timespec(new_time);
+
+	if (utimensat(AT_FDCWD, p.c_str(), times, 0) != 0)
+		ec = make_errno_ec();
+}
+
+void permissions(const path & p, perms prms)
+{
+	std::error_code ec;
+	permissions(p, prms);
+	if (ec) throw filesystem_error("Could not set permissions", p, ec);
+}
+
+void permissions(const path & p, perms prms, std::error_code & ec) noexcept
+{
+	perms newperms = status(p, ec).permissions();
+
+	if (ec) return; // bail out if we couldn't stat
+
+	if ((prms & perms::add_remove_mask) == perms::add_perms)
+	{
+		newperms |= (prms & perms::mask);
+
+	} else if ((prms & perms::add_remove_mask) == perms::remove_perms)
+	{
+		newperms &= ~(prms & perms::mask);
+
+	} else if ((prms & perms::add_remove_mask) == perms::none)
+	{
+		newperms = (prms & perms::mask);
+	} else
+	{
+		// both add and remove are set
+		ec = make_errno_ec(EINVAL);
+		return;
+	}
+
+	if (fchmodat(AT_FDCWD, p.c_str(), static_cast<mode_t>(newperms), 0) != 0)
+	{
+		ec = make_errno_ec();
+	}
+}
+
 path read_symlink(const path & p)
 {
 	std::error_code ec;
@@ -620,6 +675,17 @@ file_status symlink_status(const path & p, std::error_code & ec) noexcept
 		ec = make_errno_ec();
 
 	return ret;
+}
+
+path system_complete(const path & p)
+{
+	return absolute(p, current_path());
+}
+
+path system_complete(const path & p, std::error_code & ec)
+{
+	ec.clear();
+	return absolute(p, current_path());
 }
 
 path temp_directory_path()
