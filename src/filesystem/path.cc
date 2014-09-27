@@ -216,7 +216,19 @@ int path::compare(const value_type * s) const
 //////////////////////////////////////////////////////////////////////
 // decomposition
 // path path::root_path() const;
-// path path::relative_path() const;
+
+path path::relative_path() const
+{
+	path ret;
+	if (pathname[0] == preferred_separator)
+	{
+		string_type::size_type pos
+		  = pathname.find_first_not_of(preferred_separator);
+
+		ret = pathname.substr(pos, string_type::npos);
+	}
+	return ret;
+}
 
 path path::root_name() const
 {

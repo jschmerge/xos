@@ -48,30 +48,46 @@ path current_path(std::error_code & ec);
 void current_path(const path & p);
 void current_path(const path & p, std::error_code & ec) noexcept;
 
-#if 0
 path absolute(const path & p, const path & base = current_path());
+
+#if 0
 path canonical(const path & p, const path & base, std::error_code & ec);
 path canonical(const path & p, std::error_code & ec);
 path canonical(const path & p, const path & base = current_path());
 
-void copy(const path & from, const path & to);
-void copy(const path & from, const path & to,
-          std::error_code & ex) noexcept;
+void copy(const path & from, const path & to)
+{
+	copy(from, to, copy_options::none);
+}
+
+void copy(const path & from, const path & to, std::error_code & ex) noexcept
+{
+	copy(from, to, copy_options::none, ec);
+}
+
 void copy(const path & from, const path & to, copy_options options);
 void copy(const path & from, const path & to, copy_options options,
           std::error_code & ex) noexcept;
 
 bool copy_file(const path & from, const path & to);
+{
+	return copy_file(from, to, copy_options::none);
+}
+
 bool copy_file(const path & from, const path & to,
                std::error_code & ec) noexcept;
+{
+	return copy_file(from, to, copy_options::none, ec);
+}
+
 bool copy_file(const path & from, const path & to, copy_options options);
 bool copy_file(const path & from, const path & to, copy_options options,
                std::error_code & ec) noexcept;
+#endif
 
 void copy_symlink(const path & existing, const path & newborn);
 void copy_symlink(const path & existing, const path & newborn,
                   std::error_code & ec) noexcept;
-#endif
 
 bool create_directories(const path & p);
 bool create_directories(const path & p, std::error_code & ec) noexcept;
@@ -135,10 +151,10 @@ bool is_socket(const path & p, std::error_code & ec) noexcept;
 bool is_symlink(const path & p);
 bool is_symlink(const path & p, std::error_code & ec) noexcept;
 
-#if 0
 file_time_type last_write_time(const path & p);
 file_time_type last_write_time(const path & p, std::error_code & ec) noexcept;
 
+#if 0
 void last_write_time(const path & p, file_time_type new_time);
 void last_write_time(const path & p, file_time_type new_time,
                       std::error_code & ec) noexcept;

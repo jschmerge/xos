@@ -1,6 +1,7 @@
 #include "fs_operations.h"
 #include "directory_iterator.h"
 #include "filesystem_error.h"
+#include "../time/timeutil.h"
 
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -40,6 +41,39 @@ inline constexpr perms st_mode_to_perms(mode_t m)
 	       | ( (m & S_ISVTX) ? perms::sticky_bit : perms::none ) );
 }
 
+// Note: base defaults to current_path()
+//
+// Also note, logic here is copied straight from thruth table in
+// draft N4100 - deserves testing
+// ALSO NOTE: root_name() & friends are largely untested
+path absolute(const path & p, const path & base)
+{
+	path ret;
+	if (p.has_root_name())
+	{
+		if (p.has_root_directory())
+		{
+			ret = p;
+		} else
+		{
+			ret = p.root_name()
+			      / absolute(base).root_directory()
+			      / absolute(base).relative_path()
+			      / p.relative_path();
+		}
+	} else
+	{
+		if (p.has_root_directory())
+		{
+			ret = absolute(base).root_name() / p;
+		} else
+		{
+			ret = absolute(base) / p;
+		}
+	}
+	return ret;
+}
+
 path current_path()
 {
 	std::error_code ec;
@@ -77,6 +111,22 @@ void current_path(const path & p, std::error_code & ec) noexcept
 
 	if (chdir(p.c_str()) != 0)
 		ec = make_errno_ec();
+}
+
+void copy_symlink(const path & from, const path & to)
+{
+	std::error_code ec;
+	copy_symlink(from, to, ec);
+	if (ec) throw filesystem_error("Could not copy symlink", from, to, ec);
+}
+
+void copy_symlink(const path & from, const path & to,
+                  std::error_code & ec) noexcept
+{
+	path p = read_symlink(from, ec);
+
+	if (!ec)
+		create_symlink(p, to, ec);
 }
 
 bool create_directories(const path & p)
@@ -357,6 +407,33 @@ bool is_symlink(const path & p)
 
 bool is_symlink(const path & p, std::error_code & ec) noexcept
 	{ return is_symlink(symlink_status(p, ec)); }
+
+file_time_type last_write_time(const path & p)
+{
+	std::error_code ec;
+	file_time_type ret = last_write_time(p, ec);
+	if (ec)
+		throw filesystem_error("Could not read file modification time",
+		                       p, ec);
+	return ret;
+}
+
+file_time_type last_write_time(const path & p, std::error_code & ec) noexcept
+{
+	struct stat st;
+	file_time_type ret{file_time_type::min()};
+
+	ec.clear();
+
+	if (stat(p.c_str(), &st) == 0)
+		ret = from_timespec<file_time_type::clock,
+		                    file_time_type::duration>(st.st_mtim);
+	else
+		ec = make_errno_ec();
+
+	return ret;
+}
+
 
 path read_symlink(const path & p)
 {

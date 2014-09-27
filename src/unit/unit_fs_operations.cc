@@ -19,6 +19,7 @@ class Test_fs_operations : public CppUnit::TestFixture
 	CPPUNIT_TEST(create_directories);
 	CPPUNIT_TEST(status);
 	CPPUNIT_TEST(symlink_status);
+	CPPUNIT_TEST(last_write_time);
 	CPPUNIT_TEST(temp_directory_path);
 	CPPUNIT_TEST_SUITE_END();
 
@@ -172,6 +173,14 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(
 			s = fs::symlink_status(non_accessible_file, ec));
 		CPPUNIT_ASSERT(ec && s.type() == fs::file_type::none);
+	}
+
+	void last_write_time()
+	{
+		fs::path p{"/etc/passwd"};
+		auto t0 = fs::file_time_type::min();
+		auto tp = fs::last_write_time(p);
+		CPPUNIT_ASSERT(tp > t0);
 	}
 
 	void temp_directory_path()

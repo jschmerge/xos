@@ -180,8 +180,9 @@ class path
 
 	path & replace_extension(const path & replacement = path());
 	path root_path() const;
-	path relative_path() const;
 #endif
+
+	path relative_path() const;
 	path stem() const;
 	path extension() const;
 
