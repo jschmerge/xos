@@ -47,8 +47,12 @@ enum class perms : unsigned int
 	mask             = all | set_uid | set_gid | sticky_bit,
 
 	unknown          = 0xffff,
+
 	add_perms        = 0x10000,
 	remove_perms     = 0x20000,
+
+	add_remove_mask  = 0x30000,
+
 	resolve_symlinks = 0x40000,
 };
 
