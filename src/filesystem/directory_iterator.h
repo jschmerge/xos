@@ -20,22 +20,17 @@ class directory_entry;
 
 enum class directory_options
 {
-	none = 0,
+	none                     = 0,
 	follow_directory_symlink = 1,
-	skip_permission_denied = 2,
+	skip_permission_denied   = 2,
 };
 
 DEFINE_BITMASK_OPERATORS(directory_options, unsigned int);
 
 class directory_iterator
+  : public std::iterator<std::forward_iterator_tag, directory_entry>
 {
  public:
-	typedef directory_entry         value_type;
-	typedef std::ptrdiff_t          difference_type;
-	typedef const directory_entry * pointer;
-	typedef const directory_entry & reference;
-	typedef std::input_iterator_tag iterator_category;
-
 	// member functions
 	directory_iterator() noexcept;
 
@@ -68,11 +63,8 @@ class directory_iterator
 	{
 		std::error_code ec;
 		increment(ec);
-
-		if (ec)
-			throw filesystem_error("Could not advance directory cursor",
-		                           m_pathname, ec);
-
+		if (ec) throw filesystem_error("Could not advance directory cursor",
+		                               m_pathname, ec);
 		return *this;
 	}
 
