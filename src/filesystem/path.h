@@ -228,6 +228,23 @@ inline path operator / (const path & lhs, const path & rhs)
 	return p;
 }
 
+inline bool is_linking_dot(const filesystem::path & p)
+{
+	const std::string & s = p.filename();
+	return ( ( (s.length() == 1) && s[0] == '.') );
+}
+
+inline bool is_linking_dot_dot(const filesystem::path & p)
+{
+	const std::string & s = p.filename();
+	return ( (s.length() == 2) && (s[0] == '.') && (s[1] == '.') );
+}
+
+inline bool is_linking_directory(const filesystem::path & p)
+{
+	return (is_linking_dot(p) || is_linking_dot_dot(p));
+}
+
 } /*v1*/
 }/*filesystem*/
 

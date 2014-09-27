@@ -6,15 +6,6 @@
 
 namespace {
 	
-static inline
-bool is_special_directory(const filesystem::path & p)
-{
-	const std::string & s = p.filename();
-
-	return (  ( (s.length() == 1) && s[0] == '.')                        // "."
-	       || ( (s.length() == 2) && (s[0] == '.') && (s[1] == '.') ) ); // ".."
-}
-
 } // namespace
 
 namespace filesystem {
@@ -323,7 +314,7 @@ path path::stem() const
 	path st(s);
 	std::string::size_type n = 0;
 
-	if (  ( ! is_special_directory(*this) )
+	if (  ( ! is_linking_directory(*this) )
 	   && ( (n = s.find_last_of('.')) != std::string::npos ) )
 		st = s.substr(0, n);
 
@@ -336,7 +327,7 @@ path path::extension() const
 	std::string s = filename();
 	std::string::size_type n = 0;
 
-	if (  ( ! is_special_directory(*this) )
+	if (  ( ! is_linking_directory(*this) )
 	   && ( (n = s.find_last_of('.')) != std::string::npos ) )
 		ext = s.substr(n);
 
