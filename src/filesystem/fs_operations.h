@@ -50,11 +50,11 @@ void current_path(const path & p, std::error_code & ec) noexcept;
 
 path absolute(const path & p, const path & base = current_path());
 
-#if 0
 path canonical(const path & p, const path & base, std::error_code & ec);
 path canonical(const path & p, std::error_code & ec);
 path canonical(const path & p, const path & base = current_path());
 
+#if 0
 void copy(const path & from, const path & to)
 {
 	copy(from, to, copy_options::none);

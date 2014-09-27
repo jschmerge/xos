@@ -7,8 +7,9 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 
-#include <cstdio>  // _P_tmpdir is defined here
 #include <climits> // PATH_MAX is defined through this
+#include <cstdlib> // for realpath()
+#include <cstdio>  // P_tmpdir is defined here
 
 namespace filesystem {
 inline namespace v1 {
@@ -71,6 +72,45 @@ path absolute(const path & p, const path & base)
 			ret = absolute(base) / p;
 		}
 	}
+	return ret;
+}
+
+path canonical(const path & p, const path & base, std::error_code & ec)
+{
+	path ret = absolute(p, base);
+	char resolved[PATH_MAX];
+	char * rc = nullptr;
+
+	// XXX - replace this with hand-rolled logic
+	if ((rc = realpath(ret.c_str(), resolved)) == nullptr)
+	{
+		ec = make_errno_ec();
+		ret.clear();
+	} else
+	{
+		ret = resolved;
+		if (!exists(ret))
+		{
+			ec = make_errno_ec(ENOENT);
+			ret.clear();
+		}
+	}
+
+	return ret;
+}
+
+path canonical(const path & p, std::error_code & ec)
+{
+	path base = current_path(ec);
+	return ec ? path() : canonical(p, base, ec);
+}
+
+// Note: base defaults to current_path()
+path canonical(const path & p, const path & base)
+{
+	std::error_code ec;
+	path ret = canonical(p, base, ec);
+	if (ec) throw filesystem_error("Could not find canonical path", p, ec);
 	return ret;
 }
 
