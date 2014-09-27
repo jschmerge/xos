@@ -486,6 +486,8 @@ void last_write_time(const path & p, file_time_type new_time)
 void last_write_time(const path & p, file_time_type new_time,
                       std::error_code & ec) noexcept
 {
+	// XXX - flags to system call here allow distinguishing symlink from
+	// underlying object - should we expose this?
 	struct timespec times[2] = { { 0, UTIME_OMIT }, { 0, 0 } };
 	times[1] = to_timespec(new_time);
 
@@ -524,6 +526,8 @@ void permissions(const path & p, perms prms, std::error_code & ec) noexcept
 		return;
 	}
 
+	// XXX - flags to system call here allow distinguishing symlink from
+	// underlying object - should we expose this?
 	if (fchmodat(AT_FDCWD, p.c_str(), static_cast<mode_t>(newperms), 0) != 0)
 	{
 		ec = make_errno_ec();
