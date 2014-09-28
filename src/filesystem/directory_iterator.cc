@@ -14,6 +14,7 @@ directory_iterator::directory_iterator() noexcept
   , m_entry()
 	{ }
 
+// XXX we'd construct a directory entry here, but we can't
 directory_iterator::directory_iterator(const path & p,
                                        directory_options options)
   : m_handle(nullptr)
@@ -22,6 +23,7 @@ directory_iterator::directory_iterator(const path & p,
   , m_pathname(p)
   , m_entry()
 {
+#if 0
 	if (m_pathname.empty())
 		throw filesystem_error("Empty directory pathname",
 		                       std::make_error_code(
@@ -38,7 +40,9 @@ directory_iterator::directory_iterator(const path & p,
 
 	std::error_code ec;
 	increment(ec);
-
+#endif
+	std::error_code ec;
+	delegate_construction(ec);
 	if (ec)
 		throw filesystem_error("Could not read directory entry", p, ec);
 }
@@ -52,28 +56,7 @@ directory_iterator::directory_iterator(const path & p,
   , m_pathname(p)
   , m_entry()
 {
-	ec.clear();
-
-	if (m_pathname.empty())
-	{
-		ec = std::make_error_code(std::errc::invalid_argument);
-		m_pathname.clear();
-		return;
-	}
-
-	m_handle.reset(opendir(m_pathname.c_str()));
-
-	if (! m_handle)
-	{
-		ec = make_errno_ec();
-		m_handle.reset();
-		m_pathname.clear();
-		return;
-	}
-
-	m_pathname /= "/";
-	m_entry.assign(m_pathname);
-	increment(ec);
+	delegate_construction(ec);
 }
 
 directory_iterator::directory_iterator(const path & p)
@@ -137,7 +120,6 @@ directory_iterator::operator = (const directory_iterator & other)
 	return *this;
 }
 
-
 directory_iterator &
 directory_iterator::operator = (directory_iterator && other) noexcept
 {
@@ -164,6 +146,32 @@ directory_iterator::operator = (directory_iterator && other) noexcept
 	return *this;
 }
 
+void directory_iterator::delegate_construction(std::error_code & ec) noexcept
+{
+	ec.clear();
+
+	if (m_pathname.empty())
+	{
+		ec = std::make_error_code(std::errc::invalid_argument);
+		m_pathname.clear();
+		return;
+	}
+
+	m_handle.reset(opendir(m_pathname.c_str()));
+
+	if (! m_handle)
+	{
+		ec = make_errno_ec();
+		m_handle.reset();
+		m_pathname.clear();
+		return;
+	}
+
+	m_pathname /= "/";
+	m_entry.assign(m_pathname);
+	increment(ec);
+}
+
 directory_iterator &
 directory_iterator::increment(std::error_code & ec) noexcept
 {
@@ -183,7 +191,7 @@ directory_iterator::increment(std::error_code & ec) noexcept
 			m_entry.replace_filename(m_buffer.d_name);
 	} else
 	{
-		ec = std::error_code(rv, std::system_category());
+		ec = make_errno_ec(rv);
 	}
 	return *this;
 }

@@ -69,6 +69,7 @@ class recursive_directory_iterator
 	struct dirent                         m_buffer;
 	directory_options                     m_options;
 	path                                  m_pathname;
+	path                                  m_current_path;
 	unsigned int                          m_depth;
 	directory_entry                       m_entry;
 };

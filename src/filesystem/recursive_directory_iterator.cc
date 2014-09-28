@@ -5,11 +5,13 @@
 namespace filesystem {
 inline namespace v1 {
 
+// Constructs the end() iterator
 recursive_directory_iterator::recursive_directory_iterator() noexcept
   : m_handle(nullptr)
   , m_buffer()
   , m_options(directory_options::none)
   , m_pathname()
+  , m_current_path()
   , m_depth(0)
   , m_entry()
 	{ }
@@ -20,6 +22,7 @@ recursive_directory_iterator::recursive_directory_iterator(
   , m_buffer()
   , m_options(options)
   , m_pathname(p)
+  , m_current_path(p)
   , m_depth(0)
   , m_entry()
 {
@@ -31,6 +34,7 @@ recursive_directory_iterator::recursive_directory_iterator(
   , m_buffer()
   , m_options(options)
   , m_pathname(p)
+  , m_current_path(p)
   , m_depth(0)
   , m_entry()
 {

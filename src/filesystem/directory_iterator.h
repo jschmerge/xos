@@ -79,6 +79,8 @@ class directory_iterator
 		{ return !(*this == other); }
 
  private:
+	void delegate_construction(std::error_code & ec) noexcept;
+
 	std::unique_ptr<DIR, DirCloseFunctor> m_handle;
 	struct dirent                         m_buffer;
 	directory_options                     m_options;
