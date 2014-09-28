@@ -170,10 +170,10 @@ bool remove(const path & p, std::error_code & ec) noexcept;
 #if 0
 uintmax_t remove_all(const path & p);
 uintmax_t remove_all(const path & p, std::error_code & ec) noexcept;
+#endif
 
 void rename(const path & from, const path & to);
 void rename(const path & from, const path & to, std::error_code & ec) noexcept;
-#endif
 
 void resize_file(const path & p, uintmax_t size);
 void resize_file(const path & p, uintmax_t size, std::error_code & ec) noexcept;

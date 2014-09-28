@@ -578,6 +578,19 @@ bool remove(const path & p, std::error_code & ec) noexcept
 	return (rc == 0);
 }
 
+void rename(const path & from, const path & to)
+{
+	std::error_code ec;
+	rename(from, to, ec);
+	if (ec) throw filesystem_error("Could not rename file", from, to, ec);
+}
+
+void rename(const path & from, const path & to, std::error_code & ec) noexcept
+{
+	if (renameat(AT_FDCWD, from.c_str(), AT_FDCWD, to.c_str()) != 0)
+		ec = make_errno_ec();
+}
+
 void resize_file(const path & p, uintmax_t size)
 {
 	std::error_code ec;
