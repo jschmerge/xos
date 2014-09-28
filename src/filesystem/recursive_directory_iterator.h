@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <queue>
+#include "file_status.h"
 #include "directory_iterator.h"
 
 namespace filesystem {
@@ -32,10 +33,16 @@ class recursive_directory_iterator
 
 	// modifiers
 	recursive_directory_iterator &
-	  operator = (const recursive_directory_iterator & rhs);
+	  operator = (const recursive_directory_iterator & )
+	{
+		return *this;
+	}
 
 	recursive_directory_iterator &
-	  operator = (recursive_directory_iterator && rhs) noexcept;
+	  operator = (recursive_directory_iterator && ) noexcept
+	{
+		return *this;
+	}
 
 	recursive_directory_iterator & operator++()
 	{
@@ -51,12 +58,23 @@ class recursive_directory_iterator
 	void pop();
 
 	void disable_recursion_pending();
+
 	// observers
 	directory_options options() const;
 
 	int depth() const;
 
-	bool recursion_pending() const;
+	bool recursion_pending() const
+	{
+		bool rc = false;
+		if ( ! (  m_entry.path().empty()
+		       || is_linking_directory(m_entry) ) )
+		{
+			rc = (m_entry.status().type() == file_type::directory);
+			printf("Recursing on '%s'\n", m_entry.path().c_str());
+		}
+		return rc;
+	}
 
 	const directory_entry & operator * () const
 		{ return m_entry; }
@@ -64,7 +82,28 @@ class recursive_directory_iterator
 	const directory_entry * operator -> () const
 		{ return &m_entry; }
 
+	bool operator == (const recursive_directory_iterator & other) const
+	{
+		return (m_entry.path().empty() && other.m_entry.path().empty());
+	}
+
+	bool operator != (const recursive_directory_iterator & other) const
+		{ return !(*this == other); }
+
  private:
+	void delegate_construction(std::error_code & ec);
+	std::error_code do_recursive_open(const path & p);
+
+	void set_to_end_iterator()
+	{
+		m_handle.reset(nullptr);
+		memset(&m_buffer, 0, sizeof(m_buffer));
+		m_pathname.clear();
+		m_current_path.clear();
+		m_depth = 0;
+		m_entry.assign(path());
+	}
+
 	std::unique_ptr<DIR, DirCloseFunctor> m_handle;
 	struct dirent                         m_buffer;
 	directory_options                     m_options;
@@ -73,7 +112,6 @@ class recursive_directory_iterator
 	unsigned int                          m_depth;
 	directory_entry                       m_entry;
 };
-
 
 inline
 recursive_directory_iterator begin(recursive_directory_iterator iter) noexcept
