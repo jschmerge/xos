@@ -46,7 +46,6 @@ TARGETS           = unittest
 unittest_OBJS     = cppunit-main.o \
                     unit_bithacks.o \
                     unit_average.o \
-                    unit_unicode.o \
                     unit_file_status.o \
                     unit_directory_entry.o \
                     unit_fs_operations.o \
@@ -54,7 +53,10 @@ unittest_OBJS     = cppunit-main.o \
                     unit_path_traits.o \
                     unit_path.o \
                     unit_path_iterator.o \
-                    unit_directory_iterator.o
+                    unit_directory_iterator.o \
+                    unit_recursive_directory_iterator.o
+
+#                    unit_unicode.o \
 
 PROGRESS ?= brief
 bin/unittest: ../filesystem/lib/libfilesystem.a

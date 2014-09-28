@@ -6,6 +6,7 @@
 namespace filesystem {
 inline namespace v1 {
 
+// Constructs the end() iterator
 directory_iterator::directory_iterator() noexcept
   : m_handle(nullptr)
   , m_buffer()
@@ -14,7 +15,6 @@ directory_iterator::directory_iterator() noexcept
   , m_entry()
 	{ }
 
-// XXX we'd construct a directory entry here, but we can't
 directory_iterator::directory_iterator(const path & p,
                                        directory_options options)
   : m_handle(nullptr)
@@ -23,24 +23,6 @@ directory_iterator::directory_iterator(const path & p,
   , m_pathname(p)
   , m_entry()
 {
-#if 0
-	if (m_pathname.empty())
-		throw filesystem_error("Empty directory pathname",
-		                       std::make_error_code(
-		                         std::errc::invalid_argument));
-
-	m_handle.reset(opendir(m_pathname.c_str()));
-
-	if (! m_handle)
-		throw filesystem_error("Could not open directory",
-		                        p, make_errno_ec());
-
-	m_pathname /= "/";
-	m_entry.assign(m_pathname);
-
-	std::error_code ec;
-	increment(ec);
-#endif
 	std::error_code ec;
 	delegate_construction(ec);
 	if (ec)
