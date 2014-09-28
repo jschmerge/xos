@@ -93,12 +93,8 @@ class Test_directory_iterator : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(inserted == true);
 		}
 
-		try {
-			fs::directory_iterator x = std::move(i);
-			++i;
-		} catch (...) {
-			std::cout  << "Caught exception" << std::endl;
-		}
+		fs::directory_iterator x = std::move(i);
+		CPPUNIT_ASSERT_THROW(++i; , fs::filesystem_error);
 
 		i.increment(ec);
 

@@ -105,17 +105,12 @@ class Test_fs_operations : public CppUnit::TestFixture
 		std::error_code ec;
 		fs::path p{"/usr/local/bin"};
 		rc = fs::create_directories(p, ec);
-		if (ec)
-			std::cerr << "Error on /usr/local path = "
-			          << ec.message() << std::endl;
 		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(rc == false);
 
 		ec.clear();
 		fs::path tmp{"/tmp/foo" + std::to_string(getpid()) + "/bar"};
 		rc = fs::create_directories(tmp, ec);
-		if (ec)
-			std::cerr << "Error on temp path = " << ec.message() << std::endl;
 		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(rc == true);
 	}

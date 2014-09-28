@@ -9,6 +9,8 @@
 - replace_extension()
 - root_path() - think it always returns '/'
 
+- directory_iterator needs to heed directory_options
+
 - unit tests for directory_entry comparison operators
 - unit tests for file_status copy & move ctors and assignment operators
 - unit tests for bool is_whatever(file_status) (fs_operations.h)

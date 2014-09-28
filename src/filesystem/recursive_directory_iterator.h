@@ -65,6 +65,8 @@ class recursive_directory_iterator
 		{ return &m_entry; }
 
  private:
+	std::unique_ptr<DIR, DirCloseFunctor> m_handle;
+	struct dirent                         m_buffer;
 	directory_options                     m_options;
 	path                                  m_pathname;
 	unsigned int                          m_depth;
