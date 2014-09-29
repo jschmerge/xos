@@ -95,6 +95,7 @@ void recursive_directory_iterator::delegate_construction(std::error_code & ec)
 
 	m_pathname /= "/";
 	m_entry.assign(m_pathname);
+	printf("----------------------> %s\n", m_pathname.c_str());
 	increment(ec);
 }
 
@@ -136,12 +137,15 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 
 	if (! m_handle)
 	{
+		printf("-------> OPEN FAILED!!!!: %s\n", strerror(errno));
 		ec = make_errno_ec();
 		m_handle.reset();
 		m_pathname.clear();
+	} else
+	{
+		m_current_path /= "/";
+		m_entry.assign(m_current_path);
 	}
-	m_current_path /= "/";
-	m_entry.assign(m_current_path);
 
 	return ec;
 }
@@ -149,8 +153,20 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 bool recursive_directory_iterator::recursion_pending() const
 {
 	bool rc = false;
-	if ( ! (  m_entry.path().empty()
-	       || is_linking_directory(m_entry) ) )
+
+	printf("%d %d", (int) m_entry.path().empty(),
+	       (int) is_linking_directory(m_entry));
+
+//	if ( ! (  m_entry.path().empty()
+//	       || is_linking_directory(m_entry) ) )
+
+	if (m_entry.path().empty())
+	{
+		printf("%s is empty\n", m_entry.path().c_str());
+	} else if (is_linking_directory(m_entry))
+	{
+		printf("%s is linking dir\n", m_entry.path().c_str());
+	} else
 	{
 		rc = (m_entry.symlink_status().type() == file_type::directory);
 
@@ -177,27 +193,41 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 
 	if (recursion_pending())
 	{
-		ec = do_recursive_open(m_entry);
-	}
-
-	if ((rv = readdir_r(m_handle.get(), &m_buffer, &de)) == 0)
-	{
-		if (de == nullptr)
+		if ((ec = do_recursive_open(m_entry)))
 		{
-			printf ("END REACHED\n");
-			if (m_stack.empty())
+//			This condition should be:
+//			if ((ec.default_error_condition() == std::errc::permission_denied)
+//			...but libstdc++ doesn't map system_category errors to generic_cat
+			if (  (ec.value() == EACCES)
+			   && (m_options & directory_options::skip_permission_denied)
+			            != directory_options::none)
 			{
-				printf ("STACK EMPTY\n");
-				set_to_end_iterator();
+				ec.clear();
+				pop();
 			} else
 			{
-				printf ("RETURNING UP\n");
-				pop();
+				path tmp = m_entry;
+				set_to_end_iterator();
+				m_current_path = tmp;
+				return *this;
 			}
-		} else
-			m_entry.replace_filename(m_buffer.d_name);
-	} else
+			
+		}
+	}
+
+	while (  ((rv = readdir_r(m_handle.get(), &m_buffer, &de)) == 0)
+	      && (de == nullptr) && !m_stack.empty() )
+	{
+		pop();
+	}
+
+	if (rv == 0 && de == nullptr && m_stack.empty())
+		set_to_end_iterator();
+	else if (rv != 0)
 		ec = make_errno_ec(rv);
+	else
+		m_entry.replace_filename(m_buffer.d_name);
+
 
 	return *this;
 }
