@@ -79,7 +79,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 		std::cout << "--------------------------------------------\n";
 		fs::recursive_directory_iterator i(
-		    fs::current_path(), fs::directory_options::skip_permission_denied);
+		    "/tmp", fs::directory_options::skip_permission_denied);
 		CPPUNIT_ASSERT(i != end(i));
 
 		for (; i != end(i); ++i)
@@ -96,7 +96,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		}
 
 		fs::recursive_directory_iterator j(
-		    "/", fs::directory_options::skip_permission_denied);
+		    "/proc", fs::directory_options::skip_permission_denied);
 		CPPUNIT_ASSERT(j != end(j));
 
 		for (; j != end(j); ++j)

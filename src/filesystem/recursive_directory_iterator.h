@@ -48,7 +48,7 @@ class recursive_directory_iterator
 	{
 		std::error_code ec;
 		increment(ec);
-		if (ec) printf("##==> %s\n", m_current_path.c_str());
+//		if (ec) printf("##==> %s\n", m_current_path.c_str());
 		if (ec) throw filesystem_error("Could not advance directory cursor",
 		                                m_current_path, ec);
 		return *this;

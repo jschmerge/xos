@@ -143,6 +143,7 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 		m_pathname.clear();
 	} else
 	{
+		printf("-------> OPEN SUCCEEDED!!!!: %s\n", m_current_path.c_str());
 		m_current_path /= "/";
 		m_entry.assign(m_current_path);
 	}
@@ -154,18 +155,15 @@ bool recursive_directory_iterator::recursion_pending() const
 {
 	bool rc = false;
 
-	printf("%d %d", (int) m_entry.path().empty(),
-	       (int) is_linking_directory(m_entry));
-
 //	if ( ! (  m_entry.path().empty()
 //	       || is_linking_directory(m_entry) ) )
 
 	if (m_entry.path().empty())
 	{
-		printf("%s is empty\n", m_entry.path().c_str());
+//		printf("%s is empty\n", m_entry.path().c_str());
 	} else if (is_linking_directory(m_entry))
 	{
-		printf("%s is linking dir\n", m_entry.path().c_str());
+//		printf("%s is linking dir\n", m_entry.path().c_str());
 	} else
 	{
 		rc = (m_entry.symlink_status().type() == file_type::directory);
@@ -191,17 +189,22 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 		return *this;
 	}
 
-	if (recursion_pending())
+	if (!m_entry.path().empty() && recursion_pending())
 	{
 		if ((ec = do_recursive_open(m_entry)))
 		{
-//			This condition should be:
-//			if ((ec.default_error_condition() == std::errc::permission_denied)
-//			...but libstdc++ doesn't map system_category errors to generic_cat
-			if (  (ec.value() == EACCES)
-			   && (m_options & directory_options::skip_permission_denied)
-			            != directory_options::none)
+			printf("************Error occurred %d: %s\n", ec.value(),
+			       ec.message().c_str());
+
+			// This condition should be:
+			// if((ec.default_error_condition() == std::errc::permission_denied)
+			// ...but libstdc++ doesn't map system_category errors to
+			// generic_category()
+			if (  ( (ec.value() == EACCES) || (ec.value() == EPERM) )
+			   && ( (m_options & directory_options::skip_permission_denied)
+			            != directory_options::none) )
 			{
+				printf("************* ignoring error\n");
 				ec.clear();
 				pop();
 			} else
@@ -211,7 +214,6 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 				m_current_path = tmp;
 				return *this;
 			}
-			
 		}
 	}
 
@@ -221,13 +223,20 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 		pop();
 	}
 
+	if (ec) printf("EC IS SET\n");
+
 	if (rv == 0 && de == nullptr && m_stack.empty())
 		set_to_end_iterator();
 	else if (rv != 0)
 		ec = make_errno_ec(rv);
 	else
-		m_entry.replace_filename(m_buffer.d_name);
+	{
+		path tmp(m_current_path);
+		tmp /= m_buffer.d_name;
+		m_entry.assign(tmp);
+	}
 
+	if (ec) printf("EC IS SET2\n");
 
 	return *this;
 }
