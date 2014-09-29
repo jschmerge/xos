@@ -84,7 +84,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 		for (; i != end(i); ++i)
 		{
-//			if (config::verbose)
+			if (config::verbose)
 				std::cout << " entry: " << i->path().c_str() << '\n';
 
 			std::set<fs::path>::iterator rv;
@@ -101,7 +101,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 		for (; j != end(j); ++j)
 		{
-//			if (config::verbose)
+			if (config::verbose)
 				std::cout << " entry: " << j->path().c_str() << '\n';
 
 			std::set<fs::path>::iterator rv;
