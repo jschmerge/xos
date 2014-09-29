@@ -77,13 +77,13 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 		putchar('\n'); 
 
-		fs::recursive_directory_iterator i(fs::path("/usr"));
+		fs::recursive_directory_iterator i(fs::path("/tmp"));
 		CPPUNIT_ASSERT(i != end(i));
 
 		for (; i != end(i); ++i)
 		{
 //			if (config::verbose)
-				std::cout << " entry of /usr: " << i->path().c_str() << '\n';
+				std::cout << " entry of /tmp: " << i->path().c_str() << '\n';
 
 			std::set<fs::path>::iterator rv;
 			bool inserted = false;

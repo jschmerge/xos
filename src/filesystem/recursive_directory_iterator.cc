@@ -98,11 +98,37 @@ void recursive_directory_iterator::delegate_construction(std::error_code & ec)
 	increment(ec);
 }
 
+std::error_code recursive_directory_iterator::push_state()
+{
+	std::error_code ec;
+	long location = telldir(m_handle.get());
+
+	if (location == -1)
+		ec = make_errno_ec();
+	else
+		m_stack.emplace(m_current_path, telldir(m_handle.get()));
+	return ec;
+}
+
+void recursive_directory_iterator::pop()
+{
+	m_handle.reset(opendir(m_stack.top().directory.c_str()));
+	if (! m_handle)
+		throw filesystem_error("Could not re-open directory",
+		                       m_stack.top().directory.c_str(),
+		                       make_errno_ec());
+
+	seekdir(m_handle.get(), m_stack.top().tellptr);
+	m_current_path = m_stack.top().directory;
+	m_entry.assign(m_current_path / "/");
+	m_stack.pop();
+}
+
 std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 {
 	std::error_code ec;
 
-	// XXX - save old directory state here
+	push_state();
 
 	printf("Opening directory '%s'\n", p.c_str());
 	m_current_path = p;
@@ -157,8 +183,18 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 	if ((rv = readdir_r(m_handle.get(), &m_buffer, &de)) == 0)
 	{
 		if (de == nullptr)
-			set_to_end_iterator();
-		else
+		{
+			printf ("END REACHED\n");
+			if (m_stack.empty())
+			{
+				printf ("STACK EMPTY\n");
+				set_to_end_iterator();
+			} else
+			{
+				printf ("RETURNING UP\n");
+				pop();
+			}
+		} else
 			m_entry.replace_filename(m_buffer.d_name);
 	} else
 		ec = make_errno_ec(rv);

@@ -2,7 +2,7 @@
 #define GUARD_RECURSIVE_DIRECTORY_ITERATOR_H 1
 
 #include <iterator>
-#include <queue>
+#include <stack>
 #include "file_status.h"
 #include "directory_iterator.h"
 
@@ -82,6 +82,7 @@ class recursive_directory_iterator
 
  private:
 	void delegate_construction(std::error_code & ec);
+	std::error_code push_state();
 	std::error_code do_recursive_open(const path & p);
 
 	void set_to_end_iterator()
@@ -94,6 +95,26 @@ class recursive_directory_iterator
 		m_entry.assign(path());
 	}
 
+	// Simple struct for keeping state
+	struct saved_iterator_state
+	{
+		saved_iterator_state(const path & p, long value)
+		  : directory(p), tellptr(value) { }
+
+		saved_iterator_state(const saved_iterator_state & other) = default;
+
+		saved_iterator_state(saved_iterator_state && other) = default;
+
+		saved_iterator_state &
+		operator = (const saved_iterator_state & other) = default;
+
+		saved_iterator_state &
+		operator = (saved_iterator_state && other) = default;
+
+		path directory;
+		long tellptr;
+	};
+
 	std::unique_ptr<DIR, DirCloseFunctor> m_handle;
 	struct dirent                         m_buffer;
 	directory_options                     m_options;
@@ -101,6 +122,8 @@ class recursive_directory_iterator
 	path                                  m_current_path;
 	unsigned int                          m_depth;
 	directory_entry                       m_entry;
+
+	std::stack<saved_iterator_state>      m_stack;
 };
 
 inline
