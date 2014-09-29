@@ -95,7 +95,7 @@ void recursive_directory_iterator::delegate_construction(std::error_code & ec)
 
 	m_pathname /= "/";
 	m_entry.assign(m_pathname);
-	printf("----------------------> %s\n", m_pathname.c_str());
+//	printf("----------------------> %s\n", m_pathname.c_str());
 	increment(ec);
 }
 
@@ -130,20 +130,16 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 	std::error_code ec;
 
 	push_state();
-
-//	printf("Opening directory '%s'\n", p.c_str());
 	m_current_path = p;
 	m_handle.reset(opendir(m_current_path.c_str()));
 
 	if (! m_handle)
 	{
-//		printf("-------> OPEN FAILED!!!!: %s\n", strerror(errno));
 		ec = make_errno_ec();
 		m_handle.reset();
 		m_pathname.clear();
 	} else
 	{
-//		printf("-------> OPEN SUCCEEDED!!!!: %s\n", m_current_path.c_str());
 		m_current_path /= "/";
 		m_entry.assign(m_current_path);
 	}
@@ -155,21 +151,9 @@ bool recursive_directory_iterator::recursion_pending() const
 {
 	bool rc = false;
 
-//	if ( ! (  m_entry.path().empty()
-//	       || is_linking_directory(m_entry) ) )
-
-	if (m_entry.path().empty())
-	{
-//		printf("%s is empty\n", m_entry.path().c_str());
-	} else if (is_linking_directory(m_entry))
-	{
-//		printf("%s is linking dir\n", m_entry.path().c_str());
-	} else
-	{
+	if ( (!m_entry.path().empty()) && (!is_linking_directory(m_entry)) )
 		rc = (m_entry.symlink_status().type() == file_type::directory);
 
-//		if (rc) printf("Recursing on '%s'\n", m_entry.path().c_str());
-	}
 	return rc;
 }
 
@@ -181,7 +165,6 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 	int rv = 0;
 	ec.clear();
 
-	// Bail on invalid
 	if (! m_handle)
 	{
 		set_to_end_iterator();
@@ -193,18 +176,10 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 	{
 		if ((ec = do_recursive_open(m_entry)))
 		{
-			printf("************Error occurred %d: %s\n", ec.value(),
-			       ec.message().c_str());
-
-			// This condition should be:
-			// if((ec.default_error_condition() == std::errc::permission_denied)
-			// ...but libstdc++ doesn't map system_category errors to
-			// generic_category()
 			if (  ( (ec.value() == EACCES) || (ec.value() == EPERM) )
 			   && ( (m_options & directory_options::skip_permission_denied)
 			            != directory_options::none) )
 			{
-				printf("************* ignoring error\n");
 				ec.clear();
 				pop();
 			} else
@@ -226,25 +201,21 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 	if (rv == 0 && de == nullptr && m_stack.empty())
 	{
 		set_to_end_iterator();
+	} else if (  ((m_options & directory_options::skip_permission_denied)
+	                != directory_options::none)
+		      && ((rv == EPERM) || (rv == EACCES)) )
+	{
+		ec.clear();
+		pop();
 	} else if (rv != 0)
 	{
-		if (  ((m_options & directory_options::skip_permission_denied) != directory_options::none)
-		   && ((rv == EPERM) || (rv == EACCES)) )
-		{
-			printf("************* ignoring error\n");
-			ec.clear();
-			pop();
-		} else
-		{
-			ec = make_errno_ec(rv);
-		}
+		ec = make_errno_ec(rv);
 	} else
 	{
 		path tmp(m_current_path);
 		tmp /= m_buffer.d_name;
 		m_entry.assign(tmp);
 	}
-
 
 	return *this;
 }

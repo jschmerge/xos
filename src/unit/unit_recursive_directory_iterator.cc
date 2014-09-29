@@ -30,18 +30,22 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(empty == end(fs::recursive_directory_iterator()));
 
 		CPPUNIT_ASSERT_NO_THROW(fs::recursive_directory_iterator i;);
-		CPPUNIT_ASSERT_NO_THROW(fs::recursive_directory_iterator i(fs::path{"/tmp"}););
 		CPPUNIT_ASSERT_NO_THROW(
-		   fs::recursive_directory_iterator i(fs::path{"/tmp"}, ec););
+			fs::recursive_directory_iterator i(fs::path{"/tmp"}););
+		CPPUNIT_ASSERT_NO_THROW(
+			fs::recursive_directory_iterator i(fs::path{"/tmp"}, ec););
 
-		CPPUNIT_ASSERT_THROW({fs::recursive_directory_iterator j(fs::path("/foo"));},
-		                     fs::filesystem_error);
+		CPPUNIT_ASSERT_THROW({
+			fs::recursive_directory_iterator j(fs::path("/foo"));
+		}, fs::filesystem_error);
 
-		CPPUNIT_ASSERT_THROW({fs::recursive_directory_iterator j(fs::path{"/root"});},
-		                     fs::filesystem_error);
+		CPPUNIT_ASSERT_THROW({
+			fs::recursive_directory_iterator j(fs::path{"/root"});
+		}, fs::filesystem_error);
 
-		CPPUNIT_ASSERT_THROW({fs::recursive_directory_iterator j(fs::path{""});},
-		                     fs::filesystem_error);
+		CPPUNIT_ASSERT_THROW({
+			fs::recursive_directory_iterator j(fs::path{""});
+		}, fs::filesystem_error);
 
 		ec.clear();
 		CPPUNIT_ASSERT_NO_THROW(
@@ -75,44 +79,61 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		std::error_code ec;
 		std::set<fs::path> paths;
 
-		putchar('\n'); 
+		if (config::verbose) putchar('\n'); 
 
-		std::cout << "--------------------------------------------\n";
+		if (config::verbose)
+			std::cout << "--------------------------------------------\n";
 		fs::recursive_directory_iterator i(
 		    "/tmp", fs::directory_options::skip_permission_denied);
 		CPPUNIT_ASSERT(i != end(i));
 
 		for (; i != end(i); ++i)
 		{
+			bool inserted = false;
 			if (config::verbose)
 				std::cout << " entry: " << i->path().c_str() << '\n';
 
 			std::set<fs::path>::iterator rv;
-			bool inserted = false;
-
 			std::tie(rv, inserted) = paths.insert(*i);
-
 			CPPUNIT_ASSERT(inserted == true);
 		}
 
+		paths.clear();
+		if (config::verbose)
+			std::cout << "--------------------------------------------\n";
 		fs::recursive_directory_iterator j(
 		    "/proc", fs::directory_options::skip_permission_denied);
 		CPPUNIT_ASSERT(j != end(j));
 
 		for (; j != end(j); ++j)
 		{
+			bool inserted = false;
 			if (config::verbose)
 				std::cout << " entry: " << j->path().c_str() << '\n';
 
 			std::set<fs::path>::iterator rv;
-			bool inserted = false;
-
 			std::tie(rv, inserted) = paths.insert(*j);
-
 			CPPUNIT_ASSERT(inserted == true);
 		}
 
-		
+		paths.clear();
+		if (config::verbose)
+			std::cout << "--------------------------------------------\n";
+		fs::recursive_directory_iterator k(
+		    "/tmp", fs::directory_options::skip_permission_denied);
+		CPPUNIT_ASSERT(k != end(k));
+
+		for (; k != end(k); ++k)
+		{
+			bool inserted = false;
+			if (config::verbose)
+				std::cout << " entry: " << k->path().c_str() << '\n';
+
+			std::set<fs::path>::iterator rv;
+			std::tie(rv, inserted) = paths.insert(*k);
+			CPPUNIT_ASSERT(inserted == true);
+		}
+
 
 #if 0
 		fs::recursive_directory_iterator x = std::move(i);
@@ -130,7 +151,6 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 	void random_tests()
 	{
-#if 0
 		for (const char * s : { ".", "/tmp", "/dev" })
 		{
 			fs::recursive_directory_iterator di(s);
@@ -183,7 +203,6 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 				CPPUNIT_ASSERT(e.path().has_filename());
 			}
 		}
-#endif
 	}
 };
 
