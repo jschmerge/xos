@@ -64,17 +64,7 @@ class recursive_directory_iterator
 
 	int depth() const;
 
-	bool recursion_pending() const
-	{
-		bool rc = false;
-		if ( ! (  m_entry.path().empty()
-		       || is_linking_directory(m_entry) ) )
-		{
-			rc = (m_entry.status().type() == file_type::directory);
-			printf("Recursing on '%s'\n", m_entry.path().c_str());
-		}
-		return rc;
-	}
+	bool recursion_pending() const;
 
 	const directory_entry & operator * () const
 		{ return m_entry; }

@@ -75,16 +75,15 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		std::error_code ec;
 		std::set<fs::path> paths;
 
-		if (config::verbose)
-			putchar('\n'); 
+		putchar('\n'); 
 
-		fs::recursive_directory_iterator i(fs::path("/tmp"));
+		fs::recursive_directory_iterator i(fs::path("/usr"));
 		CPPUNIT_ASSERT(i != end(i));
 
 		for (; i != end(i); ++i)
 		{
 //			if (config::verbose)
-				std::cout << " entry of /tmp: " << i->path().c_str() << '\n';
+				std::cout << " entry of /usr: " << i->path().c_str() << '\n';
 
 			std::set<fs::path>::iterator rv;
 			bool inserted = false;
@@ -94,6 +93,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(inserted == true);
 		}
 
+#if 0
 		fs::recursive_directory_iterator x = std::move(i);
 		CPPUNIT_ASSERT_THROW(++i; , fs::filesystem_error);
 
@@ -104,6 +104,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		{
 			CPPUNIT_ASSERT(paths.find(j) != paths.end());
 		}
+#endif
 	}
 
 	void random_tests()

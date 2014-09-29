@@ -104,6 +104,7 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 
 	// XXX - save old directory state here
 
+	printf("Opening directory '%s'\n", p.c_str());
 	m_current_path = p;
 	m_handle.reset(opendir(m_current_path.c_str()));
 
@@ -113,11 +114,25 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 		m_handle.reset();
 		m_pathname.clear();
 	}
-	m_pathname /= "/";
-	m_entry.assign(m_pathname);
+	m_current_path /= "/";
+	m_entry.assign(m_current_path);
 
 	return ec;
 }
+
+bool recursive_directory_iterator::recursion_pending() const
+{
+	bool rc = false;
+	if ( ! (  m_entry.path().empty()
+	       || is_linking_directory(m_entry) ) )
+	{
+		rc = (m_entry.symlink_status().type() == file_type::directory);
+
+		if (rc) printf("Recursing on '%s'\n", m_entry.path().c_str());
+	}
+	return rc;
+}
+
 
 recursive_directory_iterator &
 recursive_directory_iterator::increment(std::error_code & ec) noexcept
