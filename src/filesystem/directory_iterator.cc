@@ -152,6 +152,13 @@ void directory_iterator::delegate_construction(std::error_code & ec) noexcept
 	m_pathname /= "/";
 	m_entry.assign(m_pathname);
 	increment(ec);
+
+	if (ec && ( (ec.value() == EPERM) || (ec.value() == EACCES) )
+	    && ( (m_options & directory_options::skip_permission_denied)
+	          != directory_options::none) )
+	{
+		ec.clear();
+	}
 }
 
 directory_iterator &

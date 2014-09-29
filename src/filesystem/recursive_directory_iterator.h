@@ -2,7 +2,7 @@
 #define GUARD_RECURSIVE_DIRECTORY_ITERATOR_H 1
 
 #include <iterator>
-#include <stack>
+#include <vector>
 #include "file_status.h"
 #include "directory_iterator.h"
 
@@ -48,7 +48,6 @@ class recursive_directory_iterator
 	{
 		std::error_code ec;
 		increment(ec);
-//		if (ec) printf("##==> %s\n", m_current_path.c_str());
 		if (ec) throw filesystem_error("Could not advance directory cursor",
 		                                m_current_path, ec);
 		return *this;
@@ -61,9 +60,11 @@ class recursive_directory_iterator
 	void disable_recursion_pending();
 
 	// observers
-	directory_options options() const;
+	directory_options options() const
+		{ return m_options; }
 
-	int depth() const;
+	int depth() const
+		{ return m_stack.size(); }
 
 	bool recursion_pending() const;
 
@@ -92,8 +93,8 @@ class recursive_directory_iterator
 		memset(&m_buffer, 0, sizeof(m_buffer));
 		m_pathname.clear();
 		m_current_path.clear();
-		m_depth = 0;
 		m_entry.assign(path());
+		m_stack.clear();
 	}
 
 	// Simple struct for keeping state
@@ -121,10 +122,9 @@ class recursive_directory_iterator
 	directory_options                     m_options;
 	path                                  m_pathname;
 	path                                  m_current_path;
-	unsigned int                          m_depth;
 	directory_entry                       m_entry;
-
-	std::stack<saved_iterator_state>      m_stack;
+	std::vector<saved_iterator_state>     m_stack;
+	bool                                  m_recurse_flag;
 };
 
 inline

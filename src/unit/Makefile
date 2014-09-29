@@ -46,6 +46,7 @@ TARGETS           = unittest
 unittest_OBJS     = cppunit-main.o \
                     unit_bithacks.o \
                     unit_average.o \
+                    unit_unicode.o \
                     unit_file_status.o \
                     unit_directory_entry.o \
                     unit_fs_operations.o \

@@ -135,7 +135,6 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		}
 
 
-#if 0
 		fs::recursive_directory_iterator x = std::move(i);
 		CPPUNIT_ASSERT_THROW(++i; , fs::filesystem_error);
 
@@ -146,14 +145,15 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		{
 			CPPUNIT_ASSERT(paths.find(j) != paths.end());
 		}
-#endif
 	}
 
 	void random_tests()
 	{
-		for (const char * s : { ".", "/tmp", "/dev" })
+		for (const char * s : { ".", "/tmp", "/dev", "/" })
 		{
-			fs::recursive_directory_iterator di(s);
+			std::error_code ec;
+			auto di = fs::recursive_directory_iterator(s,
+			                fs::directory_options::skip_permission_denied);
 
 			if (config::verbose) putchar('\n');
 
@@ -169,8 +169,8 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 				              == ( e.path().stem().string()
 				                 + e.path().extension().string()));
 
-				fs::file_status st = e.symlink_status();
-				uintmax_t links = fs::hard_link_count(e);
+				fs::file_status st = e.symlink_status(ec);
+				uintmax_t links = fs::hard_link_count(e, ec);
 				uintmax_t size = 0;
 
 				if (is_regular_file(st))
