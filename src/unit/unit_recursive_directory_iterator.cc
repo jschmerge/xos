@@ -141,9 +141,9 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		i.increment(ec);
 
 		i = fs::recursive_directory_iterator(fs::path("/tmp"));
-		for (auto & j : i)
+		for (auto j = i; j != end(i); ++i)
 		{
-			CPPUNIT_ASSERT(paths.find(j) != paths.end());
+			CPPUNIT_ASSERT(paths.find(*j) != paths.end());
 		}
 	}
 
