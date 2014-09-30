@@ -176,7 +176,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 				if (is_regular_file(st))
 				{
 					size = fs::file_size(e);
-				} else if (fs::is_symlink(e))
+				} else if (fs::is_symlink(e, ec))
 				{
 					size = 0;
 				} else
@@ -187,9 +187,13 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 				if (config::verbose)
 					std::cout << "\tNumber of links: " << links << '\n'
-					          << "\tSize: " << size << '\n';
+					          << "\tSize: " << size
+					          << "\tType: " << (int)st.type() << '\n';
 
-				CPPUNIT_ASSERT(fs::is_other(st)
+
+				CPPUNIT_ASSERT(  st.type() == fs::file_type::unknown
+				              || st.type() == fs::file_type::none
+				              || fs::is_other(st)
 				              || fs::is_regular_file(st)
 				              || fs::is_directory(st)
 				              || fs::is_symlink(st));
