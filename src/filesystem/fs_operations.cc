@@ -1,6 +1,7 @@
 #include "fs_operations.h"
 #include "directory_iterator.h"
 #include "filesystem_error.h"
+#include "recursive_directory_iterator.h"
 #include "../time/timeutil.h"
 
 #include <sys/stat.h>
@@ -576,6 +577,65 @@ bool remove(const path & p, std::error_code & ec) noexcept
 	rc = is_directory(st) ? rmdir(p.c_str()) : unlink(p.c_str());
 	if (rc != 0) ec = make_errno_ec();
 	return (rc == 0);
+}
+
+uintmax_t remove_all(const path & p)
+{
+	std::error_code ec;
+	uintmax_t count = remove_all(p, ec);
+	if (ec) throw filesystem_error("remove_all failed", p, ec);
+	return count;
+}
+
+uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
+{
+	uintmax_t count = 0;
+	path last_directory;
+	int last_depth = 0;
+	std::vector<path> stack; // for remembering on recursion
+
+	ec.clear();
+
+	for (recursive_directory_iterator rdi(p, ec);
+	     (!ec) && rdi != recursive_directory_iterator();
+	     rdi.increment(ec))
+	{
+//		printf("\n--------> %s (last=%d, curr=%d)", rdi->path().c_str(),
+//		       last_depth, rdi.depth());
+
+		if (last_depth > rdi.depth())
+		{
+			// just finished recursing
+//			printf("\nRemoving directory %s\n", stack.back().c_str());
+			remove(stack.back(), ec);
+			stack.pop_back();
+		}
+
+		file_status st = rdi->symlink_status(ec);
+
+		if (! ec)
+		{
+			if ( st.type() == file_type::directory )
+			{
+				if (!is_linking_directory(*rdi))
+					stack.push_back(*rdi);
+			} else
+			{
+//				printf("\nRemoving entry %s\n", rdi->path().c_str());
+				remove(rdi->path(),ec);
+			}
+		}
+
+		last_depth = rdi.depth();
+	}
+
+	if ( ! ec )
+	{
+//		printf("\nRemoving target %s\n", p.c_str());
+		remove(p, ec);
+	}
+
+	return count;
 }
 
 void rename(const path & from, const path & to)

@@ -192,7 +192,16 @@ bool recursive_directory_iterator::recursion_pending() const
 	bool rc = false;
 
 	if ( (!m_entry.path().empty()) && (!is_linking_directory(m_entry)) )
-		rc = (m_entry.symlink_status().type() == file_type::directory);
+	{
+		if ( (m_options & directory_options::follow_directory_symlink)
+		        == directory_options::none)
+		{
+			rc = (m_entry.symlink_status().type() == file_type::directory);
+		} else
+		{
+			rc = (m_entry.symlink_status().type() == file_type::directory);
+		}
+	}
 
 	return rc;
 }

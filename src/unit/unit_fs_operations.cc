@@ -21,6 +21,7 @@ class Test_fs_operations : public CppUnit::TestFixture
 	CPPUNIT_TEST(symlink_status);
 	CPPUNIT_TEST(last_write_time);
 	CPPUNIT_TEST(temp_directory_path);
+	CPPUNIT_TEST(remove_all);
 	CPPUNIT_TEST_SUITE_END();
 
  public:
@@ -176,6 +177,16 @@ class Test_fs_operations : public CppUnit::TestFixture
 		auto t0 = fs::file_time_type::min();
 		auto tp = fs::last_write_time(p);
 		CPPUNIT_ASSERT(tp > t0);
+	}
+
+	void remove_all()
+	{
+		std::error_code ec;
+		fs::path tmp{"/tmp/foo" + std::to_string(getpid())};
+
+		fs::remove_all(tmp, ec);
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(!exists(tmp));
 	}
 
 	void temp_directory_path()

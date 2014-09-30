@@ -149,7 +149,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 	void random_tests()
 	{
-		for (const char * s : { ".", "/tmp", "/dev", "/" })
+		for (const char * s : { ".", "/tmp", "/dev" })
 		{
 			std::error_code ec;
 			auto di = fs::recursive_directory_iterator(s,
@@ -159,11 +159,13 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 
 			for (auto & e : di)
 			{
+#if 0
 				if (config::verbose)
 					std::cout << "Found dirent: '" << e.path().c_str()
 					          << "\n\tstem = '" << e.path().stem().c_str()
 					          << "' ext = '" << e.path().extension().c_str()
 					          << "'\n";
+#endif
 
 				CPPUNIT_ASSERT(  e.path().filename().string()
 				              == ( e.path().stem().string()
