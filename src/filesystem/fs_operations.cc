@@ -671,7 +671,7 @@ file_status symlink_status(const path & p)
 {
 	std::error_code  ec;
 	file_status ret = symlink_status(p, ec);
-	if (ec) throw filesystem_error("Could not stat file", p, ec);
+	if (ec) throw filesystem_error("Could not lstat file", p, ec);
 	return ret;
 }
 
