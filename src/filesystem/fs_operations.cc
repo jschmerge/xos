@@ -766,6 +766,12 @@ uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
 		last_depth = rdi.depth();
 	}
 
+	while ( (!stack.empty()) && (! ec) )
+	{
+		remove(stack.back(), ec);
+		stack.pop_back();
+	}
+
 	if ( ! ec )
 	{
 //		printf("\nRemoving target %s\n", p.c_str());
