@@ -24,21 +24,33 @@ enum class copy_options
 {
 	none = 0,
 
-	skip_existing      = (1 << 0),
-	overwrite_existing = (1 << 1),
-	update_existing    = (1 << 2),
+	skip_existing        = (1 << 0),
+	overwrite_existing   = (1 << 1),
+	update_existing      = (1 << 2),
 
-	recursive          = (1 << 3),
+	existing_entry_group = ( skip_existing
+	                       | overwrite_existing
+	                       | update_existing),
 
-	copy_symlinks      = (1 << 4),
-	skip_symlinks      = (1 << 5),
+	recursive            = (1 << 3),
 
-	directories_only   = (1 << 6),
-	create_symlinks    = (1 << 7),
-	create_hard_links  = (1 << 8),
+	copy_symlinks        = (1 << 4),
+	skip_symlinks        = (1 << 5),
+
+	symlink_group        = (copy_symlinks | skip_symlinks),
+
+	directories_only     = (1 << 6),
+	create_symlinks      = (1 << 7),
+	create_hard_links    = (1 << 8),
+
+	directory_group      = ( directories_only
+	                       | create_symlinks
+	                       | create_hard_links),
 };
 
 DEFINE_BITMASK_OPERATORS(copy_options, unsigned int);
+inline bool is_set(copy_options set, copy_options value)
+	{ return ((set & value) != copy_options::none); }
 
 typedef std::chrono::high_resolution_clock clock_type;
 typedef std::chrono::time_point<clock_type> file_time_type;
@@ -68,22 +80,15 @@ void copy(const path & from, const path & to, std::error_code & ex) noexcept
 void copy(const path & from, const path & to, copy_options options);
 void copy(const path & from, const path & to, copy_options options,
           std::error_code & ex) noexcept;
+#endif
 
 bool copy_file(const path & from, const path & to);
-{
-	return copy_file(from, to, copy_options::none);
-}
-
 bool copy_file(const path & from, const path & to,
                std::error_code & ec) noexcept;
-{
-	return copy_file(from, to, copy_options::none, ec);
-}
 
 bool copy_file(const path & from, const path & to, copy_options options);
 bool copy_file(const path & from, const path & to, copy_options options,
                std::error_code & ec) noexcept;
-#endif
 
 void copy_symlink(const path & existing, const path & newborn);
 void copy_symlink(const path & existing, const path & newborn,

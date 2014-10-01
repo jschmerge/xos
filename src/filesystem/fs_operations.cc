@@ -116,6 +116,133 @@ path canonical(const path & p, const path & base)
 	return ret;
 }
 
+bool copy_file(const path & from, const path & to)
+{
+	return copy_file(from, to, copy_options::none);
+}
+
+bool copy_file(const path & from, const path & to,
+               std::error_code & ec) noexcept
+{
+	return copy_file(from, to, copy_options::none, ec);
+}
+
+inline bool validate_copy_file_options(copy_options opts)
+{
+	bool rc = true;
+	if (__builtin_popcount(static_cast<unsigned>(
+	                         opts & copy_options::existing_entry_group)) > 1)
+		rc = false;
+
+	if (__builtin_popcount(static_cast<unsigned>(
+	                         opts & copy_options::symlink_group)) > 1)
+		rc = false;
+
+	if (__builtin_popcount(static_cast<unsigned>(
+	                         opts & copy_options::directory_group)) > 1)
+		rc = false;
+
+	return rc;
+}
+
+bool copy_file(const path & from, const path & to, copy_options options)
+{
+	std::error_code ec;
+	bool rc = copy_file(from, to, options, ec);
+	if (ec) throw filesystem_error("could not copy_file", from, to, ec);
+	return rc;
+}
+
+// XXX we should use exceptions here
+bool copy_impl(const path & from, const path & to, std::error_code & ec)
+{
+	int fromfd = -1, tofd = -1;
+	const ssize_t buffersize = 4096;
+	ssize_t n = 0;
+	char buffer[buffersize];
+
+	file_status st = status(from);
+	if ((fromfd = open(from.c_str(), O_RDONLY)) < 0)
+	{
+		ec = make_errno_ec();
+		return false;
+	}
+
+	if ((tofd = open(to.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 
+	                 static_cast<mode_t>(st.permissions()))) < 0)
+	{
+		ec = make_errno_ec();
+		close(fromfd);
+		return false;
+	}
+	
+	while ((n = read(fromfd, buffer, buffersize)) > 0)
+	{
+		while (n > 0)
+		{
+			ssize_t nwritten = write(tofd, buffer, n);
+			if (nwritten <= 0)
+			{
+				ec = make_errno_ec();
+				close(fromfd);
+				close(tofd);
+				return false;
+			}
+
+			n -= nwritten;
+		}
+	}
+
+	close(fromfd);
+	close(tofd);
+
+	if (n < 0)
+	{
+		ec = make_errno_ec();
+		return false;
+	} else
+		return true;
+}
+
+bool copy_file(const path & from, const path & to, copy_options options,
+               std::error_code & ec) noexcept
+{
+	bool rc = false;
+	ec.clear();
+	if (!validate_copy_file_options(options))
+	{
+		ec = make_error_code(std::errc::invalid_argument);
+		return false;
+	}
+
+	file_status to_status = status(to, ec);
+	ec.clear();
+
+	if (  (exists(to_status) && equivalent(from, to))
+	   || (  exists(to_status)
+	      && (options & copy_options::existing_entry_group)
+	            == copy_options::none))
+	{
+		ec = make_error_code(std::errc::file_exists);
+		return false;
+	}
+
+	try {
+		if (  !exists(to_status)
+		   || ((  exists(to_status)
+		       && is_set(options, copy_options::overwrite_existing))
+		   || ((  exists(to_status)
+		       && is_set(options, copy_options::update_existing)
+		       && last_write_time(from) > last_write_time(to)))))
+		{
+			rc = copy_impl(from, to, ec);
+		}
+	} catch (std::system_error & e)
+	{ ec = e.code(); }
+
+	return rc;
+}
+
 path current_path()
 {
 	std::error_code ec;
