@@ -52,8 +52,16 @@ inline constexpr perms st_mode_to_perms(mode_t m)
 path absolute(const path & p, const path & base)
 {
 	path ret;
+
+	if (p.has_root_directory())
+		ret = p;
+	else
+		ret = (absolute(base) / p);
+#if 0
+	printf("\n-> examining path %s", p.c_str());
 	if (p.has_root_name())
 	{
+		printf("\n-> has_root_name");
 		if (p.has_root_directory())
 		{
 			ret = p;
@@ -66,6 +74,7 @@ path absolute(const path & p, const path & base)
 		}
 	} else
 	{
+		printf("\n-> ! has_root_name");
 		if (p.has_root_directory())
 		{
 			ret = absolute(base).root_name() / p;
@@ -74,6 +83,7 @@ path absolute(const path & p, const path & base)
 			ret = absolute(base) / p;
 		}
 	}
+#endif
 	return ret;
 }
 

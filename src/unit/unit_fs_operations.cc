@@ -14,6 +14,9 @@ namespace fs = filesystem::v1;
 class Test_fs_operations : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_fs_operations);
+	CPPUNIT_TEST(absolute);
+	CPPUNIT_TEST(canonical);
+	CPPUNIT_TEST(copy_file);
 	CPPUNIT_TEST(get_current_path);
 	CPPUNIT_TEST(set_current_path);
 	CPPUNIT_TEST(create_directories);
@@ -80,6 +83,61 @@ class Test_fs_operations : public CppUnit::TestFixture
 		}
 
 		CPPUNIT_ASSERT(caught);
+	}
+
+	void absolute()
+	{
+		fs::path full_path{"/usr/local"};
+		fs::path base_path{"/usr"};
+		fs::path a{"local"};
+		fs::path b{"/usr/local"};
+
+		CPPUNIT_ASSERT(fs::absolute(a, base_path) == full_path);
+		CPPUNIT_ASSERT(fs::absolute(b, base_path) == full_path);
+		
+	}
+
+	void canonical()
+	{
+		fs::path full_path{"/usr/local"};
+		fs::path base_path{"/usr"};
+		fs::path a{"local/../local/bin/.."};
+		fs::path b{"/usr/local/../../../../usr/./local"};
+
+		CPPUNIT_ASSERT(fs::canonical(a, base_path) == full_path);
+		CPPUNIT_ASSERT(fs::canonical(b, base_path) == full_path);
+	}
+
+	void copy_file()
+	{
+		using CO = fs::copy_options;
+		std::vector<fs::copy_options> bad_options{
+			CO::skip_existing | CO::overwrite_existing,
+			CO::skip_existing | CO::update_existing,
+			CO::overwrite_existing | CO::update_existing,
+			CO::skip_existing | CO::overwrite_existing | CO::update_existing,
+			CO::copy_symlinks | CO::skip_symlinks,
+
+			CO::directories_only | CO::create_symlinks,
+			CO::directories_only | CO::create_hard_links,
+			CO::create_symlinks | CO::create_hard_links,
+			CO::directories_only | CO::create_symlinks | CO::create_hard_links,
+		};
+
+		for (const auto & o : bad_options)
+		{
+			CPPUNIT_ASSERT_THROW(fs::copy_file("a", "b", o),
+			                     fs::filesystem_error);
+		}
+
+		std::error_code ec;
+		CPPUNIT_ASSERT(!fs::copy_file("/badpath", "b", ec));
+		CPPUNIT_ASSERT(ec);
+
+		CPPUNIT_ASSERT(fs::copy_file("/etc/fstab", "/tmp/xxx",
+		                             fs::copy_options::overwrite_existing));
+		CPPUNIT_ASSERT_THROW(fs::copy_file("/etc/fstab", "/tmp/xxx"),
+		                     fs::filesystem_error);
 	}
 
 	void get_current_path()
