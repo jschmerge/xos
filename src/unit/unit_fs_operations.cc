@@ -1,4 +1,5 @@
 #include "../filesystem/fs_operations.h"
+#include "../filesystem/directory_iterator.h"
 #include "../filesystem/file_status.h"
 #include "../filesystem/path.h"
 
@@ -17,9 +18,10 @@ class Test_fs_operations : public CppUnit::TestFixture
 	CPPUNIT_TEST(absolute);
 	CPPUNIT_TEST(canonical);
 	CPPUNIT_TEST(copy_file);
+	CPPUNIT_TEST(create_directories);
 	CPPUNIT_TEST(get_current_path);
 	CPPUNIT_TEST(set_current_path);
-	CPPUNIT_TEST(create_directories);
+	CPPUNIT_TEST(is_empty);
 	CPPUNIT_TEST(status);
 	CPPUNIT_TEST(symlink_status);
 	CPPUNIT_TEST(last_write_time);
@@ -99,10 +101,13 @@ class Test_fs_operations : public CppUnit::TestFixture
 
 	void canonical()
 	{
+		fs::path bad_path{"/badpath"};
 		fs::path full_path{"/usr/local"};
 		fs::path base_path{"/usr"};
 		fs::path a{"local/../local/bin/.."};
 		fs::path b{"/usr/local/../../../../usr/./local"};
+
+		CPPUNIT_ASSERT_THROW(fs::canonical(bad_path), fs::filesystem_error);
 
 		CPPUNIT_ASSERT(fs::canonical(a, base_path) == full_path);
 		CPPUNIT_ASSERT(fs::canonical(b, base_path) == full_path);
@@ -149,6 +154,22 @@ class Test_fs_operations : public CppUnit::TestFixture
 		                     fs::filesystem_error);
 	}
 
+	void create_directories()
+	{
+		bool rc = false;
+		std::error_code ec;
+		fs::path p{"/usr/local/bin"};
+		rc = fs::create_directories(p, ec);
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(rc == false);
+
+		ec.clear();
+		fs::path tmp{"/tmp/foo" + std::to_string(getpid()) + "/bar"};
+		rc = fs::create_directories(tmp, ec);
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(rc == true);
+	}
+
 	void get_current_path()
 	{
 // XXX - How do we get this to fail?
@@ -167,20 +188,23 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(fs::current_path(fs::temp_directory_path()));
 	}
 
-	void create_directories()
+	void is_empty()
 	{
-		bool rc = false;
-		std::error_code ec;
-		fs::path p{"/usr/local/bin"};
-		rc = fs::create_directories(p, ec);
-		CPPUNIT_ASSERT(!ec);
-		CPPUNIT_ASSERT(rc == false);
+		// Test directory
+		fs::path p = fs::temp_directory_path() / "emptydir";
+		try { fs::remove_all(p); } catch (...) { }
+		CPPUNIT_ASSERT(fs::create_directory(p));
+		CPPUNIT_ASSERT(fs::is_empty(p));
+		CPPUNIT_ASSERT(fs::create_directories(p / "subdir"));
+		CPPUNIT_ASSERT(!fs::is_empty(p));
 
-		ec.clear();
-		fs::path tmp{"/tmp/foo" + std::to_string(getpid()) + "/bar"};
-		rc = fs::create_directories(tmp, ec);
-		CPPUNIT_ASSERT(!ec);
-		CPPUNIT_ASSERT(rc == true);
+		// Test File
+		fs::path q = p / "foo";
+		CPPUNIT_ASSERT(fs::copy_file("/etc/fstab", q));
+		CPPUNIT_ASSERT(!fs::is_empty(q));
+		CPPUNIT_ASSERT_NO_THROW(fs::resize_file(q, 0));
+		CPPUNIT_ASSERT(fs::is_empty(q));
+		CPPUNIT_ASSERT(fs::remove_all(p) != 0);
 	}
 
 	void status()
@@ -249,11 +273,17 @@ class Test_fs_operations : public CppUnit::TestFixture
 	void remove_all()
 	{
 		std::error_code ec;
-		fs::path tmp{"/tmp/foo" + std::to_string(getpid())};
+		fs::path tmp{fs::temp_directory_path() / "foo"};
+		tmp += std::to_string(getpid());
 
-		fs::remove_all(tmp, ec);
+		CPPUNIT_ASSERT_NO_THROW(fs::remove_all(tmp, ec));
 		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(!exists(tmp));
+
+		fs::path longpath(fs::temp_directory_path() / "foo" / "bar" / "ugg");
+		CPPUNIT_ASSERT(fs::create_directories(longpath));
+		CPPUNIT_ASSERT(fs::remove_all(longpath) > 0);
+		CPPUNIT_ASSERT(!exists(longpath));
 	}
 
 	void temp_directory_path()

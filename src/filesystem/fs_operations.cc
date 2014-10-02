@@ -605,7 +605,7 @@ bool is_empty(const path & p, std::error_code & ec) noexcept
 	bool rc = false;
 	if (is_directory(p, ec))
 	{
-		rc = (directory_iterator(p) == directory_iterator());
+		rc = (directory_iterator(p) == end(directory_iterator(p)));
 	} else
 	{
 		rc = (file_size(p, ec) == 0);
@@ -785,8 +785,8 @@ uintmax_t remove_all(const path & p)
 uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
 {
 	uintmax_t count = 0;
-	path last_directory;
-	int last_depth = 0;
+//	path last_directory;
+//	int last_depth = 0;
 	std::vector<path> stack; // for remembering on recursion
 
 	ec.clear();
@@ -798,6 +798,7 @@ uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
 //		printf("\n--------> %s (last=%d, curr=%d)", rdi->path().c_str(),
 //		       last_depth, rdi.depth());
 
+#if 0
 		if (last_depth > rdi.depth())
 		{
 			// just finished recursing
@@ -805,6 +806,7 @@ uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
 			remove(stack.back(), ec);
 			stack.pop_back();
 		}
+#endif
 
 		file_status st = rdi->symlink_status(ec);
 
@@ -812,29 +814,29 @@ uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
 		{
 			if ( st.type() == file_type::directory )
 			{
-				if (!is_linking_directory(*rdi))
-					stack.push_back(*rdi);
+				stack.push_back(*rdi);
 			} else
 			{
 //				printf("\nRemoving entry %s\n", rdi->path().c_str());
-				remove(rdi->path(),ec);
+				if (remove(rdi->path(),ec)) ++count;
 			}
 		}
 
-		last_depth = rdi.depth();
+//		last_depth = rdi.depth();
 	}
 
 	while ( (!stack.empty()) && (! ec) )
 	{
-		remove(stack.back(), ec);
+		printf("\n-> REMOVING %s\n", stack.back().c_str());
+		if (remove(stack.back(), ec)) ++count;
 		stack.pop_back();
 	}
 
-	if ( ! ec )
-	{
+//	if ( ! ec )
+//	{
 //		printf("\nRemoving target %s\n", p.c_str());
-		remove(p, ec);
-	}
+//		if (remove(p, ec)) ++count;
+//	}
 
 	return count;
 }

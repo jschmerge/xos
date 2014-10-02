@@ -164,24 +164,32 @@ void directory_iterator::delegate_construction(std::error_code & ec) noexcept
 directory_iterator &
 directory_iterator::increment(std::error_code & ec) noexcept
 {
-	struct dirent * de;
-	static_assert(std::is_same<decltype(m_handle.get()), DIR*>::value, "");
+	struct dirent * de = nullptr;
 	int rv = 0;
 
 	if (! m_handle)
 	{
 		ec = std::make_error_code(std::errc::bad_file_descriptor);
 
-	} else if ((rv = readdir_r(m_handle.get(), &m_buffer, &de)) == 0)
-	{
-		if (de == nullptr)
-			m_entry.assign(path());
-		else
-			m_entry.replace_filename(m_buffer.d_name);
 	} else
 	{
-		ec = make_errno_ec(rv);
+		do {
+			if ((rv = readdir_r(m_handle.get(), &m_buffer, &de)) == 0)
+			{
+				//printf("#####===> %s\n", m_buffer.d_name);
+				if (de == nullptr)
+					m_entry.assign(path());
+				else
+					m_entry.replace_filename(m_buffer.d_name);
+			} else
+			{
+				ec = make_errno_ec(rv);
+			}
+		} while (  (! ec)
+		        && ( is_linking_directory(m_entry))
+		        && (! m_entry.path().empty()) );
 	}
+
 	return *this;
 }
 

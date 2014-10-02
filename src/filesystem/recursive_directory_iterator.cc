@@ -213,6 +213,7 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 	int rv = 0;
 	ec.clear();
 
+	do {
 	if (! m_handle)
 	{
 		set_to_end_iterator();
@@ -266,6 +267,9 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 		tmp /= m_buffer.d_name;
 		m_entry.assign(tmp);
 	}
+	} while (  (!ec)
+	        && is_linking_directory(m_entry)
+	        && !m_entry.path().empty());
 
 	return *this;
 }
