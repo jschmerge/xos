@@ -126,6 +126,64 @@ path canonical(const path & p, const path & base)
 	return ret;
 }
 
+void copy(const path & from, const path & to)
+{
+	copy(from, to, copy_options::none);
+}
+
+void copy(const path & from, const path & to, std::error_code & ec) noexcept
+{
+	copy(from, to, copy_options::none, ec);
+}
+
+void copy(const path & from, const path & to, copy_options options)
+{
+	std::error_code ec;
+	copy(from, to, options, ec);
+	if (ec) throw filesystem_error("Could not copy file", from, to, ec);
+}
+
+void copy(const path & from, const path & to, copy_options options,
+          std::error_code & ec) noexcept
+{
+	file_status tostat, fromstat;
+
+	ec.clear();
+
+	if (  is_set(options, copy_options::create_symlinks)
+	   || is_set(options, copy_options::skip_symlinks) )
+	{
+		fromstat = symlink_status(from);
+		tostat = symlink_status(to);
+	} else
+	{
+		fromstat = status(from);
+		tostat = status(to);
+	}
+
+	if (!exists(fromstat))
+	{
+		ec = std::make_error_code(std::errc::no_such_file_or_directory);
+		return;
+	} else if (equivalent(from, to, ec))
+	{
+		ec = std::make_error_code(std::errc::file_exists);
+		return;
+	} else if (is_other(tostat) || is_other(fromstat))
+	{
+		ec = std::make_error_code(std::errc::operation_not_supported);
+		return;
+	} else if (is_directory(fromstat) && is_regular_file(tostat))
+	{
+		ec = std::make_error_code(std::errc::is_a_directory);
+		return;
+	}
+
+	if (is_symlink(fromstat))
+	{
+	}
+}
+
 bool copy_file(const path & from, const path & to)
 {
 	return copy_file(from, to, copy_options::none);

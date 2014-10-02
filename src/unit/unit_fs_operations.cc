@@ -106,6 +106,15 @@ class Test_fs_operations : public CppUnit::TestFixture
 
 		CPPUNIT_ASSERT(fs::canonical(a, base_path) == full_path);
 		CPPUNIT_ASSERT(fs::canonical(b, base_path) == full_path);
+
+		std::error_code ec;
+		current_path(base_path, ec);
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(fs::canonical(a, ec) == full_path);
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(fs::canonical(b, ec) == full_path);
+		CPPUNIT_ASSERT(!ec);
+		
 	}
 
 	void copy_file()

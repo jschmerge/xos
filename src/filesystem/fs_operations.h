@@ -66,21 +66,12 @@ path canonical(const path & p, const path & base, std::error_code & ec);
 path canonical(const path & p, std::error_code & ec);
 path canonical(const path & p, const path & base = current_path());
 
-#if 0
-void copy(const path & from, const path & to)
-{
-	copy(from, to, copy_options::none);
-}
-
-void copy(const path & from, const path & to, std::error_code & ex) noexcept
-{
-	copy(from, to, copy_options::none, ec);
-}
+void copy(const path & from, const path & to);
+void copy(const path & from, const path & to, std::error_code & ex) noexcept;
 
 void copy(const path & from, const path & to, copy_options options);
 void copy(const path & from, const path & to, copy_options options,
           std::error_code & ex) noexcept;
-#endif
 
 bool copy_file(const path & from, const path & to);
 bool copy_file(const path & from, const path & to,
