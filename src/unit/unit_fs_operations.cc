@@ -19,9 +19,11 @@ class Test_fs_operations : public CppUnit::TestFixture
 	CPPUNIT_TEST(canonical);
 	CPPUNIT_TEST(copy_file);
 	CPPUNIT_TEST(create_directories);
+	CPPUNIT_TEST(create_directory);
 	CPPUNIT_TEST(get_current_path);
 	CPPUNIT_TEST(set_current_path);
 	CPPUNIT_TEST(is_empty);
+	CPPUNIT_TEST(space);
 	CPPUNIT_TEST(status);
 	CPPUNIT_TEST(symlink_status);
 	CPPUNIT_TEST(last_write_time);
@@ -152,6 +154,8 @@ class Test_fs_operations : public CppUnit::TestFixture
 		                             fs::copy_options::overwrite_existing));
 		CPPUNIT_ASSERT_THROW(fs::copy_file("/etc/fstab", "/tmp/xxx"),
 		                     fs::filesystem_error);
+
+		CPPUNIT_ASSERT(fs::remove("/tmp/xxx"));
 	}
 
 	void create_directories()
@@ -168,6 +172,21 @@ class Test_fs_operations : public CppUnit::TestFixture
 		rc = fs::create_directories(tmp, ec);
 		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(rc == true);
+		fs::path bad{"/root/subdir/bad"};
+		CPPUNIT_ASSERT_THROW(fs::create_directories(bad),
+		                     fs::filesystem_error);
+	}
+
+	void create_directory()
+	{
+		fs::path dir(fs::temp_directory_path() / "created_dir");
+		fs::path file(fs::temp_directory_path() / "created_dir/file");
+		CPPUNIT_ASSERT_NO_THROW(fs::create_directory(dir));
+		CPPUNIT_ASSERT(fs::is_directory(dir));
+		CPPUNIT_ASSERT_NO_THROW(fs::create_directory(dir));
+		CPPUNIT_ASSERT(fs::copy_file("/etc/fstab", file));
+		CPPUNIT_ASSERT_THROW(fs::create_directory(file), fs::filesystem_error);
+		CPPUNIT_ASSERT(fs::remove_all(dir) > 0);
 	}
 
 	void get_current_path()
@@ -207,6 +226,26 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(fs::resize_file(q, 0));
 		CPPUNIT_ASSERT(fs::is_empty(q));
 		CPPUNIT_ASSERT(fs::remove_all(p) != 0);
+	}
+
+	void space()
+	{
+		fs::space_info s;
+		fs::path goodpath{fs::temp_directory_path()};
+		fs::path badpath{"/badpath"};
+
+		CPPUNIT_ASSERT_NO_THROW(s = fs::space(fs::temp_directory_path()));
+		CPPUNIT_ASSERT(  s.capacity > 0
+		              && s.capacity != static_cast<uintmax_t>(-1));
+		CPPUNIT_ASSERT(  s.available > 0
+		              && s.available != static_cast<uintmax_t>(-1));
+		CPPUNIT_ASSERT(  s.free > 0
+		              && s.free != static_cast<uintmax_t>(-1));
+		// not sure what else we can test here
+		CPPUNIT_ASSERT(s.capacity >= s.available);
+		CPPUNIT_ASSERT(s.capacity >= s.free);
+
+		CPPUNIT_ASSERT_THROW(fs::space(badpath), fs::filesystem_error);
 	}
 
 	void status()
