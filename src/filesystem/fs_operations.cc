@@ -126,6 +126,25 @@ path canonical(const path & p, const path & base)
 	return ret;
 }
 
+inline bool validate_copy_file_options(copy_options o)
+{
+	bool rc = true;
+
+	if (__builtin_popcount(static_cast<unsigned>(
+	                         o & copy_options::existing_entry_group)) > 1)
+		rc = false;
+
+	if (__builtin_popcount(static_cast<unsigned>(
+	                         o & copy_options::symlink_group)) > 1)
+		rc = false;
+
+	if (__builtin_popcount(static_cast<unsigned>(
+	                         o & copy_options::directory_group)) > 1)
+		rc = false;
+
+	return rc;
+}
+
 void copy(const path & from, const path & to)
 {
 	copy(from, to, copy_options::none);
@@ -149,6 +168,12 @@ void copy(const path & from, const path & to, copy_options options,
 	file_status tostat, fromstat;
 
 	ec.clear();
+
+	if (!validate_copy_file_options(options))
+	{
+		ec = make_error_code(std::errc::invalid_argument);
+		return;
+	}
 
 	if (  is_set(options, copy_options::create_symlinks)
 	   || is_set(options, copy_options::skip_symlinks) )
@@ -181,6 +206,42 @@ void copy(const path & from, const path & to, copy_options options,
 
 	if (is_symlink(fromstat))
 	{
+		if ( ! is_set(options, copy_options::skip_symlinks))
+			return;
+		else if ( ! exists(tostat) )
+			copy_symlink(from, to, ec);
+
+	} else if (is_regular_file(fromstat))
+	{
+		if ( is_set(options, copy_options::directories_only) )
+			return;
+		else if ( is_set(options, copy_options::create_symlinks) )
+			create_symlink(from, to, ec);
+		else if ( is_set(options, copy_options::create_hard_links) )
+			create_hard_link(from, to, ec);
+		else if ( is_directory(tostat) )
+			copy_file(from, to / from.filename(), ec);
+		else
+			copy_file(from, to, ec);
+
+	} else if (  is_directory(fromstat)
+	          && is_set(options, copy_options::recursive) )
+	{
+		if ( ! exists(tostat) )
+			create_directory(to, from, ec);
+
+		for (auto x = directory_iterator(from);
+		     (!ec) && x != directory_iterator();
+		     ++x)
+		{
+			// XXX - Standard says we need to add something here to options;
+			// need to test to figure out what - most likely something
+			// that prevents horrible recursion issues
+			//
+			// The spirit of this is to do a 'cp -r' for directories, lets
+			// examine how that works and tweak accordingly
+			copy(x->path(), to / x->path().filename(), options, ec);
+		}
 	}
 }
 
@@ -195,23 +256,6 @@ bool copy_file(const path & from, const path & to,
 	return copy_file(from, to, copy_options::none, ec);
 }
 
-inline bool validate_copy_file_options(copy_options opts)
-{
-	bool rc = true;
-	if (__builtin_popcount(static_cast<unsigned>(
-	                         opts & copy_options::existing_entry_group)) > 1)
-		rc = false;
-
-	if (__builtin_popcount(static_cast<unsigned>(
-	                         opts & copy_options::symlink_group)) > 1)
-		rc = false;
-
-	if (__builtin_popcount(static_cast<unsigned>(
-	                         opts & copy_options::directory_group)) > 1)
-		rc = false;
-
-	return rc;
-}
 
 bool copy_file(const path & from, const path & to, copy_options options)
 {
