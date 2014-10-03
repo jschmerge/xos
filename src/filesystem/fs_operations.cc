@@ -827,16 +827,16 @@ uintmax_t remove_all(const path & p, std::error_code & ec) noexcept
 
 	while ( (!stack.empty()) && (! ec) )
 	{
-		printf("\n-> REMOVING %s\n", stack.back().c_str());
+//		printf("\n-> REMOVING %s\n", stack.back().c_str());
 		if (remove(stack.back(), ec)) ++count;
 		stack.pop_back();
 	}
 
-//	if ( ! ec )
-//	{
+	if ( ! ec )
+	{
 //		printf("\nRemoving target %s\n", p.c_str());
-//		if (remove(p, ec)) ++count;
-//	}
+		if (remove(p, ec)) ++count;
+	}
 
 	return count;
 }

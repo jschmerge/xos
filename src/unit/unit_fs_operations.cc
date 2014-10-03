@@ -192,8 +192,10 @@ class Test_fs_operations : public CppUnit::TestFixture
 	{
 		// Test directory
 		fs::path p = fs::temp_directory_path() / "emptydir";
+		std::error_code ec;
 		try { fs::remove_all(p); } catch (...) { }
-		CPPUNIT_ASSERT(fs::create_directory(p));
+		fs::create_directory(p, ec);
+		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(fs::is_empty(p));
 		CPPUNIT_ASSERT(fs::create_directories(p / "subdir"));
 		CPPUNIT_ASSERT(!fs::is_empty(p));
@@ -280,10 +282,14 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(!exists(tmp));
 
-		fs::path longpath(fs::temp_directory_path() / "foo" / "bar" / "ugg");
+		fs::path longpath(tmp / "bar" / "ugg");
 		CPPUNIT_ASSERT(fs::create_directories(longpath));
-		CPPUNIT_ASSERT(fs::remove_all(longpath) > 0);
-		CPPUNIT_ASSERT(!exists(longpath));
+		CPPUNIT_ASSERT(fs::remove_all(tmp) > 0);
+		CPPUNIT_ASSERT(!exists(tmp));
+
+		CPPUNIT_ASSERT(!ec);
+		CPPUNIT_ASSERT(!exists(tmp));
+
 	}
 
 	void temp_directory_path()
