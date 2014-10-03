@@ -221,7 +221,7 @@ recursive_directory_iterator::increment(std::error_code & ec) noexcept
 		return *this;
 	}
 
-	if (!m_entry.path().empty() && recursion_pending())
+	if (recursion_pending())
 	{
 		if ((ec = do_recursive_open(m_entry)))
 		{
