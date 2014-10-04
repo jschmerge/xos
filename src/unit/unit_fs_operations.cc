@@ -5,7 +5,9 @@
 
 #include <unistd.h>
 
+#include <cstdlib>
 #include <string>
+#include <map>
 #include <functional>
 
 #include "cppunit-header.h"
@@ -40,13 +42,21 @@ class Test_fs_operations : public CppUnit::TestFixture
 
 	void setUp()
 	{
-		savedCWD = fs::current_path();
+		std::string arena = "/tmp/unittest." + std::to_string(getpid());
+		savedCwd = fs::current_path();
+
+		env_values.clear();
+
+		if (getenv("TMPDIR") == NULL)
+			env_values.erase("TMPDIR");
+		else
+			env_values["TMPDIR"] =  getenv("TMPDIR");
 	}
 
 	void tearDown()
 	{
 		// restore the old CWD
-		fs::current_path(savedCWD);
+		fs::current_path(savedCwd);
 
 		if (config::verbose)
 			std::cout << "\n-> RESTORING CWD: " << fs::current_path().c_str()
@@ -58,7 +68,8 @@ class Test_fs_operations : public CppUnit::TestFixture
 	const fs::path nonexistent_file;
 	const fs::path non_accessible_file;
 
-	fs::path savedCWD;
+	fs::path savedCwd;
+	std::map<std::string, std::string> env_values;
 
 	void test_fs_exception_thrown(std::function<void(void)> f,
 	                              fs::path target)
