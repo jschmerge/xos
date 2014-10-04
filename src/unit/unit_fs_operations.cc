@@ -15,6 +15,7 @@ namespace fs = filesystem::v1;
 class Test_fs_operations : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_fs_operations);
+	CPPUNIT_TEST(copy_options_bitmask_operators);
 	CPPUNIT_TEST(absolute);
 	CPPUNIT_TEST(canonical);
 	CPPUNIT_TEST(copy_file);
@@ -112,6 +113,68 @@ class Test_fs_operations : public CppUnit::TestFixture
 		}
 
 		CPPUNIT_ASSERT(caught);
+	}
+
+	void copy_options_bitmask_operators()
+	{
+		const fs::copy_options full = ~(fs::copy_options::none);
+		const fs::copy_options empty = fs::copy_options::none;
+
+		CPPUNIT_ASSERT(full != empty);
+
+		for (auto x : { fs::copy_options::skip_existing,
+		                fs::copy_options::overwrite_existing,
+		                fs::copy_options::update_existing,
+		                fs::copy_options::existing_entry_group,
+		                fs::copy_options::recursive,
+		                fs::copy_options::copy_symlinks,
+		                fs::copy_options::skip_symlinks,
+		                fs::copy_options::symlink_group,
+		                fs::copy_options::directories_only,
+		                fs::copy_options::create_symlinks,
+		                fs::copy_options::create_hard_links,
+		                fs::copy_options::directory_group } )
+		{
+			CPPUNIT_ASSERT((x & ~x) == empty);
+			CPPUNIT_ASSERT(~x != full);
+			CPPUNIT_ASSERT(is_set(x, x));
+			CPPUNIT_ASSERT(!is_set(~x, x));
+
+			CPPUNIT_ASSERT((empty & x) == fs::copy_options::none);
+			CPPUNIT_ASSERT((empty | x) == x);
+			CPPUNIT_ASSERT((empty ^ x) == x);
+
+			CPPUNIT_ASSERT((full & x) == x);
+			CPPUNIT_ASSERT((full | x) == full);
+			CPPUNIT_ASSERT((full ^ x) == ~x);
+
+			fs::copy_options tmp;
+
+			tmp = full;
+			tmp &= x;
+			CPPUNIT_ASSERT(tmp == (full & x));
+
+			tmp = full;
+			tmp |= x;
+			CPPUNIT_ASSERT(tmp == (full | x));
+
+			tmp = full;
+			tmp ^= x;
+			CPPUNIT_ASSERT(tmp == (full ^ x));
+
+			tmp = empty;
+			tmp &= x;
+			CPPUNIT_ASSERT(tmp == (empty & x));
+
+			tmp = empty;
+			tmp |= x;
+			CPPUNIT_ASSERT(tmp == (empty | x));
+
+			tmp = empty;
+			tmp ^= x;
+			CPPUNIT_ASSERT(tmp == (empty ^ x));
+
+		}
 	}
 
 	void absolute()
