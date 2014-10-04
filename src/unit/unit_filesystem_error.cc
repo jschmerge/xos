@@ -1,4 +1,7 @@
-#include "../filesystem/filesystem"
+#include "../filesystem/path.h"
+#include "../filesystem/filesystem_error.h"
+
+#include <memory>
 
 #include "cppunit-header.h"
 
@@ -7,6 +10,7 @@ class Test_filesystem_error : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_filesystem_error);
 	CPPUNIT_TEST(constructor_test);
+	CPPUNIT_TEST(throw_check);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -32,6 +36,37 @@ class Test_filesystem_error : public CppUnit::TestFixture
 			printf("filesystem_error (2 path) what: %s\n", fe2.what());
 		}
 		
+		// this causes alternate dtor to get called
+		std::unique_ptr<fs::filesystem_error> x(
+			new fs::filesystem_error("blah", std::error_code()));
+	}
+
+	void throw_check()
+	{
+		try { throw fs::filesystem_error(
+		              "message", std::make_error_code(std::errc::bad_message)); }
+		catch (std::exception & e) { }
+		catch (...) { CPPUNIT_FAIL("Exception was not caught"); }
+
+		try { throw fs::filesystem_error(
+		              "message", std::make_error_code(std::errc::bad_message)); }
+		catch (std::runtime_error & e) { }
+		catch (...) { CPPUNIT_FAIL("Exception was not caught"); }
+
+		try { throw fs::filesystem_error(
+		              "message", std::make_error_code(std::errc::bad_message)); }
+		catch (std::system_error & e) {
+			CPPUNIT_ASSERT(e.code().value()
+			                 == static_cast<int>(std::errc::bad_message));
+		} catch (...) { CPPUNIT_FAIL("Exception was not caught"); }
+
+		try { throw fs::filesystem_error(
+		              "message", std::make_error_code(std::errc::bad_message)); }
+		catch (fs::filesystem_error & e) {
+			CPPUNIT_ASSERT(e.code().value()
+			                 == static_cast<int>(std::errc::bad_message));
+		} catch (...) { CPPUNIT_FAIL("Exception was not caught"); }
+
 	}
 };
 
