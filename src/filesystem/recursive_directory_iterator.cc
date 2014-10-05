@@ -112,6 +112,24 @@ recursive_directory_iterator(recursive_directory_iterator && other) noexcept
 recursive_directory_iterator::~recursive_directory_iterator()
 	{ }
 
+recursive_directory_iterator &
+recursive_directory_iterator::operator = (
+	const recursive_directory_iterator & other)
+{
+	if (this != &other)
+	{
+		m_handle.reset(opendir(other.m_current_path.c_str()));
+		memcpy(&m_buffer, &other.m_buffer, sizeof(m_buffer));
+		m_options = other.m_options;
+  		m_pathname = other.m_pathname;
+		m_current_path = other.m_current_path;
+		m_entry = other.m_entry;
+		m_stack = other.m_stack;
+		m_recurse_flag = other.m_recurse_flag;
+	}
+
+	return *this;
+}
 
 void recursive_directory_iterator::delegate_construction(std::error_code & ec)
 {
