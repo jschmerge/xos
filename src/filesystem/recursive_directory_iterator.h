@@ -33,10 +33,7 @@ class recursive_directory_iterator
 
 	// modifiers
 	recursive_directory_iterator &
-	  operator = (const recursive_directory_iterator & )
-	{
-		return *this;
-	}
+	  operator = (const recursive_directory_iterator & );
 
 	recursive_directory_iterator &
 	  operator = (recursive_directory_iterator && ) noexcept

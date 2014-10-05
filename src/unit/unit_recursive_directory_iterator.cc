@@ -61,6 +61,7 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(
 			fs::recursive_directory_iterator j(fs::path(""), ec););
 		CPPUNIT_ASSERT(ec);
+
 	}
 
 	void assignment()
@@ -72,6 +73,24 @@ class Test_recursive_directory_iterator : public CppUnit::TestFixture
 		i = fs::recursive_directory_iterator{};
 		i = j;
 		i = empty;
+
+		fs::recursive_directory_iterator
+		      fromroot("/", fs::directory_options::skip_permission_denied);
+		fs::recursive_directory_iterator copy;
+		while (fromroot != end(fromroot))
+		{
+			++fromroot;
+			if (fromroot.depth() > 4)
+				break;
+		}
+
+		if (fromroot != end(fromroot))
+		{
+			copy = fromroot;
+			CPPUNIT_ASSERT(fromroot.options() == copy.options());
+			CPPUNIT_ASSERT(fromroot.depth() == copy.depth());
+			CPPUNIT_ASSERT(*fromroot == *copy);
+		}
 	}
 
 	void iteration()
