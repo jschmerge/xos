@@ -738,7 +738,7 @@ void last_write_time(const path & p, file_time_type new_time,
 void permissions(const path & p, perms prms)
 {
 	std::error_code ec;
-	permissions(p, prms);
+	permissions(p, prms, ec);
 	if (ec) throw filesystem_error("Could not set permissions", p, ec);
 }
 
@@ -1030,7 +1030,6 @@ path temp_directory_path(std::error_code & ec)
 		const char * value = getenv(var);
 		if (value != nullptr)
 		{
-			printf("Found var %s = %s\n", var, value);
 			st = status(value, ec);
 
 			if (exists(st) && is_directory(st))

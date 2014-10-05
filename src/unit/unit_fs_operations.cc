@@ -7,7 +7,6 @@
 
 #include <cstdlib>
 #include <string>
-#include <map>
 #include <functional>
 
 #include "cppunit-header.h"
@@ -17,14 +16,17 @@ namespace fs = filesystem::v1;
 class Test_fs_operations : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_fs_operations);
+	CPPUNIT_TEST(copy_options_bitmask_operators);
 	CPPUNIT_TEST(absolute);
 	CPPUNIT_TEST(canonical);
 	CPPUNIT_TEST(copy_file);
+	CPPUNIT_TEST(copy_symlink);
 	CPPUNIT_TEST(create_directories);
 	CPPUNIT_TEST(create_directory);
 	CPPUNIT_TEST(get_current_path);
 	CPPUNIT_TEST(set_current_path);
 	CPPUNIT_TEST(is_empty);
+	CPPUNIT_TEST(rename);
 	CPPUNIT_TEST(space);
 	CPPUNIT_TEST(status);
 	CPPUNIT_TEST(symlink_status);
@@ -42,25 +44,39 @@ class Test_fs_operations : public CppUnit::TestFixture
 
 	void setUp()
 	{
-		std::string arena = "/tmp/unittest." + std::to_string(getpid());
-		savedCwd = fs::current_path();
+		saved_cwd = fs::current_path();
 
-		env_values.clear();
+		const char * tmp_ptr = getenv("TMPDIR");
+		if (tmp_ptr != nullptr)
+			saved_tmp_env_var = tmp_ptr;
 
-		if (getenv("TMPDIR") == NULL)
-			env_values.erase("TMPDIR");
-		else
-			env_values["TMPDIR"] =  getenv("TMPDIR");
+		fs::path tmp = fs::temp_directory_path();
+
+		tmp /= "unittest.";
+		tmp += std::to_string(getpid());
+
+		CPPUNIT_ASSERT(setenv("TMPDIR", tmp.c_str(), 1) == 0);
+
+		fs::create_directories(tmp);
 	}
 
 	void tearDown()
 	{
+		fs::remove_all(fs::temp_directory_path());
+
 		// restore the old CWD
-		fs::current_path(savedCwd);
+		fs::current_path(saved_cwd);
 
 		if (config::verbose)
 			std::cout << "\n-> RESTORING CWD: " << fs::current_path().c_str()
 			          << std::endl;
+		if (!saved_tmp_env_var.empty())
+			CPPUNIT_ASSERT(setenv("TMPDIR", saved_tmp_env_var.c_str(), 1) == 0);
+		else
+			CPPUNIT_ASSERT(unsetenv("TMPDIR") == 0);
+
+		saved_tmp_env_var.clear();
+		saved_cwd.clear();
 	}
 
  protected:
@@ -68,8 +84,8 @@ class Test_fs_operations : public CppUnit::TestFixture
 	const fs::path nonexistent_file;
 	const fs::path non_accessible_file;
 
-	fs::path savedCwd;
-	std::map<std::string, std::string> env_values;
+	fs::path saved_cwd;
+	std::string	saved_tmp_env_var;
 
 	void test_fs_exception_thrown(std::function<void(void)> f,
 	                              fs::path target)
@@ -98,6 +114,68 @@ class Test_fs_operations : public CppUnit::TestFixture
 		}
 
 		CPPUNIT_ASSERT(caught);
+	}
+
+	void copy_options_bitmask_operators()
+	{
+		const fs::copy_options full = ~(fs::copy_options::none);
+		const fs::copy_options empty = fs::copy_options::none;
+
+		CPPUNIT_ASSERT(full != empty);
+
+		for (auto x : { fs::copy_options::skip_existing,
+		                fs::copy_options::overwrite_existing,
+		                fs::copy_options::update_existing,
+		                fs::copy_options::existing_entry_group,
+		                fs::copy_options::recursive,
+		                fs::copy_options::copy_symlinks,
+		                fs::copy_options::skip_symlinks,
+		                fs::copy_options::symlink_group,
+		                fs::copy_options::directories_only,
+		                fs::copy_options::create_symlinks,
+		                fs::copy_options::create_hard_links,
+		                fs::copy_options::directory_group } )
+		{
+			CPPUNIT_ASSERT((x & ~x) == empty);
+			CPPUNIT_ASSERT(~x != full);
+			CPPUNIT_ASSERT(is_set(x, x));
+			CPPUNIT_ASSERT(!is_set(~x, x));
+
+			CPPUNIT_ASSERT((empty & x) == fs::copy_options::none);
+			CPPUNIT_ASSERT((empty | x) == x);
+			CPPUNIT_ASSERT((empty ^ x) == x);
+
+			CPPUNIT_ASSERT((full & x) == x);
+			CPPUNIT_ASSERT((full | x) == full);
+			CPPUNIT_ASSERT((full ^ x) == ~x);
+
+			fs::copy_options tmp;
+
+			tmp = full;
+			tmp &= x;
+			CPPUNIT_ASSERT(tmp == (full & x));
+
+			tmp = full;
+			tmp |= x;
+			CPPUNIT_ASSERT(tmp == (full | x));
+
+			tmp = full;
+			tmp ^= x;
+			CPPUNIT_ASSERT(tmp == (full ^ x));
+
+			tmp = empty;
+			tmp &= x;
+			CPPUNIT_ASSERT(tmp == (empty & x));
+
+			tmp = empty;
+			tmp |= x;
+			CPPUNIT_ASSERT(tmp == (empty | x));
+
+			tmp = empty;
+			tmp ^= x;
+			CPPUNIT_ASSERT(tmp == (empty ^ x));
+
+		}
 	}
 
 	void absolute()
@@ -169,6 +247,17 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(fs::remove("/tmp/xxx"));
 	}
 
+	void copy_symlink()
+	{
+		fs::path file{"/etc/fstab"};
+		fs::path link1{fs::temp_directory_path() / "link_orig"};
+		fs::path link2{fs::temp_directory_path() / "link_copy"};
+		CPPUNIT_ASSERT_NO_THROW(fs::create_symlink(file, link1));
+		CPPUNIT_ASSERT_NO_THROW(fs::copy_symlink(link1, link2));
+
+		CPPUNIT_ASSERT(fs::read_symlink(link1) == fs::read_symlink(link2));
+	}
+
 	void create_directories()
 	{
 		bool rc = false;
@@ -179,7 +268,7 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(rc == false);
 
 		ec.clear();
-		fs::path tmp{"/tmp/foo" + std::to_string(getpid()) + "/bar"};
+		fs::path tmp{fs::temp_directory_path() / "bar"};
 		rc = fs::create_directories(tmp, ec);
 		CPPUNIT_ASSERT(!ec);
 		CPPUNIT_ASSERT(rc == true);
@@ -191,22 +280,35 @@ class Test_fs_operations : public CppUnit::TestFixture
 	void create_directory()
 	{
 		fs::path dir(fs::temp_directory_path() / "created_dir");
+		fs::path dir2(fs::temp_directory_path() / "copied_dir");
 		fs::path file(fs::temp_directory_path() / "created_dir/file");
 		CPPUNIT_ASSERT_NO_THROW(fs::create_directory(dir));
 		CPPUNIT_ASSERT(fs::is_directory(dir));
 		CPPUNIT_ASSERT_NO_THROW(fs::create_directory(dir));
 		CPPUNIT_ASSERT(fs::copy_file("/etc/fstab", file));
 		CPPUNIT_ASSERT_THROW(fs::create_directory(file), fs::filesystem_error);
-		CPPUNIT_ASSERT(fs::remove_all(dir) > 0);
+
+		CPPUNIT_ASSERT_NO_THROW(fs::permissions(dir, fs::perms::owner_all));
+		CPPUNIT_ASSERT(fs::status(dir).permissions() == fs::perms::owner_all);
+		CPPUNIT_ASSERT(fs::create_directory(dir2, dir));
+		CPPUNIT_ASSERT(fs::status(dir2).permissions() == fs::perms::owner_all);
 	}
 
 	void get_current_path()
 	{
+#if 0
 // XXX - How do we get this to fail?
 		fs::path p = fs::current_path();
 
 		if (config::verbose)
 			std::cout << "\nCurrent path = '" << p.c_str() << "'" << std::endl;
+#endif
+		fs::path p{fs::temp_directory_path() / "dir"};
+		CPPUNIT_ASSERT_NO_THROW(fs::create_directory(p));
+		CPPUNIT_ASSERT_NO_THROW(fs::current_path(p));
+		CPPUNIT_ASSERT(fs::current_path() == p);
+		CPPUNIT_ASSERT_NO_THROW(fs::remove(p));
+		CPPUNIT_ASSERT_THROW(fs::current_path(), fs::filesystem_error);
 	}
 
 	void set_current_path()
@@ -237,6 +339,24 @@ class Test_fs_operations : public CppUnit::TestFixture
 		CPPUNIT_ASSERT_NO_THROW(fs::resize_file(q, 0));
 		CPPUNIT_ASSERT(fs::is_empty(q));
 		CPPUNIT_ASSERT(fs::remove_all(p) != 0);
+	}
+
+	void rename()
+	{
+		fs::path p = fs::temp_directory_path() / "foo";
+		fs::path p2 = p;
+		p2.replace_filename("bar");
+
+		CPPUNIT_ASSERT(fs::copy_file("/etc/fstab", p));
+		CPPUNIT_ASSERT(fs::exists(p));
+		CPPUNIT_ASSERT(!fs::exists(p2));
+
+		CPPUNIT_ASSERT_NO_THROW(fs::rename(p, p2));
+		CPPUNIT_ASSERT(!fs::exists(p));
+		CPPUNIT_ASSERT(fs::exists(p2));
+
+		CPPUNIT_ASSERT_THROW(fs::rename(nonexistent_file, p2),
+		                     fs::filesystem_error);
 	}
 
 	void space()
@@ -320,13 +440,16 @@ class Test_fs_operations : public CppUnit::TestFixture
 		auto t0 = fs::file_time_type::min();
 		auto tp = fs::last_write_time(p);
 		CPPUNIT_ASSERT(tp > t0);
+
+		fs::path q{fs::temp_directory_path() / "bad"};
+		CPPUNIT_ASSERT_THROW(fs::last_write_time(q), fs::filesystem_error);
 	}
 
 	void remove_all()
 	{
 		std::error_code ec;
 		fs::path tmp{fs::temp_directory_path() / "foo"};
-		tmp += std::to_string(getpid());
+		CPPUNIT_ASSERT(fs::create_directories(tmp));
 
 		CPPUNIT_ASSERT_NO_THROW(fs::remove_all(tmp, ec));
 		CPPUNIT_ASSERT(!ec);
@@ -348,7 +471,7 @@ class Test_fs_operations : public CppUnit::TestFixture
 //		std::cout << "default temporary directory = "
 //		          << p.c_str() << std::endl;
 
-		CPPUNIT_ASSERT(p == "/tmp");
+		CPPUNIT_ASSERT(fs::is_directory(p));
 	}
 };
 

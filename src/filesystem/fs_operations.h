@@ -49,8 +49,6 @@ enum class copy_options
 };
 
 DEFINE_BITMASK_OPERATORS(copy_options, unsigned int);
-inline bool is_set(copy_options set, copy_options value)
-	{ return ((set & value) != copy_options::none); }
 
 typedef std::chrono::high_resolution_clock clock_type;
 typedef std::chrono::time_point<clock_type> file_time_type;
