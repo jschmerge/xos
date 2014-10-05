@@ -183,6 +183,7 @@ class Test_byteReverse : public CppUnit::TestFixture
 
 			for (size_t i = 0; i < sizeof(T); ++i)
 			{
+#if 0
 				if (s.top() != getByte(rx, i))
 				{
 					std::cout << std::hex << static_cast<uint32_t>(s.top())
@@ -190,8 +191,10 @@ class Test_byteReverse : public CppUnit::TestFixture
 					          << static_cast<uint32_t>(getByte(rx, i))
 					          << " do not match" << std::endl;
 					std::cout << std::dec;
-					CPPUNIT_ASSERT(false);
 				}
+#else
+				CPPUNIT_ASSERT(s.top() == getByte(rx, i));
+#endif
 				s.pop();
 			}
 		}

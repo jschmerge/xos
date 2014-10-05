@@ -37,6 +37,7 @@ class Test_Average : public CppUnit::TestFixture
 		}
 
 		accum /= values.size();
+#if 0
 		if (std::abs(accum - avg.mean()) > std::max(accum, avg.mean()))
 		{
 			std::cout << "\n" << std::setprecision(9) << accum << " " 
@@ -46,6 +47,10 @@ class Test_Average : public CppUnit::TestFixture
 			          << std::endl;
 			CPPUNIT_ASSERT(accum == avg.mean());
 		}
+#else
+		CPPUNIT_ASSERT(std::abs(accum - avg.mean()) <=
+		                 std::max(accum, avg.mean()));
+#endif
 	}
 };
 
