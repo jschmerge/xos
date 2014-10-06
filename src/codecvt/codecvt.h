@@ -224,7 +224,8 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	      char16_t*, char16_t*, char16_t*&) const;
 
 	virtual int
-	do_encoding() const noexcept;
+	do_encoding() const noexcept
+	{ return 0; }
 
 	virtual bool
 	do_always_noconv() const noexcept
@@ -266,7 +267,23 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	}
 
 	virtual int
-	do_max_length() const noexcept;
+	do_max_length() const noexcept
+	{
+		// max_length is defined to be the maximum return value from
+		// do_length(state, begin, end, 1) ... so max number of bytes it
+		// could take to produce a single char16_t. There are two
+		// interpretations of this:
+		//
+		// 1) max number of char's to produce a valid unicode codepoint that is
+		//    encodable as utf16 (4)
+		//
+		// 2) max number of char's to produce a unicode codepoint that is in
+		//    the basic multilingual plain (3)
+		//
+		// Since this function is most likely used for determining buffer
+		// sizes, we're erring on the side of caution and choosing 4
+		return 4;
+	}
 };
 
 //
