@@ -4,6 +4,9 @@
 #include <locale>
 #include <cassert>
 
+#include "utf8conv.h"
+
+#if 0
 namespace utf8_conversion {
 
 constexpr uint32_t length_limits[] = {
@@ -178,6 +181,7 @@ inline bool update_mbstate(std::mbstate_t & s, const char c)
 }
 
 } // namespace utf8_conversion
+#endif
 
 //////////////////////////////////////////////////////////////////////
 namespace std {
@@ -230,7 +234,36 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	do_length(mbstate_t & state,
 	          const char * from_begin,
 	          const char * from_end,
-	          size_t max) const;
+	          size_t max) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		size_t count = 0;
+		const char * i = from_begin;
+
+		while (  (i < from_end)
+		      && (count < max)
+		      && utf8::update_mbstate(state, *i))
+		{
+			if (state.__count == 0)
+			{
+				if (state.__value.__wch < 0x10000u)
+				{
+					++count;
+				} else if (state.__value.__wch < 0x10ffff)
+				{
+					if ((count + 2) >= max)
+						count += 2;
+				} else
+				{
+					// error
+				}
+			}
+			++i;
+		}
+
+		return (i - from_begin);
+	}
 
 	virtual int
 	do_max_length() const noexcept;
@@ -399,7 +432,7 @@ template<> class codecvt<char32_t, char, mbstate_t>
 	do_max_length() const noexcept override
 	{
 		namespace utf8 = utf8_conversion;
-		return utf8::bytes_needed(utf8::max_encodable_value);
+		return utf8::bytes_needed(utf8::max_encodable_value());
 	}
 };
 
