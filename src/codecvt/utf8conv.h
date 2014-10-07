@@ -149,7 +149,7 @@ inline bool update_mbstate(std::mbstate_t & s, const char c)
 {
 	bool rc = true;
 
-	if (s.__count <= 0)
+	if (s.__count < 0)
 	{
 		// handle error
 		rc = false;
