@@ -23,7 +23,6 @@ This was taken from the clang libc++ codebase and edited for formatting:
 100000-10FFFF DBC0-DBFF, DC00-DFFF F4-F4, 80-8F, 80-BF, 80-BF   65536
 */
 
-#include <utility>
 #include <stdexcept>
 
 constexpr char32_t ten_bit_mask = 0x3ffu;

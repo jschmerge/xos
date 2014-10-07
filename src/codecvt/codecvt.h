@@ -33,7 +33,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	~codecvt() { }
 
 	virtual result
-	do_out(mbstate_t&,
+	do_out(mbstate_t & state,
 	       const char16_t * from_begin,
 	       const char16_t * from_end,
 	       const char16_t * & from_next,
@@ -41,14 +41,60 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	       char * to_end,
 	       char * & to_next) const override
 	{
+		namespace utf8 = utf8_conversion;
+
 		result res = ok;
 
 		from_next = from_begin;
 		to_next = to_begin;
 
-		while ((to_next < to_end) && (from_next < from_end))
+		while ((to_next < to_end) && (from_next < from_end) && (res == ok))
 		{
-			// 
+			if (state.__count == 0)
+			{
+				if (*from_next < 0xd800 || *from_next > 0xdfff)
+				{
+					state.__value.__wch = *from_next;
+					state.__count = 0; // superfluous
+					++from_next;
+				} else if (*from_next < 0xdc00)
+				{
+					state.__value.__wch = (*from_next & 0x3ff) << 10;
+					state.__count = -1;
+					++from_next;
+				} else
+				{
+					res = error;
+				}
+			} else if (state.__count == -1)
+			{
+				if (*from_next > 0xdbff && *from_next < 0xe000)
+				{
+					state.__value.__wch |= (*from_next & 0x3ff);
+					state.__value.__wch += 0x10000;
+					state.__count = 0;
+					++from_next;
+				} else
+				{
+					res = error;
+				}
+			}
+
+			if ((state.__count == 0) && (res == ok))
+			{
+				// have a complete character
+				char val = utf8::remove_leader_byte(state);
+				if (state.__count < 0)
+					res = error;
+
+				*to_next = val;
+				++to_next;
+			}
+
+			if (state.__count > 0)
+			{
+				res = do_unshift(state, to_next, to_end, to_next);
+			}
 		}
 
 		return res;
@@ -64,9 +110,11 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 		assert((state.__count) >= 0 && (state.__count < do_max_length()));
 
+#if 0
 		// if this is the case, we have half of a surrugate pair
 		if ((state.__value.__wch) != 0 && (state.__count == 0))
 			return error;
+#endif
 
 		to_next = to_begin;
 
@@ -83,7 +131,8 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	virtual result
 	do_in(mbstate_t&,
 	      const char*, const char*, const char*&,
-	      char16_t*, char16_t*, char16_t*&) const;
+	      char16_t*, char16_t*, char16_t*&) const
+	{ return ok; }
 
 	virtual int
 	do_encoding() const noexcept
@@ -113,17 +162,23 @@ template<> class codecvt<char16_t, char, mbstate_t>
 				if (state.__value.__wch < 0x10000u)
 				{
 					++count;
-				} else if (state.__value.__wch < 0x10ffff)
+				} else if (state.__value.__wch <= 0x10ffff)
 				{
-					if ((count + 2) >= max)
+//					if ((count + 2) <= max)
 						count += 2;
+//					else
+//						++count;
 				} else
 				{
-					// error
+					printf("BREAK\n");
+					break;
 				}
+				printf("%06x(%zd) ", state.__value.__wch, count);
+				state.__value.__wch = 0;
 			}
 			++i;
 		}
+		putchar('\n');
 
 		return (i - from_begin);
 	}
