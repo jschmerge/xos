@@ -18,8 +18,7 @@ int main()
 	char * end = outbuf + 64, * ptr2 = nullptr;
 
 	auto state = std::mbstate_t();
-	//for (char32_t i = 0; i < 0x10ffff; ++i)
-	for (char32_t i = 0; i < 0x7fffffff; ++i)
+	for (char32_t i = 0; i < 0x100ffff; ++i)
 	{
 		auto res = cvt.out(state, &i, (&i) + 1, doneptr, outbuf, end, ptr2);
 		if ((i % 0x100000) == 0 || ((i < 0x10000) && ((i % 0x100) == 0)))
@@ -28,11 +27,21 @@ int main()
 
 		assert(res == std::codecvt_base::ok);
 
-		size_t length = ptr2 - outbuf;
+		int length = ptr2 - outbuf;
 
 		state = std::mbstate_t();
-		auto l2 = cvt.length(state, outbuf, ptr2, 1);
+		int l2 = cvt.length(state, outbuf, ptr2, 20);
 
-		printf("Length %d %zu\n", l2, length);
+		assert(length == l2);
+
+
+		char32_t redecoded = 0, * lastptr = nullptr;
+		const char * ptr1 = nullptr;
+		state = std::mbstate_t();
+		res = cvt.in(state, outbuf, outbuf + length, ptr1,
+		             &redecoded, (&redecoded) + 1, lastptr);
+
+		assert(res == std::codecvt_base::ok);
+		assert(i == redecoded);
 	}
 }

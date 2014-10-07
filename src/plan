@@ -5,30 +5,4 @@ Basic 2 operand operators - as needed -trivial
 iostream operators - necessary, but not a huge priority due to implicit
 std::string conversions
 
-directory_entry, directory_iterator, begin and end.. HIGH PRIORITY SOON
-
-file_status - higher than directory_entry
-
-enums file_type, perms, copy_options, directory_options - necessary, but only if blocking something, plus not much work
-
-is_empty() - high prio
-is_other() - high prio
-is_regular_file() - high prio
-
 ->filetime - oportunity to mix-in some good posix compatible code, perhaps WP on it
-
-status()
-file_status()
-system_complete()
-temp_directory_path()
-
-
-copy*
-
-create*
-
-exists*
-equivalent*
-file_size*
-is_block/char*
-is_dir*
