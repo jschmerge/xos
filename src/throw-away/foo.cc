@@ -42,3 +42,10 @@ static_assert(   is_iterable<int [][10] >::value, "");
 static_assert(   is_iterable<std::vector<int>::iterator>::value, "");
 static_assert(   is_iterable<std::array<int, 0>::iterator>::value, "");
 static_assert(   is_iterable<std::array<int, 10>::iterator>::value, "");
+static_assert(   is_iterable<std::initializer_list<int>::iterator>::value, "");
+auto x = { 1, 2, 3 };
+static_assert(   is_iterable<decltype(x)::iterator>::value, "");
+
+int main()
+{
+}
