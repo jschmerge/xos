@@ -81,7 +81,21 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
 	CPPUNIT_TEST(has_stem);
+
+	CPPUNIT_TEST(relative_path);
+	CPPUNIT_TEST(root_name);
+	CPPUNIT_TEST(root_directory);
+	CPPUNIT_TEST(has_root_path);
+	CPPUNIT_TEST(relative_path);
+	CPPUNIT_TEST(has_parent_path);
+	CPPUNIT_TEST(has_extension);
 	CPPUNIT_TEST_SUITE_END();
+
+	std::vector<path> path_list = {
+			"", "/", "//", "///",
+			"a", "a/", "/a/", "//a/", "/a", "//a", "///a/",
+		    "/", "a/b", "/a/b", "//a/b", "/", "a/", "/a/", "//a/",
+	};
 
  protected:
 	template <class ECT>
@@ -513,8 +527,8 @@ class Test_Path : public CppUnit::TestFixture
 
 	void has_root_name()
 	{
-		path p;
-		CPPUNIT_ASSERT(p.has_root_name() == false);
+		for (auto & p : path_list)
+			CPPUNIT_ASSERT(p.has_root_name() == false);
 	}
 
 	void has_root_path()
@@ -531,6 +545,57 @@ class Test_Path : public CppUnit::TestFixture
 			path p(s);
 			printf("%s\n", s);
 			CPPUNIT_ASSERT(p.has_stem());
+		}
+
+		for (const auto & s : { "", ".ext" })
+		{
+			path p(s);
+			printf("%s\n", s);
+			CPPUNIT_ASSERT(!p.has_stem());
+		}
+	}
+
+
+	void relative_path()
+	{
+	}
+
+	void root_name()
+	{
+		for (const path & p : { "", ".", "..", "foo", "/foo", "foo/" })
+		{
+			CPPUNIT_ASSERT(p.has_root_name() || p.root_name().empty());
+		}
+	}
+
+	void root_directory()
+	{
+		for (const path & p : { "", ".", "..", "foo", "/foo", "foo/" })
+		{
+			CPPUNIT_ASSERT(p.root_directory().empty()
+			  || (p.root_directory().string()[0] == path::preferred_separator));
+		}
+	}
+
+
+	void has_parent_path()
+	{
+	}
+
+	void has_extension()
+	{
+		for (const auto & s : { "", ".", "..", "foo", "/foo", "foo/" })
+		{
+			path p(s);
+			printf("%s\n", s);
+			CPPUNIT_ASSERT(!p.has_extension());
+		}
+
+		for (const auto & s : { ".ext", })
+		{
+			path p(s);
+			printf("%s\n", s);
+			CPPUNIT_ASSERT(!p.has_stem());
 		}
 	}
 };
