@@ -83,7 +83,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 			if ((state.__count == 0) && (res == ok))
 			{
 				// have a complete character
-				char val = utf8::remove_leader_byte(state);
+				char val = utf8::extract_leader_byte(state);
 				if (state.__count < 0)
 					res = error;
 
@@ -251,7 +251,7 @@ template<> class codecvt<char32_t, char, mbstate_t>
 			if (state.__count == 0)
 			{
 				state.__value.__wch = *from_next;
-				char val = utf8::remove_leader_byte(state);
+				char val = utf8::extract_leader_byte(state);
 
 				if (state.__count < 0)
 					return error;

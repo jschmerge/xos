@@ -1,6 +1,7 @@
 
 #include <cstdint>
 #include <cwchar>
+#include <iterator>
 
 namespace utf8_conversion {
 
@@ -13,6 +14,15 @@ constexpr uint32_t length_limits[] = {
 	0x80000000ul
 };
 
+constexpr uint8_t leader_prefix[] = {
+	0x00u,
+	0xc0u,
+	0xe0u,
+	0xf0u,
+	0xf8u,
+	0xfcu,
+};
+
 constexpr uint8_t one_byte_limit   = 0x80u;
 constexpr uint8_t invalid_limit    = 0xc0u;
 constexpr uint8_t two_byte_limit   = 0xe0u;
@@ -21,11 +31,6 @@ constexpr uint8_t four_byte_limit  = 0xf8u;
 constexpr uint8_t five_byte_limit  = 0xfcu;
 constexpr uint8_t six_byte_limit   = 0xfeu;
 
-constexpr uint8_t leader_prefix2    = 0xc0u;
-constexpr uint8_t leader_prefix3    = 0xe0u;
-constexpr uint8_t leader_prefix4    = 0xf0u;
-constexpr uint8_t leader_prefix5    = 0xf8u;
-constexpr uint8_t leader_prefix6    = 0xfcu;
 //
 // encode
 //
@@ -50,40 +55,26 @@ constexpr inline char next_byte(const std::mbstate_t & s)
 	         & s.__value.__wch) >> data_shift(s.__count));
 }
 
-inline char remove_leader_byte(mbstate_t & state)
+inline char extract_leader_byte(mbstate_t & state)
 {
-	// Someone smarter than me can probably figure out how to write
-	// this elegantly as a constexpr function
 	char leader = 0;
-	if (state.__value.__wch < length_limits[0])
-	{
-		leader = state.__value.__wch;
-		state.__value.__wch = 0;
-		state.__count = 0;
-	} else if (state.__value.__wch < length_limits[1])
-	{
-		leader = (leader_prefix2 | (state.__value.__wch >> 6));
-		state.__count = 1;
-	} else if (state.__value.__wch < length_limits[2])
-	{
-		leader = (leader_prefix3 | (state.__value.__wch >> 12));
-		state.__count = 2;
-	} else if (state.__value.__wch < length_limits[3])
-	{
-		leader = (leader_prefix4 | (state.__value.__wch >> 18));
-		state.__count = 3;
-	} else if (state.__value.__wch < length_limits[4])
-	{
-		leader = (leader_prefix5 | (state.__value.__wch >> 24));
-		state.__count = 4;
-	} else if (state.__value.__wch < length_limits[5])
-	{
-		leader = (leader_prefix6 | (state.__value.__wch >> 30));
-		state.__count = 5;
-	} else
+
+	for (int i = 0;
+	     i < (std::end(length_limits) - std::begin(length_limits)); ++i)
 	{
 		// on error, we set __count to -1; - see do_out
 		state.__count = -1;
+
+		if (state.__value.__wch < length_limits[i])
+		{
+			unsigned int shift = (continuation_bits_per_byte * i);
+			leader = (leader_prefix[i] | (state.__value.__wch >> shift));
+			state.__count = i;
+
+			if (i == 0) state.__value.__wch = 0;
+
+			break;
+		}
 	}
 
 	return leader;
@@ -92,8 +83,7 @@ inline char remove_leader_byte(mbstate_t & state)
 //
 // decode
 //
-constexpr uint32_t max_encodable_value()
-{ return 0x7fffffff; }
+constexpr uint32_t max_encodable_value() { return 0x7fffffff; }
 
 constexpr uint8_t continuation_byte_prefix_mask = 0xc0u;
 

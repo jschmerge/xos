@@ -72,7 +72,8 @@ void checku16()
 	s = std::mbstate_t();
 //	assert(cvt.length(s, s8.data(), s8.data() + s8.size(), 40) == (int)s16.length());
 	for (int i = 0; i < 21; ++i)
-	printf("%d: %d\n", i, cvt.length(s, s8.data(), s8.data() + s8.size(), i) );
+		printf("%d: %d\n", i, cvt.length(s, s8.data(),
+		       s8.data() + s8.size(), i) );
 
 }
 
