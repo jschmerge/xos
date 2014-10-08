@@ -80,6 +80,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(modifierFunctions);
 	CPPUNIT_TEST(compareFunctions);
 	CPPUNIT_TEST(interegatorFunctions);
+	CPPUNIT_TEST(has_stem);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
@@ -521,6 +522,16 @@ class Test_Path : public CppUnit::TestFixture
 		path p("foo");
 
 		CPPUNIT_ASSERT(p.has_root_path() == false);
+	}
+
+	void has_stem()
+	{
+		for (const auto & s : { ".", "..", "foo.", "foo", "/foo", "foo/" })
+		{
+			path p(s);
+			printf("%s\n", s);
+			CPPUNIT_ASSERT(p.has_stem());
+		}
 	}
 };
 
