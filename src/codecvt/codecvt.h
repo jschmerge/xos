@@ -8,12 +8,62 @@
 
 constexpr char32_t ten_bit_mask = 0x3ffu;
 constexpr char32_t magic_value = 0x10000u;
-//constexpr char32_t encoding_pattern = 0xd800dc00;
 
-//constexpr char16_t surrogate_range_begin = 0xd800u;
-//constexpr char16_t surrogate_high_end  = 0xdbffu;
-//constexpr char16_t surrogate_low_begin = 0xdc00u;
-//constexpr char16_t surrogate_range_end = 0xdfffu;
+inline bool update_mbstate(std::mbstate_t & s, char16_t c)
+{
+	bool rc = true;
+	if (s.__count == 0)
+	{
+		if (c < 0xd800 || c > 0xdfff)
+		{
+			s.__value.__wch = c;
+			s.__count = 0; // superfluous
+		} else if (c < 0xdc00)
+		{
+			s.__value.__wch = (c & 0x3ff) << 10;
+			s.__count = -1;
+		} else
+		{
+			rc = false;
+		}
+	} else if (s.__count == -1)
+	{
+		if (c > 0xdbff && c < 0xe000)
+		{
+			s.__value.__wch |= (c & 0x3ff);
+			s.__value.__wch += 0x10000;
+			s.__count = 0;
+		} else
+		{
+			rc = false;
+		}
+	}
+
+	return rc;
+}
+
+	
+inline char16_t extract_leader_value(std::mbstate_t & s)
+{
+	char16_t value = 0;
+			
+	if (s.__value.__wch < magic_value)
+	{
+		value = s.__value.__wch;
+	} else
+	{
+		s.__value.__wch -= magic_value;
+
+		value = ((s.__value.__wch >> 10) & ten_bit_mask);
+		s.__value.__wch &= ten_bit_mask;
+
+		value |= 0xd800;
+		s.__value.__wch |= 0xdc00;
+		s.__count = -1;
+	}
+
+	return value;
+}
 
 namespace std {
 
@@ -59,6 +109,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 		while ((to_next < to_end) && (from_next < from_end) && (res == ok))
 		{
+#if 0
 			if (state.__count == 0)
 			{
 				if (*from_next < 0xd800 || *from_next > 0xdfff)
@@ -88,6 +139,11 @@ template<> class codecvt<char16_t, char, mbstate_t>
 					res = error;
 				}
 			}
+#endif
+			if (update_mbstate(state, *from_next))
+				++from_next;
+			else
+				res = error;
 
 			if ((state.__count == 0) && (res == ok))
 			{
@@ -118,12 +174,6 @@ template<> class codecvt<char16_t, char, mbstate_t>
 		namespace utf8 = utf8_conversion;
 
 		assert((state.__count) >= 0 && (state.__count < do_max_length()));
-
-#if 0
-		// if this is the case, we have half of a surrugate pair
-		if ((state.__value.__wch) != 0 && (state.__count == 0))
-			return error;
-#endif
 
 		to_next = to_begin;
 
@@ -175,6 +225,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 			if (state.__count == 0)
 			{
+#if 0
 				char32_t tmp = 0;
 				
 				if (state.__value.__wch < magic_value)
@@ -193,6 +244,9 @@ template<> class codecvt<char16_t, char, mbstate_t>
 				}
 				
 				*to_next = tmp;
+#endif
+				*to_next = extract_leader_value(state);
+
 				++to_next;
 			}
 		}
@@ -237,21 +291,15 @@ template<> class codecvt<char16_t, char, mbstate_t>
 					++count;
 				} else if (state.__value.__wch <= 0x10ffff)
 				{
-//					if ((count + 2) <= max)
-						count += 2;
-//					else
-//						++count;
+					count += 2;
 				} else
 				{
-					printf("BREAK\n");
 					break;
 				}
-				printf("%06x(%zd) ", state.__value.__wch, count);
 				state.__value.__wch = 0;
 			}
 			++i;
 		}
-		putchar('\n');
 
 		return (i - from_begin);
 	}
