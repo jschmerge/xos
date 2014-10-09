@@ -86,8 +86,9 @@ void checku16()
 	r = cvt.in(s,s8.data(),s8.data() + s8.size(), cto_end,
 	           buffer16, buffer16 + 40, end16);
 
+	printf("-> in returned %s\n", code2str(r));
 	assert(r == std::codecvt_base::ok);
-	printf("%ld, %zu\n", end16 - buffer16, s16.length());
+
 	assert(static_cast<size_t>(end16 - buffer16) == s16.length());
 	assert(memcmp(buffer16, s16.data(), end16 - buffer16) == 0);
 }

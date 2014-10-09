@@ -161,6 +161,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 			{
 				*to_next = state.__value.__wch;
 				++to_next;
+				state.__count = 0;
 			}
 
 			if (utf8::update_mbstate(state, *from_next))
@@ -188,11 +189,19 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 					tmp |= 0xd800;
 					state.__value.__wch |= 0xdc00;
+					state.__count = -1;
 				}
 				
 				*to_next = tmp;
 				++to_next;
 			}
+		}
+
+		if ((state.__count < 0) && (to_next < to_end))
+		{
+			*to_next = state.__value.__wch;
+			++to_next;
+			state.__count = 0;
 		}
 
 		return res;
