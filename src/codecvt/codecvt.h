@@ -6,6 +6,15 @@
 
 #include "utf8conv.h"
 
+constexpr char32_t ten_bit_mask = 0x3ffu;
+constexpr char32_t magic_value = 0x10000u;
+//constexpr char32_t encoding_pattern = 0xd800dc00;
+
+//constexpr char16_t surrogate_range_begin = 0xd800u;
+//constexpr char16_t surrogate_high_end  = 0xdbffu;
+//constexpr char16_t surrogate_low_begin = 0xdc00u;
+//constexpr char16_t surrogate_range_end = 0xdfffu;
+
 namespace std {
 
 //
@@ -129,10 +138,65 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	}
 
 	virtual result
-	do_in(mbstate_t&,
-	      const char*, const char*, const char*&,
-	      char16_t*, char16_t*, char16_t*&) const
-	{ return ok; }
+	do_in(mbstate_t & state,
+	      const char * from_begin,
+	      const char * from_end,
+	      const char * & from_next,
+	      char16_t * to_begin,
+	      char16_t * to_end,
+	      char16_t * & to_next) const
+	{
+		namespace utf8 = utf8_conversion;
+		result res = ok;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_next = from_begin;
+		to_next = to_begin;
+
+		while ( (from_next < from_end) && (to_next < to_end) )
+		{
+			if (state.__count < 0)
+			{
+				*to_next = state.__value.__wch;
+				++to_next;
+			}
+
+			if (utf8::update_mbstate(state, *from_next))
+			{
+				++from_next;
+			} else
+			{
+				return res = error;
+				break;
+			}
+
+			if (state.__count == 0)
+			{
+				char32_t tmp = 0;
+				
+				if (state.__value.__wch < magic_value)
+				{
+					tmp = state.__value.__wch;
+				} else
+				{
+					state.__value.__wch -= magic_value;
+
+					tmp = ((state.__value.__wch >> 10) & ten_bit_mask);
+					state.__value.__wch &= ten_bit_mask;
+
+					tmp |= 0xd800;
+					state.__value.__wch |= 0xdc00;
+				}
+				
+				*to_next = tmp;
+				++to_next;
+			}
+		}
+
+		return res;
+	}
 
 	virtual int
 	do_encoding() const noexcept

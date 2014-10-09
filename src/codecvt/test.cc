@@ -70,11 +70,26 @@ void checku16()
 	printf("literal(decode) = %s\n", buffer);
 
 	s = std::mbstate_t();
-//	assert(cvt.length(s, s8.data(), s8.data() + s8.size(), 40) == (int)s16.length());
-	for (int i = 0; i < 21; ++i)
-		printf("%d: %d\n", i, cvt.length(s, s8.data(),
-		       s8.data() + s8.size(), i) );
+	assert(cvt.length(s, s8.data(), s8.data() + s8.length(), s16.length())
+	          == static_cast<int>(s8.length()));
 
+//	for (int i = 0; i < 21; ++i)
+//		printf("%d: %d\n", i, cvt.length(s, s8.data(),
+//		       s8.data() + s8.size(), i) );
+
+	char16_t buffer16[40];
+	memset(buffer16, 0, sizeof(buffer16));
+	const char * cto_end = nullptr;
+	char16_t * end16;
+
+	s = std::mbstate_t();
+	r = cvt.in(s,s8.data(),s8.data() + s8.size(), cto_end,
+	           buffer16, buffer16 + 40, end16);
+
+	assert(r == std::codecvt_base::ok);
+	printf("%ld, %zu\n", end16 - buffer16, s16.length());
+	assert(static_cast<size_t>(end16 - buffer16) == s16.length());
+	assert(memcmp(buffer16, s16.data(), end16 - buffer16) == 0);
 }
 
 int main()
