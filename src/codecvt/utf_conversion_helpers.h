@@ -1,3 +1,5 @@
+#ifndef GUARD_UTF
+#define GUARD_UTF 1
 
 #include <cstdint>
 #include <cwchar>
@@ -113,7 +115,7 @@ inline constexpr size_t codepoint_length (char c)
 inline bool is_codepoint_start (char c)
 {
 	bool rc = false;
-	
+
 	if (  (static_cast<unsigned char>(c) < six_byte_limit)
 	   && ( continuation_byte_prefix != ( static_cast<unsigned char>(c)
 	                                    & continuation_byte_prefix_mask) ) )
@@ -169,3 +171,84 @@ inline bool update_mbstate(std::mbstate_t & s, const char c)
 
 } // namespace utf8_conversion
 
+
+namespace utf16_conversion {
+
+constexpr char32_t surrogate_data_bits = 10;
+constexpr char32_t ten_bit_mask = ( (1 << surrogate_data_bits) - 1);
+constexpr char32_t surrogate_data_bitmask = ( (1 << surrogate_data_bits) - 1);
+constexpr char32_t surrogate_transform_value = 0x10000u;
+
+constexpr char16_t surrogate_min = 0xd800u;
+constexpr char16_t surrogate_max = 0xdfffu;
+constexpr char16_t low_surrogate_min = 0xdc00u;
+
+constexpr uint32_t max_encodable_value() { return 0x10ffffu; }
+
+inline bool update_mbstate(std::mbstate_t & s, char16_t c)
+{
+	bool rc = true;
+	if (s.__count == 0)
+	{
+		if (c < surrogate_min || c > surrogate_max)
+		{
+			s.__value.__wch = c;
+			s.__count = 0; // superfluous
+		} else if (c < low_surrogate_min)
+		{
+			s.__value.__wch = (c & surrogate_data_bitmask);
+			s.__value.__wch <<= surrogate_data_bits;
+			s.__count = -1;
+		} else
+		{
+			rc = false;
+		}
+	} else if (s.__count == -1)
+	{
+		if (c >= low_surrogate_min && c <= surrogate_max)
+		{
+			s.__value.__wch |= (c & ten_bit_mask);
+			s.__value.__wch += surrogate_transform_value;
+			s.__count = 0;
+		} else
+		{
+			rc = false;
+		}
+	}
+
+	return rc;
+}
+
+constexpr char16_t high_surrogate_value(char32_t c)
+{
+	return (surrogate_min
+		   | ( ( (c - surrogate_transform_value) >> surrogate_data_bits)
+	           & surrogate_data_bitmask));
+}
+
+constexpr char16_t low_surrogate_value(char32_t c)
+{
+	return (low_surrogate_min
+		   | ( (c - surrogate_transform_value) & surrogate_data_bitmask));
+}
+
+inline char16_t extract_leader_value(std::mbstate_t & s)
+{
+	char16_t value = 0;
+
+	if (s.__value.__wch < surrogate_transform_value)
+	{
+		value = s.__value.__wch;
+	} else
+	{
+		value = high_surrogate_value(s.__value.__wch);
+		s.__value.__wch = low_surrogate_value(s.__value.__wch);
+		s.__count = -1;
+	}
+
+	return value;
+}
+
+} // namespace utf16_conversion
+
+#endif // GUARD_UTF
