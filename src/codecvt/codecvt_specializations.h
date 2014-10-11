@@ -6,65 +6,6 @@
 
 #include "utf8conv.h"
 
-constexpr char32_t ten_bit_mask = 0x3ffu;
-constexpr char32_t magic_value = 0x10000u;
-
-inline bool update_mbstate(std::mbstate_t & s, char16_t c)
-{
-	bool rc = true;
-	if (s.__count == 0)
-	{
-		if (c < 0xd800 || c > 0xdfff)
-		{
-			s.__value.__wch = c;
-			s.__count = 0; // superfluous
-		} else if (c < 0xdc00)
-		{
-			s.__value.__wch = (c & 0x3ff) << 10;
-			s.__count = -1;
-		} else
-		{
-			rc = false;
-		}
-	} else if (s.__count == -1)
-	{
-		if (c > 0xdbff && c < 0xe000)
-		{
-			s.__value.__wch |= (c & 0x3ff);
-			s.__value.__wch += 0x10000;
-			s.__count = 0;
-		} else
-		{
-			rc = false;
-		}
-	}
-
-	return rc;
-}
-
-	
-inline char16_t extract_leader_value(std::mbstate_t & s)
-{
-	char16_t value = 0;
-			
-	if (s.__value.__wch < magic_value)
-	{
-		value = s.__value.__wch;
-	} else
-	{
-		s.__value.__wch -= magic_value;
-
-		value = ((s.__value.__wch >> 10) & ten_bit_mask);
-		s.__value.__wch &= ten_bit_mask;
-
-		value |= 0xd800;
-		s.__value.__wch |= 0xdc00;
-		s.__count = -1;
-	}
-
-	return value;
-}
-
 namespace std {
 
 //
@@ -101,6 +42,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	       char * & to_next) const override
 	{
 		namespace utf8 = utf8_conversion;
+		namespace utf16 = utf16_conversion;
 
 		result res = ok;
 
@@ -109,7 +51,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 		while ((to_next < to_end) && (from_next < from_end) && (res == ok))
 		{
-			if (update_mbstate(state, *from_next))
+			if (utf16::update_mbstate(state, *from_next))
 				++from_next;
 			else
 				res = error;
@@ -166,6 +108,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	      char16_t * & to_next) const
 	{
 		namespace utf8 = utf8_conversion;
+		namespace utf16 = utf16_conversion;
 		result res = ok;
 
 		assert(from_begin <= from_end);
@@ -194,7 +137,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 			if (state.__count == 0)
 			{
-				*to_next = extract_leader_value(state);
+				*to_next = utf16::extract_leader_value(state);
 
 				++to_next;
 			}
