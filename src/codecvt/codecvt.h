@@ -109,37 +109,6 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 		while ((to_next < to_end) && (from_next < from_end) && (res == ok))
 		{
-#if 0
-			if (state.__count == 0)
-			{
-				if (*from_next < 0xd800 || *from_next > 0xdfff)
-				{
-					state.__value.__wch = *from_next;
-					state.__count = 0; // superfluous
-					++from_next;
-				} else if (*from_next < 0xdc00)
-				{
-					state.__value.__wch = (*from_next & 0x3ff) << 10;
-					state.__count = -1;
-					++from_next;
-				} else
-				{
-					res = error;
-				}
-			} else if (state.__count == -1)
-			{
-				if (*from_next > 0xdbff && *from_next < 0xe000)
-				{
-					state.__value.__wch |= (*from_next & 0x3ff);
-					state.__value.__wch += 0x10000;
-					state.__count = 0;
-					++from_next;
-				} else
-				{
-					res = error;
-				}
-			}
-#endif
 			if (update_mbstate(state, *from_next))
 				++from_next;
 			else
@@ -225,28 +194,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 			if (state.__count == 0)
 			{
-#if 0
-				char32_t tmp = 0;
-				
-				if (state.__value.__wch < magic_value)
-				{
-					tmp = state.__value.__wch;
-				} else
-				{
-					state.__value.__wch -= magic_value;
-
-					tmp = ((state.__value.__wch >> 10) & ten_bit_mask);
-					state.__value.__wch &= ten_bit_mask;
-
-					tmp |= 0xd800;
-					state.__value.__wch |= 0xdc00;
-					state.__count = -1;
-				}
-				
-				*to_next = tmp;
-#endif
 				*to_next = extract_leader_value(state);
-
 				++to_next;
 			}
 		}
