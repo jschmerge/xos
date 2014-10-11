@@ -1,4 +1,5 @@
 #include "codecvt_specializations.h"
+#include "utf_conversion_helpers.h"
 
 namespace std {
 
@@ -7,6 +8,7 @@ namespace std {
 // codecvt<char16_t, char, mbstate_t> member functions
 //
 //////////////////////////////////////////////////////////////////////
+locale::id codecvt<char16_t, char, mbstate_t>::id;
 
 codecvt_base::result
 codecvt<char16_t, char, mbstate_t>::do_out(
@@ -138,6 +140,7 @@ codecvt<char16_t, char, mbstate_t>::do_length(
 	size_t max) const
 {
 	namespace utf8 = utf8_conversion;
+	namespace utf16 = utf16_conversion;
 
 	size_t count = 0;
 	const char * i = from_begin;
@@ -148,10 +151,10 @@ codecvt<char16_t, char, mbstate_t>::do_length(
 	{
 		if (state.__count == 0)
 		{
-			if (state.__value.__wch < 0x10000u)
+			if (state.__value.__wch < utf16::surrogate_transform_value)
 			{
 				++count;
-			} else if (state.__value.__wch <= 0x10ffff)
+			} else if (state.__value.__wch <= utf16::max_encodable_value())
 			{
 				count += 2;
 			} else
@@ -166,11 +169,37 @@ codecvt<char16_t, char, mbstate_t>::do_length(
 	return (i - from_begin);
 }
 
+int
+codecvt<char16_t, char, mbstate_t>::do_encoding() const noexcept
+{ return 0; }
+
+bool
+codecvt<char16_t, char, mbstate_t>::do_always_noconv() const noexcept
+{ return false; }
+
+// max_length is defined to be the maximum return value from
+// do_length(state, begin, end, 1) ... so max number of bytes it
+// could take to produce a single char16_t. There are two
+// interpretations of this:
+//
+// 1) max number of char's to produce a valid unicode codepoint that is
+//    encodable as utf16 (4)
+//
+// 2) max number of char's to produce a unicode codepoint that is in
+//    the basic multilingual plain (3)
+//
+// Since this function is most likely used for determining buffer
+// sizes, we're erring on the side of caution and choosing four
+int
+codecvt<char16_t, char, mbstate_t>::do_max_length() const noexcept
+{ return 4; }
+
 //////////////////////////////////////////////////////////////////////
 //
 // codecvt<char32_t, char, mbstate_t> member functions
 //
 //////////////////////////////////////////////////////////////////////
+locale::id codecvt<char32_t, char, mbstate_t>::id;
 
 codecvt_base::result
 codecvt<char32_t, char, mbstate_t>::do_out(
@@ -293,6 +322,21 @@ codecvt<char32_t, char, mbstate_t>::do_length(
 	}
 
 	return (i - from_begin);
+}
+
+int
+codecvt<char32_t, char, mbstate_t>::do_encoding() const noexcept
+{ return 0; }
+
+bool
+codecvt<char32_t, char, mbstate_t>::do_always_noconv() const noexcept
+{ return false; }
+
+int
+codecvt<char32_t, char, mbstate_t>::do_max_length() const noexcept
+{
+	namespace utf8 = utf8_conversion;
+	return utf8::bytes_needed(utf8::max_encodable_value());
 }
 
 } // namespace std

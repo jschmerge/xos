@@ -183,6 +183,8 @@ constexpr char16_t surrogate_min = 0xd800u;
 constexpr char16_t surrogate_max = 0xdfffu;
 constexpr char16_t low_surrogate_min = 0xdc00u;
 
+constexpr uint32_t max_encodable_value() { return 0x10ffffu; }
+
 inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 {
 	bool rc = true;
