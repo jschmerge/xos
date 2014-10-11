@@ -1,5 +1,5 @@
-#ifndef GUARD_UTF8_H
-#define GUARD_UTF8_H 1
+#ifndef GUARD_CODECVT_SPECIALIZATIONS_H
+#define GUARD_CODECVT_SPECIALIZATIONS_H 1
 
 #include <locale>
 #include <cassert>
@@ -109,37 +109,6 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 		while ((to_next < to_end) && (from_next < from_end) && (res == ok))
 		{
-#if 0
-			if (state.__count == 0)
-			{
-				if (*from_next < 0xd800 || *from_next > 0xdfff)
-				{
-					state.__value.__wch = *from_next;
-					state.__count = 0; // superfluous
-					++from_next;
-				} else if (*from_next < 0xdc00)
-				{
-					state.__value.__wch = (*from_next & 0x3ff) << 10;
-					state.__count = -1;
-					++from_next;
-				} else
-				{
-					res = error;
-				}
-			} else if (state.__count == -1)
-			{
-				if (*from_next > 0xdbff && *from_next < 0xe000)
-				{
-					state.__value.__wch |= (*from_next & 0x3ff);
-					state.__value.__wch += 0x10000;
-					state.__count = 0;
-					++from_next;
-				} else
-				{
-					res = error;
-				}
-			}
-#endif
 			if (update_mbstate(state, *from_next))
 				++from_next;
 			else
@@ -225,26 +194,6 @@ template<> class codecvt<char16_t, char, mbstate_t>
 
 			if (state.__count == 0)
 			{
-#if 0
-				char32_t tmp = 0;
-				
-				if (state.__value.__wch < magic_value)
-				{
-					tmp = state.__value.__wch;
-				} else
-				{
-					state.__value.__wch -= magic_value;
-
-					tmp = ((state.__value.__wch >> 10) & ten_bit_mask);
-					state.__value.__wch &= ten_bit_mask;
-
-					tmp |= 0xd800;
-					state.__value.__wch |= 0xdc00;
-					state.__count = -1;
-				}
-				
-				*to_next = tmp;
-#endif
 				*to_next = extract_leader_value(state);
 
 				++to_next;
@@ -485,83 +434,6 @@ template<> class codecvt<char32_t, char, mbstate_t>
 	}
 };
 
-//
-// enum codecvt_mode
-//
-// - If (Mode & consume_header), the facet shall consume an initial header
-//   sequence, if present, when reading a multibyte sequence to determine
-//   the endianness of the subsequent multibyte sequence to be read.
-// - If (Mode & generate_header), the facet shall generate an initial header
-//   sequence when writing a multibyte sequence to advertise the endianness
-//   of the subsequent multibyte sequence to be written.
-// - If (Mode & little_endian), the facet shall generate a multibyte
-//   sequence in little-endian order, as opposed to the default big-endian
-//   order.
-//
-enum codecvt_mode
-{
-	consume_header = 4,
-	generate_header = 2,
-	little_endian = 1
-};
-
-//
-// For the facet codecvt_utf8:
-//
-// - The facet shall convert between UTF-8 multibyte sequences and UCS2 or
-//   UCS4 (depending on the size of Elem) within the program.
-// - Endianness shall not affect how multibyte sequences are read or written.
-// - The multibyte sequences may be written as either a text or a binary file.
-//
-// This is used to output utf-8 encoded data
-//
-template <typename Elem, unsigned long Maxcode = 0x10ffff,
-          codecvt_mode Mode = (codecvt_mode) 0>
-class codecvt_utf8 : public codecvt<Elem, char, mbstate_t>
-{
- public:
-	explicit codecvt_utf8(size_t refs = 0);
-	~codecvt_utf8();
-};
-
-//
-// For the facet codecvt_utf16:
-//
-// - The facet shall convert between UTF-16 multibyte sequences and UCS2 or
-//   UCS4 (depending on the size of Elem) within the program.
-// - Multibyte sequences shall be read or written according to the Mode
-//   flag, as set out above.
-// - The multibyte sequences may be written only as a binary file.
-//   Attempting to write to a text file produces undefined behavior.
-//
-// This is used to output utf-16 encoded data
-//
-template <typename Elem, unsigned long Maxcode = 0x10ffff,
-          codecvt_mode Mode = (codecvt_mode) 0>
-class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
-{
- public:
-	explicit codecvt_utf16(size_t refs = 0);
-	~codecvt_utf16();
-};
-
-//
-// For the facet codecvt_utf8_utf16:
-//
-// - The facet shall convert between UTF-8 multibyte sequences and UTF-16
-//   (one or two 16-bit codes) within the program.
-// - Endianness shall not affect how multibyte sequences are read or written.
-// - The multibyte sequences may be written as either a text or a binary file.
-//
-template <typename Elem, unsigned long Maxcode = 0x10ffff,
-          codecvt_mode Mode = (codecvt_mode) 0>
-class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
-{
- public:
-	explicit codecvt_utf8_utf16(size_t refs = 0);
-	~codecvt_utf8_utf16();
-};
-
 } // namespace std
 
-#endif // GUARD_UTF8_H
+#endif // GUARD_CODECVT_SPECIALIZATIONS_H
