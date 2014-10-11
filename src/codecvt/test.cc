@@ -29,6 +29,7 @@ const char * code2str(std::codecvt_base::result r)
 	 case std::codecvt_base::noconv:
 		return "noconv";
 	}
+	return nullptr;
 }
 
 void checku16()
