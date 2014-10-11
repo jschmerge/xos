@@ -4,7 +4,7 @@
 #include <locale>
 #include <cassert>
 
-#include "utf8conv.h"
+#include "utf_conversion_helpers.h"
 
 namespace std {
 
@@ -117,7 +117,7 @@ template<> class codecvt<char16_t, char, mbstate_t>
 		from_next = from_begin;
 		to_next = to_begin;
 
-		while ( (from_next < from_end) && (to_next < to_end) )
+		while ( (res == ok) && (from_next < from_end) && (to_next < to_end) )
 		{
 			if (state.__count < 0)
 			{
@@ -129,21 +129,19 @@ template<> class codecvt<char16_t, char, mbstate_t>
 			if (utf8::update_mbstate(state, *from_next))
 			{
 				++from_next;
+
+				if (state.__count == 0)
+				{
+					*to_next = utf16::extract_leader_value(state);
+					++to_next;
+				}
 			} else
 			{
-				return res = error;
-				break;
-			}
-
-			if (state.__count == 0)
-			{
-				*to_next = utf16::extract_leader_value(state);
-
-				++to_next;
+				res = error;
 			}
 		}
 
-		if ((state.__count < 0) && (to_next < to_end))
+		if ( (res == ok) && (state.__count < 0) && (to_next < to_end))
 		{
 			*to_next = state.__value.__wch;
 			++to_next;

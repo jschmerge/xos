@@ -2,8 +2,8 @@
 #define GUARD_CODECVT_UTF8_H 1
 
 #include <locale>
-#include "codecvt_mode.h"
 #include "codecvt_specializations.h"
+#include "codecvt_mode.h"
 
 namespace std {
 

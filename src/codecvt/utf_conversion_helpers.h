@@ -174,21 +174,28 @@ inline bool update_mbstate(std::mbstate_t & s, const char c)
 
 namespace utf16_conversion {
 
-constexpr char32_t ten_bit_mask = 0x3ffu;
-constexpr char32_t magic_value = 0x10000u;
+constexpr char32_t surrogate_data_bits = 10;
+constexpr char32_t ten_bit_mask = ( (1 << surrogate_data_bits) - 1);
+constexpr char32_t surrogate_data_bitmask = ( (1 << surrogate_data_bits) - 1);
+constexpr char32_t surrogate_transform_value = 0x10000u;
+
+constexpr char16_t surrogate_min = 0xd800u;
+constexpr char16_t surrogate_max = 0xdfffu;
+constexpr char16_t low_surrogate_min = 0xdc00u;
 
 inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 {
 	bool rc = true;
 	if (s.__count == 0)
 	{
-		if (c < 0xd800 || c > 0xdfff)
+		if (c < surrogate_min || c > surrogate_max)
 		{
 			s.__value.__wch = c;
 			s.__count = 0; // superfluous
-		} else if (c < 0xdc00)
+		} else if (c < low_surrogate_min)
 		{
-			s.__value.__wch = (c & 0x3ff) << 10;
+			s.__value.__wch = (c & surrogate_data_bitmask);
+			s.__value.__wch <<= surrogate_data_bits;
 			s.__count = -1;
 		} else
 		{
@@ -196,10 +203,10 @@ inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 		}
 	} else if (s.__count == -1)
 	{
-		if (c > 0xdbff && c < 0xe000)
+		if (c >= low_surrogate_min && c <= surrogate_max)
 		{
-			s.__value.__wch |= (c & 0x3ff);
-			s.__value.__wch += 0x10000;
+			s.__value.__wch |= (c & ten_bit_mask);
+			s.__value.__wch += surrogate_transform_value;
 			s.__count = 0;
 		} else
 		{
@@ -210,22 +217,30 @@ inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 	return rc;
 }
 
+constexpr char16_t high_surrogate_value(char32_t c)
+{
+	return (surrogate_min
+		   | ( ( (c - surrogate_transform_value) >> surrogate_data_bits)
+	           & surrogate_data_bitmask));
+}
+
+constexpr char16_t low_surrogate_value(char32_t c)
+{
+	return (low_surrogate_min
+		   | ( (c - surrogate_transform_value) & surrogate_data_bitmask));
+}
+
 inline char16_t extract_leader_value(std::mbstate_t & s)
 {
 	char16_t value = 0;
 
-	if (s.__value.__wch < magic_value)
+	if (s.__value.__wch < surrogate_transform_value)
 	{
 		value = s.__value.__wch;
 	} else
 	{
-		s.__value.__wch -= magic_value;
-
-		value = ((s.__value.__wch >> 10) & ten_bit_mask);
-		s.__value.__wch &= ten_bit_mask;
-
-		value |= 0xd800;
-		s.__value.__wch |= 0xdc00;
+		value = high_surrogate_value(s.__value.__wch);
+		s.__value.__wch = low_surrogate_value(s.__value.__wch);
 		s.__count = -1;
 	}
 
