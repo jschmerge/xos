@@ -3,6 +3,7 @@
 
 #include <locale>
 #include <algorithm>
+#include <cassert>
 
 #include "codecvt_specializations.h"
 #include "codecvt_mode.h"
@@ -11,9 +12,12 @@
 namespace std {
 
 // helper class mix-in for codecvt_utf8
-template <typename T, unsigned long Maxcode>
+template <typename T, unsigned long Maxcode, codecvt_mode Mode>
 struct helper
 {
+	inline bool output_bom()
+	{ return (Mode & generate_header); }
+
 	inline
 	constexpr uint32_t max_encodable() const
 	{
@@ -38,7 +42,7 @@ class codecvt_utf8;
 template <unsigned long Maxcode, codecvt_mode Mode>
 class codecvt_utf8<wchar_t, Maxcode, Mode>
   : public codecvt<wchar_t, char, mbstate_t>
-  , protected helper<wchar_t, Maxcode>
+  , protected helper<wchar_t, Maxcode, Mode>
 {
  public:
 	explicit
@@ -57,7 +61,44 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	       const wchar_t * & from_last,
 	       char * to_begin,
 	       char * to_end,
-	       char * & to_last) const override;
+	       char * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_last = from_begin;
+		to_last = to_begin;
+
+		while ((to_last < to_end) && (from_last < from_end))
+		{
+			if (state.__count == 0)
+			{
+				if (*from_last > this->max_encodable())
+					return error;
+
+				state.__value.__wch = *from_last;
+				char val = utf8::extract_leader_byte(state);
+
+				if (state.__count < 0)
+					return error;
+
+				*to_last = val;
+				++to_last;
+				++from_last;
+			}
+
+			do_unshift(state, to_last, to_end, to_last);
+		}
+
+		do_unshift(state, to_last, to_end, to_last);
+
+		return ( (  (state.__count == 0)
+		         && (from_last == from_end)) ?
+		         ok : partial );
+	}
+
 
 	virtual result
 	do_unshift(mbstate_t & state,
@@ -91,7 +132,8 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	virtual int
 	do_max_length() const noexcept override
 	{
-		return ( utf8_conversion::bytes_needed(bom_value())
+		return ( (this->output_bom() ?
+		          utf8_conversion::bytes_needed(bom_value()) : 0)
 		       + utf8_conversion::bytes_needed(this->max_encodable()));
 	}
 };
@@ -99,7 +141,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 template <unsigned long Maxcode, codecvt_mode Mode>
 class codecvt_utf8<char16_t, Maxcode, Mode>
   : public codecvt<char16_t, char, mbstate_t>
-  , protected helper<char16_t, Maxcode>
+  , protected helper<char16_t, Maxcode, Mode>
 {
  public:
 	explicit
@@ -113,12 +155,48 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
  protected:
 	virtual result
 	do_out(mbstate_t & state,
-	       const wchar_t * from_begin,
-	       const wchar_t * from_end,
-	       const wchar_t * & from_last,
+	       const char16_t * from_begin,
+	       const char16_t * from_end,
+	       const char16_t * & from_last,
 	       char * to_begin,
 	       char * to_end,
-	       char * & to_last) const override;
+	       char * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_last = from_begin;
+		to_last = to_begin;
+
+		while ((to_last < to_end) && (from_last < from_end))
+		{
+			if (state.__count == 0)
+			{
+				if (*from_last > this->max_encodable())
+					return error;
+
+				state.__value.__wch = *from_last;
+				char val = utf8::extract_leader_byte(state);
+
+				if (state.__count < 0)
+					return error;
+
+				*to_last = val;
+				++to_last;
+				++from_last;
+			}
+
+			do_unshift(state, to_last, to_end, to_last);
+		}
+
+		do_unshift(state, to_last, to_end, to_last);
+
+		return ( (  (state.__count == 0)
+		         && (from_last == from_end)) ?
+		         ok : partial );
+	}
 
 	virtual result
 	do_unshift(mbstate_t & state,
@@ -131,9 +209,9 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	      const char * from_begin,
 	      const char *from_end,
 	      const char * & from_last,
-	      wchar_t * to_begin,
-	      wchar_t * to_end,
-	      wchar_t * & to_last) const override;
+	      char16_t * to_begin,
+	      char16_t * to_end,
+	      char16_t * & to_last) const override;
 
 	virtual int
 	do_length(mbstate_t & state,
@@ -152,7 +230,8 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	virtual int
 	do_max_length() const noexcept override
 	{
-		return ( utf8_conversion::bytes_needed(bom_value())
+		return ( (this->output_bom() ?
+		          utf8_conversion::bytes_needed(bom_value()) : 0)
 		       + utf8_conversion::bytes_needed(this->max_encodable()));
 	}
 };
@@ -160,7 +239,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 template <unsigned long Maxcode, codecvt_mode Mode>
 class codecvt_utf8<char32_t, Maxcode, Mode>
   : public codecvt<char32_t, char, mbstate_t>
-  , protected helper<char32_t, Maxcode>
+  , protected helper<char32_t, Maxcode, Mode>
 {
  public:
 	explicit
@@ -174,12 +253,49 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
  protected:
 	virtual result
 	do_out(mbstate_t & state,
-	       const wchar_t * from_begin,
-	       const wchar_t * from_end,
-	       const wchar_t * & from_last,
+	       const char32_t * from_begin,
+	       const char32_t * from_end,
+	       const char32_t * & from_last,
 	       char * to_begin,
 	       char * to_end,
-	       char * & to_last) const override;
+	       char * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_last = from_begin;
+		to_last = to_begin;
+
+		while ((to_last < to_end) && (from_last < from_end))
+		{
+			if (state.__count == 0)
+			{
+				if (*from_last > this->max_encodable())
+					return error;
+
+				state.__value.__wch = *from_last;
+				char val = utf8::extract_leader_byte(state);
+
+				if (state.__count < 0)
+					return error;
+
+				*to_last = val;
+				++to_last;
+				++from_last;
+			}
+
+			do_unshift(state, to_last, to_end, to_last);
+		}
+
+		do_unshift(state, to_last, to_end, to_last);
+
+		return ( (  (state.__count == 0)
+		         && (from_last == from_end)) ?
+		         ok : partial );
+	}
+
 
 	virtual result
 	do_unshift(mbstate_t & state,
@@ -192,9 +308,9 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	      const char * from_begin,
 	      const char *from_end,
 	      const char * & from_last,
-	      wchar_t * to_begin,
-	      wchar_t * to_end,
-	      wchar_t * & to_last) const override;
+	      char32_t * to_begin,
+	      char32_t * to_end,
+	      char32_t * & to_last) const override;
 
 	virtual int
 	do_length(mbstate_t & state,
@@ -213,7 +329,8 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	virtual int
 	do_max_length() const noexcept override
 	{
-		return ( utf8_conversion::bytes_needed(bom_value())
+		return ( ( this->output_bom() ?
+		           utf8_conversion::bytes_needed(bom_value()) : 0 )
 		       + utf8_conversion::bytes_needed(this->max_encodable()));
 	}
 };
