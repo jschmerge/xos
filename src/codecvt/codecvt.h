@@ -485,6 +485,83 @@ template<> class codecvt<char32_t, char, mbstate_t>
 	}
 };
 
+//
+// enum codecvt_mode
+//
+// - If (Mode & consume_header), the facet shall consume an initial header
+//   sequence, if present, when reading a multibyte sequence to determine
+//   the endianness of the subsequent multibyte sequence to be read.
+// - If (Mode & generate_header), the facet shall generate an initial header
+//   sequence when writing a multibyte sequence to advertise the endianness
+//   of the subsequent multibyte sequence to be written.
+// - If (Mode & little_endian), the facet shall generate a multibyte
+//   sequence in little-endian order, as opposed to the default big-endian
+//   order.
+//
+enum codecvt_mode
+{
+	consume_header = 4,
+	generate_header = 2,
+	little_endian = 1
+};
+
+//
+// For the facet codecvt_utf8:
+//
+// - The facet shall convert between UTF-8 multibyte sequences and UCS2 or
+//   UCS4 (depending on the size of Elem) within the program.
+// - Endianness shall not affect how multibyte sequences are read or written.
+// - The multibyte sequences may be written as either a text or a binary file.
+//
+// This is used to output utf-8 encoded data
+//
+template <typename Elem, unsigned long Maxcode = 0x10ffff,
+          codecvt_mode Mode = (codecvt_mode) 0>
+class codecvt_utf8 : public codecvt<Elem, char, mbstate_t>
+{
+ public:
+	explicit codecvt_utf8(size_t refs = 0);
+	~codecvt_utf8();
+};
+
+//
+// For the facet codecvt_utf16:
+//
+// - The facet shall convert between UTF-16 multibyte sequences and UCS2 or
+//   UCS4 (depending on the size of Elem) within the program.
+// - Multibyte sequences shall be read or written according to the Mode
+//   flag, as set out above.
+// - The multibyte sequences may be written only as a binary file.
+//   Attempting to write to a text file produces undefined behavior.
+//
+// This is used to output utf-16 encoded data
+//
+template <typename Elem, unsigned long Maxcode = 0x10ffff,
+          codecvt_mode Mode = (codecvt_mode) 0>
+class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
+{
+ public:
+	explicit codecvt_utf16(size_t refs = 0);
+	~codecvt_utf16();
+};
+
+//
+// For the facet codecvt_utf8_utf16:
+//
+// - The facet shall convert between UTF-8 multibyte sequences and UTF-16
+//   (one or two 16-bit codes) within the program.
+// - Endianness shall not affect how multibyte sequences are read or written.
+// - The multibyte sequences may be written as either a text or a binary file.
+//
+template <typename Elem, unsigned long Maxcode = 0x10ffff,
+          codecvt_mode Mode = (codecvt_mode) 0>
+class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
+{
+ public:
+	explicit codecvt_utf8_utf16(size_t refs = 0);
+	~codecvt_utf8_utf16();
+};
+
 } // namespace std
 
 #endif // GUARD_UTF8_H

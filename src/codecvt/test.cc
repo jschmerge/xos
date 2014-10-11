@@ -35,11 +35,11 @@ void checku16()
 {
 	u16cvt cvt;
 	std::u32string s32 = U"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068"
-	                      "\u6559\u6388\U0010FF00  \U00011111  \U0010FFFF";
+	                      "\u6559\u6388\U0001f0df \U0010FFFF";
 	std::u16string s16 = u"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068"
-	                      "\u6559\u6388\U0010FF00  \U00011111  \U0010FFFF";
+	                      "\u6559\u6388\U0001f0df \U0010FFFF";
 	std::string s8 =    u8"a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068"
-	                      "\u6559\u6388\U0010FF00  \U00011111  \U0010FFFF";
+	                      "\u6559\u6388\U0001f0df \U0010FFFF";
 	char buffer[64];
 	const char16_t * from_end = nullptr;
 	char * to_end = nullptr;
