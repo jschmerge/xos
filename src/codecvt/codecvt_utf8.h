@@ -6,12 +6,13 @@
 
 #include "codecvt_specializations.h"
 #include "codecvt_mode.h"
+#include "utf_conversion_helpers.h"
 
 namespace std {
 
 // helper class mix-in for codecvt_utf8
 template <typename T, unsigned long Maxcode>
-struct codecvt_utf8_helper
+struct helper
 {
 	inline
 	constexpr uint32_t max_encodable() const
@@ -37,7 +38,7 @@ class codecvt_utf8;
 template <unsigned long Maxcode, codecvt_mode Mode>
 class codecvt_utf8<wchar_t, Maxcode, Mode>
   : public codecvt<wchar_t, char, mbstate_t>
-  , protected codecvt_utf8_helper<wchar_t, Maxcode>
+  , protected helper<wchar_t, Maxcode>
 {
  public:
 	explicit
@@ -50,33 +51,55 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 
  protected:
 	virtual result
-	do_out(mbstate_t &, const wchar_t *, const wchar_t *, const wchar_t * &,
-	       char *, char *, char * &) const override;
+	do_out(mbstate_t & state,
+	       const wchar_t * from_begin,
+	       const wchar_t * from_end,
+	       const wchar_t * & from_last,
+	       char * to_begin,
+	       char * to_end,
+	       char * & to_last) const override;
 
 	virtual result
-	do_unshift(mbstate_t &, char *, char *, char * &) const override;
+	do_unshift(mbstate_t & state,
+	           char * to_begin,
+	           char * to_end,
+	           char * & to_last) const override;
 
 	virtual result
-	do_in(mbstate_t &, const char *, const char *, const char * &,
-	      wchar_t *, wchar_t *, wchar_t * &) const override;
+	do_in(mbstate_t &state,
+	      const char * from_begin,
+	      const char *from_end,
+	      const char * & from_last,
+	      wchar_t * to_begin,
+	      wchar_t * to_end,
+	      wchar_t * & to_last) const override;
 
 	virtual int
-	do_length(mbstate_t &, const char *, const char *, size_t) const override;
+	do_length(mbstate_t & state,
+	          const char * from_begin,
+	          const char * from_end,
+	          size_t max) const override;
 
 	virtual int
-	do_encoding() const noexcept override;
+	do_encoding() const noexcept override
+	{ return 0; }
 
 	virtual bool
-	do_always_noconv() const noexcept override;
+	do_always_noconv() const noexcept override
+	{ return false; }
 
 	virtual int
-	do_max_length() const noexcept override;
+	do_max_length() const noexcept override
+	{
+		return ( utf8_conversion::bytes_needed(bom_value())
+		       + utf8_conversion::bytes_needed(this->max_encodable()));
+	}
 };
 
 template <unsigned long Maxcode, codecvt_mode Mode>
 class codecvt_utf8<char16_t, Maxcode, Mode>
   : public codecvt<char16_t, char, mbstate_t>
-  , protected codecvt_utf8_helper<char16_t, Maxcode>
+  , protected helper<char16_t, Maxcode>
 {
  public:
 	explicit
@@ -89,33 +112,55 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 
  protected:
 	virtual result
-	do_out(mbstate_t &, const char16_t *, const char16_t *, const char16_t * &,
-	       char *, char *, char * &) const override;
+	do_out(mbstate_t & state,
+	       const wchar_t * from_begin,
+	       const wchar_t * from_end,
+	       const wchar_t * & from_last,
+	       char * to_begin,
+	       char * to_end,
+	       char * & to_last) const override;
 
 	virtual result
-	do_unshift(mbstate_t &, char *, char *, char * &) const override;
+	do_unshift(mbstate_t & state,
+	           char * to_begin,
+	           char * to_end,
+	           char * & to_last) const override;
 
 	virtual result
-	do_in(mbstate_t &, const char *, const char *, const char * &,
-	      char16_t *, char16_t *, char16_t * &) const override;
+	do_in(mbstate_t &state,
+	      const char * from_begin,
+	      const char *from_end,
+	      const char * & from_last,
+	      wchar_t * to_begin,
+	      wchar_t * to_end,
+	      wchar_t * & to_last) const override;
 
 	virtual int
-	do_length(mbstate_t &, const char *, const char *, size_t) const override;
+	do_length(mbstate_t & state,
+	          const char * from_begin,
+	          const char * from_end,
+	          size_t max) const override;
 
 	virtual int
-	do_encoding() const noexcept override;
+	do_encoding() const noexcept override
+	{ return 0; }
 
 	virtual bool
-	do_always_noconv() const noexcept override;
+	do_always_noconv() const noexcept override
+	{ return false; }
 
 	virtual int
-	do_max_length() const noexcept override;
+	do_max_length() const noexcept override
+	{
+		return ( utf8_conversion::bytes_needed(bom_value())
+		       + utf8_conversion::bytes_needed(this->max_encodable()));
+	}
 };
 
 template <unsigned long Maxcode, codecvt_mode Mode>
 class codecvt_utf8<char32_t, Maxcode, Mode>
   : public codecvt<char32_t, char, mbstate_t>
-  , protected codecvt_utf8_helper<char32_t, Maxcode>
+  , protected helper<char32_t, Maxcode>
 {
  public:
 	explicit
@@ -126,28 +171,51 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	~codecvt_utf8()
 	{ }
 
+ protected:
 	virtual result
-	do_out(mbstate_t &, const char32_t *, const char32_t *, const char32_t * &,
-	       char *, char *, char * &) const override;
+	do_out(mbstate_t & state,
+	       const wchar_t * from_begin,
+	       const wchar_t * from_end,
+	       const wchar_t * & from_last,
+	       char * to_begin,
+	       char * to_end,
+	       char * & to_last) const override;
 
 	virtual result
-	do_unshift(mbstate_t &, char *, char *, char * &) const override;
+	do_unshift(mbstate_t & state,
+	           char * to_begin,
+	           char * to_end,
+	           char * & to_last) const override;
 
 	virtual result
-	do_in(mbstate_t &, const char *, const char *, const char * &,
-	      char32_t *, char32_t *, char32_t * &) const override;
+	do_in(mbstate_t &state,
+	      const char * from_begin,
+	      const char *from_end,
+	      const char * & from_last,
+	      wchar_t * to_begin,
+	      wchar_t * to_end,
+	      wchar_t * & to_last) const override;
 
 	virtual int
-	do_length(mbstate_t &, const char *, const char *, size_t) const override;
+	do_length(mbstate_t & state,
+	          const char * from_begin,
+	          const char * from_end,
+	          size_t max) const override;
 
 	virtual int
-	do_encoding() const noexcept override;
+	do_encoding() const noexcept override
+	{ return 0; }
 
 	virtual bool
-	do_always_noconv() const noexcept override;
+	do_always_noconv() const noexcept override
+	{ return false; }
 
 	virtual int
-	do_max_length() const noexcept override;
+	do_max_length() const noexcept override
+	{
+		return ( utf8_conversion::bytes_needed(bom_value())
+		       + utf8_conversion::bytes_needed(this->max_encodable()));
+	}
 };
 
 } // namespace std

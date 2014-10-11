@@ -5,6 +5,11 @@
 #include <cwchar>
 #include <iterator>
 
+constexpr char32_t bom_value()
+{
+	return 0xfeffu;
+}
+
 namespace utf8_conversion {
 
 constexpr uint32_t length_limits[] = {
