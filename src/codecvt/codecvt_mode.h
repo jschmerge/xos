@@ -1,6 +1,12 @@
 #ifndef GUARD_CODECVT_MODE_H
 #define GUARD_CODECVT_MODE_H 1
 
+
+namespace std {
+
+constexpr char32_t max_unicode_codepoint()
+{ return 0x10ffffu; }
+
 //
 // enum codecvt_mode
 //
@@ -20,5 +26,7 @@ enum codecvt_mode
 	generate_header = 2,
 	little_endian = 1
 };
+
+} // namespace std
 
 #endif // GUARD_CODECVT_MODE_H

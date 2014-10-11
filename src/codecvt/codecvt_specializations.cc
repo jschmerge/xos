@@ -1,6 +1,8 @@
 #include "codecvt_specializations.h"
 #include "utf_conversion_helpers.h"
 
+#include <cassert>
+
 namespace std {
 
 //////////////////////////////////////////////////////////////////////

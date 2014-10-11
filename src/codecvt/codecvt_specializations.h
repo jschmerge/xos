@@ -2,7 +2,6 @@
 #define GUARD_CODECVT_SPECIALIZATIONS_H 1
 
 #include <locale>
-#include <cassert>
 
 namespace std {
 
