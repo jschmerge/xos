@@ -154,13 +154,40 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	      wchar_t * to_begin,
 	      wchar_t * to_end,
 	      wchar_t * & to_last) const override;
+#endif
 
 	virtual int
 	do_length(mbstate_t & state,
 	          const char * from_begin,
 	          const char * from_end,
-	          size_t max) const override;
-#endif
+	          size_t max) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		size_t count = 0;
+		const char * i = from_begin;
+
+		while (  (i < from_end)
+		      && (count < max)
+		      && utf8::update_mbstate(state, *i))
+		{
+			if (state.__count == 0)
+			{
+				if (state.__value.__wch > Maxcode)
+					break;
+
+				if ( ! (  this->consume_bom()
+				       && (state.__value.__wch == 0xfeff)
+				       && ((i - from_begin) == 2) ) )
+				{
+					++count;
+				}
+			}
+			++i;
+		}
+
+		return (i - from_begin);
+	}
 
 	virtual int
 	do_encoding() const noexcept override
@@ -288,13 +315,40 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	      char16_t * to_begin,
 	      char16_t * to_end,
 	      char16_t * & to_last) const override;
+#endif
 
 	virtual int
 	do_length(mbstate_t & state,
 	          const char * from_begin,
 	          const char * from_end,
-	          size_t max) const override;
-#endif
+	          size_t max) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		size_t count = 0;
+		const char * i = from_begin;
+
+		while (  (i < from_end)
+		      && (count < max)
+		      && utf8::update_mbstate(state, *i))
+		{
+			if (state.__count == 0)
+			{
+				if (state.__value.__wch > Maxcode)
+					break;
+
+				if ( ! (  this->consume_bom()
+				       && (state.__value.__wch == 0xfeff)
+				       && ((i - from_begin) == 2) ) )
+				{
+					++count;
+				}
+			}
+			++i;
+		}
+
+		return (i - from_begin);
+	}
 
 	virtual int
 	do_encoding() const noexcept override
@@ -423,13 +477,40 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	      char32_t * to_begin,
 	      char32_t * to_end,
 	      char32_t * & to_last) const override;
+#endif
 
 	virtual int
 	do_length(mbstate_t & state,
 	          const char * from_begin,
 	          const char * from_end,
-	          size_t max) const override;
-#endif
+	          size_t max) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		size_t count = 0;
+		const char * i = from_begin;
+
+		while (  (i < from_end)
+		      && (count < max)
+		      && utf8::update_mbstate(state, *i))
+		{
+			if (state.__count == 0)
+			{
+				if (state.__value.__wch > Maxcode)
+					break;
+
+				if ( ! (  this->consume_bom()
+				       && (state.__value.__wch == 0xfeff)
+				       && ((i - from_begin) == 2) ) )
+				{
+					++count;
+				}
+			}
+			++i;
+		}
+
+		return (i - from_begin);
+	}
 
 	virtual int
 	do_encoding() const noexcept override
