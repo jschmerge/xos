@@ -223,7 +223,7 @@ void check_codecvt_utf8()
 	auto state = std::mbstate_t();
 
 	const T * begin = multi.get<T>().data();
-	const T * end = multi.get<T>().data() + multi.get<T>().size() + 1;
+	const T * end = multi.get<T>().data() + multi.get<T>().size();
 	const T * last = nullptr;
 
 	const size_t bufsize = 256;
@@ -239,7 +239,7 @@ void check_codecvt_utf8()
 
 	if (res == std::codecvt_base::ok)
 	{
-		std::string out_string(buffer_out);
+		std::string out_string(buffer_out, last_out - buffer_out);
 		std::string reference = (MODE & std::generate_header) ?
 		                        "\xef\xbb\xbf" : "";
 
@@ -251,11 +251,30 @@ void check_codecvt_utf8()
 			     x < out_string.length() && x < reference.length();
 			     ++x)
 			{
-				printf("%02hhx %02hhx\n", out_string.at(x),
+				printf("%zu: %02hhx %02hhx\n", x, out_string.at(x),
 				       reference.at(x));
 			}
 		}
 		assert(out_string == reference);
+
+		state = std::mbstate_t();
+		const char * length_start = out_string.data();
+		const char * length_end = out_string.data() + out_string.length();
+
+		if (  ((MODE & std::generate_header) == std::generate_header)
+		   && ((MODE & std::consume_header) == 0))
+		{
+			printf("----> SKIPPING BOM\n");
+			length_start += 3;
+		}
+
+		int count = cvt.length(state, length_start, length_end,
+		                       multi.get<T>().length());
+
+		printf("length(max=%zd) returned %d bytes\n",
+		       multi.get<T>().length(), count);
+
+		assert(count == (length_end - length_start));
 	}
 
 	assert(expect_error || res == std::codecvt_base::ok);
