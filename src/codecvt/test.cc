@@ -39,8 +39,9 @@ class u32cvt : public std::codecvt<char32_t, char, std::mbstate_t>
 	virtual ~u32cvt() { };
 };
 
-#define MY_STR "a\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068" \
-	                      "\u6559\u6388\U0001f0df \U0010FFFF"
+#define FULL_RANGE "z\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068" \
+	               "\u6559\u6388\U0001f0df \U0010FFFF"
+
 #define TRIPLE_CAT_(a_, b_, c_) a_ ## b_ ## c_
 #define TRIPLE_CAT(a_, b_, c_) TRIPLE_CAT_(a_, b_, c_)
 #define NARROW(s_) TRIPLE_CAT(, s_, )
@@ -53,7 +54,7 @@ class u32cvt : public std::codecvt<char32_t, char, std::mbstate_t>
 	multistring name(NARROW(literalval), WIDE(literalval), \
 	                 UTF16(literalval), UTF32(literalval))
 
-DEF_MULTISTRING(multi, MY_STR);
+DEF_MULTISTRING(multi, FULL_RANGE);
 
 template<>
 const std::basic_string<char> & multistring::get<char>() const
@@ -75,14 +76,10 @@ const char * code2str(std::codecvt_base::result r)
 {
 	switch (r)
 	{
-	 case std::codecvt_base::ok:
-		return "ok";
-	 case std::codecvt_base::error:
-		return "error";
-	 case std::codecvt_base::partial:
-		return "partial";
-	 case std::codecvt_base::noconv:
-		return "noconv";
+	 case std::codecvt_base::ok:      return "ok";
+	 case std::codecvt_base::error:   return "error";
+	 case std::codecvt_base::partial: return "partial";
+	 case std::codecvt_base::noconv:  return "noconv";
 	}
 	return nullptr;
 }
@@ -185,9 +182,9 @@ std::string demangle(const char * s)
 
 namespace bug
 {
- template <class T>
-  constexpr const T & min(const T & a, const T & b)
-  { return (a < b) ? a : b; }
+	template <class T>
+	constexpr const T & min(const T & a, const T & b)
+	{ return (a < b) ? a : b; }
 }
 
 static const std::string sep(80, '-');
@@ -209,11 +206,24 @@ void check_codecvt_utf8()
 
 	printf("max_length() = %d\n", cvt.max_length());
 
+	bool expect_error = false;
+	for (auto c : multi.get<char32_t>())
+	{
+		if (c > MAX)
+			expect_error = true;
+	}
+
+	for (auto c : multi.get<char16_t>())
+	{
+		if (utf16_conversion::is_surrogate(c))
+			expect_error = true;
+	}
+
 	std::codecvt_base::result res;
 	auto state = std::mbstate_t();
 
 	const T * begin = multi.get<T>().data();
-	const T * end = multi.get<T>().data() + multi.get<T>().size();
+	const T * end = multi.get<T>().data() + multi.get<T>().size() + 1;
 	const T * last = nullptr;
 
 	const size_t bufsize = 256;
@@ -226,6 +236,29 @@ void check_codecvt_utf8()
 
 	printf("out() conversion returned '%s' after writing %ld bytes\n",
 	       code2str(res), last_out - buffer_out);
+
+	if (res == std::codecvt_base::ok)
+	{
+		std::string out_string(buffer_out);
+		std::string reference = (MODE & std::generate_header) ?
+		                        "\xef\xbb\xbf" : "";
+
+		reference += multi.get<char>();
+
+		if (out_string != reference)
+		{
+			for (size_t x = 0;
+			     x < out_string.length() && x < reference.length();
+			     ++x)
+			{
+				printf("%02hhx %02hhx\n", out_string.at(x),
+				       reference.at(x));
+			}
+		}
+		assert(out_string == reference);
+	}
+
+	assert(expect_error || res == std::codecvt_base::ok);
 }
 
 template <typename T, std::codecvt_mode MODE>
@@ -253,7 +286,6 @@ void check_all()
 	check_all_enums<T, std::codecvt_mode(7)>();
 }
 
-
 int main()
 {
 	u32cvt cvt;
@@ -279,7 +311,6 @@ int main()
 		int l2 = cvt.length(state, outbuf, ptr2, 20);
 
 		assert(length == l2);
-
 
 		char32_t redecoded = 0, * lastptr = nullptr;
 		const char * ptr1 = nullptr;
