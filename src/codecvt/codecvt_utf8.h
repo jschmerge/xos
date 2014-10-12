@@ -15,14 +15,19 @@ namespace std {
 template <typename T, unsigned long Maxcode, codecvt_mode Mode>
 struct helper
 {
-	inline bool output_bom() const
+	inline bool generate_bom() const
 	{ return (Mode & generate_header); }
+
+	inline bool consume_bom() const
+	{ return (Mode & consume_header); }
 
 	inline
 	constexpr uint32_t max_encodable() const
 	{
-		return std::min(static_cast<uint32_t>(Maxcode),
-		                static_cast<uint32_t>(numeric_limits<T>::max()));
+		return std::min(
+		         static_cast<uint32_t>(0x7fffffffu),
+		         std::min(static_cast<uint32_t>(Maxcode),
+		                  static_cast<uint32_t>(numeric_limits<T>::max())));
 	}
 };
 
@@ -45,19 +50,18 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
   , protected helper<wchar_t, Maxcode, Mode>
 {
  public:
+	static_assert(Maxcode <= 0x7ffffffful,
+	              "codecvt_utf: max code must be less than 0x7ffffffu");
 	explicit
 	codecvt_utf8(size_t refs = 0)
 	: codecvt<wchar_t, char, mbstate_t>(refs)
 	, helper<wchar_t, Maxcode, Mode>()
-	, did_header(false)
 	{ }
 
 	~codecvt_utf8()
 	{ }
 
  protected:
-	bool did_header;
-
 	virtual result
 	do_out(mbstate_t & state,
 	       const wchar_t * from_begin,
@@ -76,7 +80,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 		to_last = to_begin;
 
 		// we only ever trip this once
-		if (this->output_bom() && !did_header && (from_last < from_end))
+		if (this->generate_bom() && (from_last < from_end))
 		{
 			if (bom_value() > this->max_encodable())
 				return error;
@@ -106,7 +110,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 				++from_last;
 			}
 
-			do_unshift(state, to_last, to_end, to_last);
+			this->do_unshift(state, to_last, to_end, to_last);
 		}
 
 		this->do_unshift(state, to_last, to_end, to_last);
@@ -116,13 +120,28 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 		         ok : partial );
 	}
 
-#if 0
 	virtual result
 	do_unshift(mbstate_t & state,
 	           char * to_begin,
 	           char * to_end,
-	           char * & to_last) const override;
+	           char * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
 
+		assert((state.__count) >= 0 && (state.__count < this->max_length()));
+
+		to_last = to_begin;
+
+		while ((to_last < to_end) && (state.__count > 0))
+		{
+			*to_last = utf8::next_byte(state);
+			++to_last;
+			--state.__count;
+		}
+
+		return ( (state.__count == 0) ?  ok : partial );
+	}
+#if 0
 	virtual result
 	do_in(mbstate_t &state,
 	      const char * from_begin,
@@ -150,7 +169,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	virtual int
 	do_max_length() const noexcept override
 	{
-		return ( (this->output_bom() ?
+		return ( (this->consume_bom() ?
 		          utf8_conversion::bytes_needed(bom_value()) : 0)
 		       + utf8_conversion::bytes_needed(this->max_encodable()));
 	}
@@ -162,19 +181,18 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
   , protected helper<char16_t, Maxcode, Mode>
 {
  public:
+	static_assert(Maxcode <= 0x7ffffffful,
+	              "codecvt_utf: max code must be less than 0x7ffffffu");
 	explicit
 	codecvt_utf8(size_t refs = 0)
 	: codecvt<char16_t, char, mbstate_t>(refs)
 	, helper<char16_t, Maxcode, Mode>()
-	, did_header(false)
 	{ }
 
 	~codecvt_utf8()
 	{ }
 
  protected:
-	bool did_header;
-
 	virtual result
 	do_out(mbstate_t & state,
 	       const char16_t * from_begin,
@@ -193,7 +211,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 		to_last = to_begin;
 
 		// we only ever trip this once
-		if (this->output_bom() && !did_header && (from_last < from_end))
+		if (this->generate_bom() && (from_last < from_end))
 		{
 			if (bom_value() > this->max_encodable())
 				return error;
@@ -223,7 +241,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 				++from_last;
 			}
 
-			do_unshift(state, to_last, to_end, to_last);
+			this->do_unshift(state, to_last, to_end, to_last);
 		}
 
 		this->do_unshift(state, to_last, to_end, to_last);
@@ -233,13 +251,28 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 		         ok : partial );
 	}
 
-#if 0
 	virtual result
 	do_unshift(mbstate_t & state,
 	           char * to_begin,
 	           char * to_end,
-	           char * & to_last) const override;
+	           char * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
 
+		assert((state.__count) >= 0 && (state.__count < this->max_length()));
+
+		to_last = to_begin;
+
+		while ((to_last < to_end) && (state.__count > 0))
+		{
+			*to_last = utf8::next_byte(state);
+			++to_last;
+			--state.__count;
+		}
+
+		return ( (state.__count == 0) ?  ok : partial );
+	}
+#if 0
 	virtual result
 	do_in(mbstate_t &state,
 	      const char * from_begin,
@@ -267,7 +300,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	virtual int
 	do_max_length() const noexcept override
 	{
-		return ( (this->output_bom() ?
+		return ( (this->consume_bom() ?
 		          utf8_conversion::bytes_needed(bom_value()) : 0)
 		       + utf8_conversion::bytes_needed(this->max_encodable()));
 	}
@@ -279,18 +312,18 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
   , protected helper<char32_t, Maxcode, Mode>
 {
  public:
+	static_assert(Maxcode <= 0x7ffffffful,
+	              "codecvt_utf: max code must be less than 0x7ffffffu");
 	explicit
 	codecvt_utf8(size_t refs = 0)
 	: codecvt<char32_t, char, mbstate_t>(refs)
 	, helper<char32_t, Maxcode, Mode>()
-	, did_header(false)
 	{ }
 
 	~codecvt_utf8()
 	{ }
 
  protected:
-	bool did_header;
 
 	virtual result
 	do_out(mbstate_t & state,
@@ -310,7 +343,7 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 		to_last = to_begin;
 
 		// we only ever trip this once
-		if (this->output_bom() && !did_header && (from_last < from_end))
+		if (this->generate_bom() && (from_last < from_end))
 		{
 			if (bom_value() > this->max_encodable())
 				return error;
@@ -340,7 +373,7 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 				++from_last;
 			}
 
-			do_unshift(state, to_last, to_end, to_last);
+			this->do_unshift(state, to_last, to_end, to_last);
 		}
 
 		this->do_unshift(state, to_last, to_end, to_last);
@@ -350,13 +383,29 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 		         ok : partial );
 	}
 
-#if 0
 	virtual result
 	do_unshift(mbstate_t & state,
 	           char * to_begin,
 	           char * to_end,
-	           char * & to_last) const override;
+	           char * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
 
+		assert((state.__count) >= 0 && (state.__count < this->max_length()));
+
+		to_last = to_begin;
+
+		while ((to_last < to_end) && (state.__count > 0))
+		{
+			*to_last = utf8::next_byte(state);
+			++to_last;
+			--state.__count;
+		}
+
+		return ( (state.__count == 0) ?  ok : partial );
+	}
+
+#if 0
 	virtual result
 	do_in(mbstate_t &state,
 	      const char * from_begin,
@@ -384,7 +433,7 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	virtual int
 	do_max_length() const noexcept override
 	{
-		return ( ( this->output_bom() ?
+		return ( ( this->consume_bom() ?
 		           utf8_conversion::bytes_needed(bom_value()) : 0 )
 		       + utf8_conversion::bytes_needed(this->max_encodable()));
 	}
