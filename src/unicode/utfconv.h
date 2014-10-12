@@ -123,7 +123,7 @@ class codecvt_utf8 : public std::codecvt<Elem, char, std::mbstate_t>
 
 	virtual ~codecvt_utf8() { }
 
-	static constexpr unsigned int utf_length_limits[] = {
+	static constexpr unsigned int utf_length_limits[6] = {
 		0x80, 0x800, 0x10000, 0x200000, 0x4000000, 0x80000000
 	};
 
