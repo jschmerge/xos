@@ -15,7 +15,7 @@ namespace std {
 template <typename T, unsigned long Maxcode, codecvt_mode Mode>
 struct helper
 {
-	inline bool output_bom()
+	inline bool output_bom() const
 	{ return (Mode & generate_header); }
 
 	inline
@@ -26,7 +26,6 @@ struct helper
 	}
 };
 
-
 //
 // The facet shall convert between UTF-8 multibyte sequences and UCS2 or
 // UCS4 (depending on the size of Elem) within the program.
@@ -35,7 +34,8 @@ struct helper
 //
 // - The multibyte sequences may be written as either a text or a binary file.
 //
-template <class Elem, unsigned long Maxcode = max_unicode_codepoint(),
+template <class Elem,
+          unsigned long Maxcode = max_unicode_codepoint(),
           codecvt_mode Mode = (codecvt_mode)0>
 class codecvt_utf8;
 
@@ -48,12 +48,16 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	explicit
 	codecvt_utf8(size_t refs = 0)
 	: codecvt<wchar_t, char, mbstate_t>(refs)
+	, helper<wchar_t, Maxcode, Mode>()
+	, did_header(false)
 	{ }
 
 	~codecvt_utf8()
 	{ }
 
  protected:
+	bool did_header;
+
 	virtual result
 	do_out(mbstate_t & state,
 	       const wchar_t * from_begin,
@@ -71,11 +75,24 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 		from_last = from_begin;
 		to_last = to_begin;
 
+		// we only ever trip this once
+		if (this->output_bom() && !did_header && (from_last < from_end))
+		{
+			if (bom_value() > this->max_encodable())
+				return error;
+
+			state.__value.__wch = bom_value();
+			char val = utf8::extract_leader_byte(state);
+
+			*to_last = val;
+			++to_last;
+		}
+
 		while ((to_last < to_end) && (from_last < from_end))
 		{
 			if (state.__count == 0)
 			{
-				if (*from_last > this->max_encodable())
+				if (static_cast<uint32_t>(*from_last) > this->max_encodable())
 					return error;
 
 				state.__value.__wch = *from_last;
@@ -92,14 +109,14 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 			do_unshift(state, to_last, to_end, to_last);
 		}
 
-		do_unshift(state, to_last, to_end, to_last);
+		this->do_unshift(state, to_last, to_end, to_last);
 
 		return ( (  (state.__count == 0)
 		         && (from_last == from_end)) ?
 		         ok : partial );
 	}
 
-
+#if 0
 	virtual result
 	do_unshift(mbstate_t & state,
 	           char * to_begin,
@@ -120,6 +137,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	          const char * from_begin,
 	          const char * from_end,
 	          size_t max) const override;
+#endif
 
 	virtual int
 	do_encoding() const noexcept override
@@ -147,12 +165,16 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	explicit
 	codecvt_utf8(size_t refs = 0)
 	: codecvt<char16_t, char, mbstate_t>(refs)
+	, helper<char16_t, Maxcode, Mode>()
+	, did_header(false)
 	{ }
 
 	~codecvt_utf8()
 	{ }
 
  protected:
+	bool did_header;
+
 	virtual result
 	do_out(mbstate_t & state,
 	       const char16_t * from_begin,
@@ -170,11 +192,24 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 		from_last = from_begin;
 		to_last = to_begin;
 
+		// we only ever trip this once
+		if (this->output_bom() && !did_header && (from_last < from_end))
+		{
+			if (bom_value() > this->max_encodable())
+				return error;
+
+			state.__value.__wch = bom_value();
+			char val = utf8::extract_leader_byte(state);
+
+			*to_last = val;
+			++to_last;
+		}
+
 		while ((to_last < to_end) && (from_last < from_end))
 		{
 			if (state.__count == 0)
 			{
-				if (*from_last > this->max_encodable())
+				if (static_cast<uint32_t>(*from_last) > this->max_encodable())
 					return error;
 
 				state.__value.__wch = *from_last;
@@ -191,13 +226,14 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 			do_unshift(state, to_last, to_end, to_last);
 		}
 
-		do_unshift(state, to_last, to_end, to_last);
+		this->do_unshift(state, to_last, to_end, to_last);
 
 		return ( (  (state.__count == 0)
 		         && (from_last == from_end)) ?
 		         ok : partial );
 	}
 
+#if 0
 	virtual result
 	do_unshift(mbstate_t & state,
 	           char * to_begin,
@@ -218,6 +254,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	          const char * from_begin,
 	          const char * from_end,
 	          size_t max) const override;
+#endif
 
 	virtual int
 	do_encoding() const noexcept override
@@ -245,12 +282,16 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	explicit
 	codecvt_utf8(size_t refs = 0)
 	: codecvt<char32_t, char, mbstate_t>(refs)
+	, helper<char32_t, Maxcode, Mode>()
+	, did_header(false)
 	{ }
 
 	~codecvt_utf8()
 	{ }
 
  protected:
+	bool did_header;
+
 	virtual result
 	do_out(mbstate_t & state,
 	       const char32_t * from_begin,
@@ -268,11 +309,24 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 		from_last = from_begin;
 		to_last = to_begin;
 
+		// we only ever trip this once
+		if (this->output_bom() && !did_header && (from_last < from_end))
+		{
+			if (bom_value() > this->max_encodable())
+				return error;
+
+			state.__value.__wch = bom_value();
+			char val = utf8::extract_leader_byte(state);
+
+			*to_last = val;
+			++to_last;
+		}
+
 		while ((to_last < to_end) && (from_last < from_end))
 		{
 			if (state.__count == 0)
 			{
-				if (*from_last > this->max_encodable())
+				if (static_cast<uint32_t>(*from_last) > this->max_encodable())
 					return error;
 
 				state.__value.__wch = *from_last;
@@ -289,14 +343,14 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 			do_unshift(state, to_last, to_end, to_last);
 		}
 
-		do_unshift(state, to_last, to_end, to_last);
+		this->do_unshift(state, to_last, to_end, to_last);
 
 		return ( (  (state.__count == 0)
 		         && (from_last == from_end)) ?
 		         ok : partial );
 	}
 
-
+#if 0
 	virtual result
 	do_unshift(mbstate_t & state,
 	           char * to_begin,
@@ -317,6 +371,7 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	          const char * from_begin,
 	          const char * from_end,
 	          size_t max) const override;
+#endif
 
 	virtual int
 	do_encoding() const noexcept override

@@ -1,6 +1,13 @@
 #include "codecvt_specializations.h"
+#include "codecvt_utf8.h"
+
+#include <cxxabi.h>
+
 #include <cstring>
 #include <cassert>
+#include <memory>
+#include <limits>
+#include <typeinfo>
 
 class u16cvt : public std::codecvt<char16_t, char, std::mbstate_t>
 {
@@ -74,10 +81,6 @@ void checku16()
 	assert(cvt.length(s, s8.data(), s8.data() + s8.length(), s16.length())
 	          == static_cast<int>(s8.length()));
 
-//	for (int i = 0; i < 21; ++i)
-//		printf("%d: %d\n", i, cvt.length(s, s8.data(),
-//		       s8.data() + s8.size(), i) );
-
 	char16_t buffer16[40];
 	memset(buffer16, 0, sizeof(buffer16));
 	const char * cto_end = nullptr;
@@ -93,6 +96,71 @@ void checku16()
 	assert(static_cast<size_t>(end16 - buffer16) == s16.length());
 	assert(memcmp(buffer16, s16.data(), end16 - buffer16) == 0);
 }
+
+const char * mode2str(std::codecvt_mode m)
+{
+	switch (static_cast<int>(m))
+	{
+	 case 0: return "none";
+	 case 1: return "le";
+	 case 2: return "generate";
+	 case 3: return "generate|le";
+	 case 4: return "consume";
+	 case 5: return "consume|le";
+	 case 6: return "consume|generate";
+	 case 7: return "consume|generate|le";
+	}
+
+	return "unknown";
+}
+
+std::string demangle(const char * s)
+{
+	std::string ret;
+	int status = 0;
+	
+	char * val = abi::__cxa_demangle(s, 0, 0, &status);
+	if (val != nullptr)
+	{
+		ret = val;
+		free(val);
+	}
+
+	return ret;
+}
+
+template <typename T, unsigned long MAX, std::codecvt_mode MODE>
+void check_codecvt_utf8()
+{
+	std::codecvt_utf8<T, MAX, MODE> wcvt;
+	std::string type_name = demangle(typeid(T).name());
+
+	printf("<%s, %08lx, %s>::max_length() = %d\n",
+	       type_name.c_str(), MAX, mode2str(MODE), wcvt.max_length());
+}
+
+template <typename T, std::codecvt_mode MODE>
+void check_all_enums()
+{
+	check_codecvt_utf8<T, 0xff, MODE>();
+	check_codecvt_utf8<T, 0xffff, MODE>();
+	check_codecvt_utf8<T, 0x10fff, MODE>();
+	check_codecvt_utf8<T, std::numeric_limits<T>::max(), MODE>();
+}
+
+template <typename T>
+void check_all()
+{
+	check_all_enums<T, std::codecvt_mode(0)>();
+	check_all_enums<T, std::codecvt_mode(1)>();
+	check_all_enums<T, std::codecvt_mode(2)>();
+	check_all_enums<T, std::codecvt_mode(3)>();
+	check_all_enums<T, std::codecvt_mode(4)>();
+	check_all_enums<T, std::codecvt_mode(5)>();
+	check_all_enums<T, std::codecvt_mode(6)>();
+	check_all_enums<T, std::codecvt_mode(7)>();
+}
+
 
 int main()
 {
@@ -132,4 +200,8 @@ int main()
 	}
 
 	checku16();
+
+	check_all<wchar_t>();
+	check_all<char16_t>();
+
 }
