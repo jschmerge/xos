@@ -4,6 +4,9 @@
 test: test.o codecvt_specializations.o
 	g++ -std=c++11 -Wall -o $@ $^
 
+check: test
+	./test
+
 clean:
 	rm -f *.o test
 
