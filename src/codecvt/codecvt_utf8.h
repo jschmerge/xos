@@ -72,6 +72,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	       char * & to_last) const override
 	{
 		namespace utf8 = utf8_conversion;
+		namespace utf16 = utf16_conversion;
 
 		assert(from_begin <= from_end);
 		assert(to_begin <= to_end);
@@ -97,6 +98,8 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 			if (state.__count == 0)
 			{
 				if (static_cast<uint32_t>(*from_last) > this->max_encodable())
+					return error;
+				else if (utf16::is_surrogate(*from_last))
 					return error;
 
 				state.__value.__wch = *from_last;
@@ -141,6 +144,7 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 
 		return ( (state.__count == 0) ?  ok : partial );
 	}
+
 #if 0
 	virtual result
 	do_in(mbstate_t &state,
@@ -203,6 +207,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	       char * & to_last) const override
 	{
 		namespace utf8 = utf8_conversion;
+		namespace utf16 = utf16_conversion;
 
 		assert(from_begin <= from_end);
 		assert(to_begin <= to_end);
@@ -228,6 +233,8 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 			if (state.__count == 0)
 			{
 				if (static_cast<uint32_t>(*from_last) > this->max_encodable())
+					return error;
+				else if (utf16::is_surrogate(*from_last))
 					return error;
 
 				state.__value.__wch = *from_last;
@@ -324,7 +331,6 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	{ }
 
  protected:
-
 	virtual result
 	do_out(mbstate_t & state,
 	       const char32_t * from_begin,
@@ -335,6 +341,7 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	       char * & to_last) const override
 	{
 		namespace utf8 = utf8_conversion;
+		namespace utf16 = utf16_conversion;
 
 		assert(from_begin <= from_end);
 		assert(to_begin <= to_end);
@@ -360,6 +367,8 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 			if (state.__count == 0)
 			{
 				if (static_cast<uint32_t>(*from_last) > this->max_encodable())
+					return error;
+				else if (utf16::is_surrogate(*from_last))
 					return error;
 
 				state.__value.__wch = *from_last;
