@@ -190,6 +190,11 @@ constexpr char16_t low_surrogate_min = 0xdc00u;
 
 constexpr uint32_t max_encodable_value() { return 0x10ffffu; }
 
+inline constexpr bool is_surrogate(uint32_t c)
+{
+	return ((c >= surrogate_min) && (c <= surrogate_max));
+}
+
 inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 {
 	bool rc = true;
