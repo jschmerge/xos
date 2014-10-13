@@ -1,8 +1,8 @@
 %.o: %.cc
-	g++ -std=c++11 -Wall -c $<
+	g++ -std=c++11 -O3 -Wall -Wextra -c $<
 
 test: test.o codecvt_specializations.o
-	g++ -std=c++11 -Wall -o $@ $^
+	g++ -std=c++11 -O3 -Wall -Wextra -o $@ $^
 
 check: test
 	./test
