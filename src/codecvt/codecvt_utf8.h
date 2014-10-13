@@ -145,7 +145,6 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 		return ( (state.__count == 0) ?  ok : partial );
 	}
 
-#if 0
 	virtual result
 	do_in(mbstate_t &state,
 	      const char * from_begin,
@@ -153,8 +152,40 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 	      const char * & from_last,
 	      wchar_t * to_begin,
 	      wchar_t * to_end,
-	      wchar_t * & to_last) const override;
-#endif
+	      wchar_t * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		for (from_last = from_begin, to_last = to_begin;
+		     (from_last < from_end) && (to_last < to_end);
+		     ++from_last)
+		{
+			if ( ! utf8::update_mbstate(state, *from_last))
+				return error;
+
+			// TODO: check to see if value < limits<Elem>::max()
+
+			if (state.__count == 0)
+			{
+
+				if (state.__value.__wch > Maxcode)
+					return error;
+				else if ( ! (  this->consume_bom()
+				            && (to_last == to_begin)
+				            && state.__value.__wch == 0xfefful) )
+				{
+					*to_last = state.__value.__wch;
+					++to_last;
+				}
+			}
+		}
+
+		return (((state.__count != 0) || (from_last < from_end) ) ?
+		        partial : ok );
+	}
 
 	virtual int
 	do_length(mbstate_t & state,

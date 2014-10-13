@@ -222,62 +222,105 @@ void check_codecvt_utf8()
 	std::codecvt_base::result res;
 	auto state = std::mbstate_t();
 
-	const T * begin = multi.get<T>().data();
-	const T * end = multi.get<T>().data() + multi.get<T>().size();
-	const T * last = nullptr;
-
-	const size_t bufsize = 256;
-	char buffer_out[bufsize];
-	char * last_out;
-	memset(buffer_out, 0, bufsize);
-
-	res = cvt.out(state, begin, end, last,
-	              buffer_out, buffer_out + bufsize, last_out);
-
-	printf("out() conversion returned '%s' after writing %ld bytes\n",
-	       code2str(res), last_out - buffer_out);
-
-	if (res == std::codecvt_base::ok)
 	{
-		std::string out_string(buffer_out, last_out - buffer_out);
-		std::string reference = (MODE & std::generate_header) ?
-		                        "\xef\xbb\xbf" : "";
+		const T * begin = multi.get<T>().data();
+		const T * end = multi.get<T>().data() + multi.get<T>().size();
+		const T * last = nullptr;
 
-		reference += multi.get<char>();
+		const size_t bufsize = 256;
+		char buffer_out[bufsize];
+		char * last_out;
+		memset(buffer_out, 0, bufsize);
 
-		if (out_string != reference)
+		res = cvt.out(state, begin, end, last,
+		              buffer_out, buffer_out + bufsize, last_out);
+
+		printf("out() conversion returned '%s' after writing %ld bytes\n",
+		       code2str(res), last_out - buffer_out);
+
+		if (res == std::codecvt_base::ok)
 		{
-			for (size_t x = 0;
-			     x < out_string.length() && x < reference.length();
-			     ++x)
+			std::string out_string(buffer_out, last_out - buffer_out);
+			std::string reference = (MODE & std::generate_header) ?
+			                        "\xef\xbb\xbf" : "";
+
+			reference += multi.get<char>();
+
+			if (out_string != reference)
 			{
-				printf("%zu: %02hhx %02hhx\n", x, out_string.at(x),
-				       reference.at(x));
+				for (size_t x = 0;
+				     x < out_string.length() && x < reference.length();
+				     ++x)
+				{
+					printf("%zu: %02hhx %02hhx\n", x, out_string.at(x),
+					       reference.at(x));
+				}
 			}
+			assert(out_string == reference);
+
+			state = std::mbstate_t();
+			const char * length_start = out_string.data();
+			const char * length_end = out_string.data() + out_string.length();
+
+			if (  ((MODE & std::generate_header) == std::generate_header)
+			   && ((MODE & std::consume_header) == 0))
+			{
+				length_start += 3;
+			}
+
+			int count = cvt.length(state, length_start, length_end,
+			                       multi.get<T>().length());
+
+			assert(count == (length_end - length_start));
 		}
-		assert(out_string == reference);
 
-		state = std::mbstate_t();
-		const char * length_start = out_string.data();
-		const char * length_end = out_string.data() + out_string.length();
-
-		if (  ((MODE & std::generate_header) == std::generate_header)
-		   && ((MODE & std::consume_header) == 0))
-		{
-			printf("----> SKIPPING BOM\n");
-			length_start += 3;
-		}
-
-		int count = cvt.length(state, length_start, length_end,
-		                       multi.get<T>().length());
-
-		printf("length(max=%zd) returned %d bytes\n",
-		       multi.get<T>().length(), count);
-
-		assert(count == (length_end - length_start));
+		assert(expect_error || res == std::codecvt_base::ok);
 	}
 
-	assert(expect_error || res == std::codecvt_base::ok);
+	{
+		const size_t bufsize = 256;
+
+		std::string encoded = multi.get<char>();
+		const char * begin = encoded.data();
+		const char * end = encoded.data() + encoded.size();
+		const char * last = nullptr;
+		T buffer[bufsize];
+		T * last_out = nullptr;
+		memset(buffer, 0, bufsize);
+
+		res = cvt.in(state, begin, end, last,
+		             buffer, buffer + bufsize, last_out);
+
+		printf("in() conversion(no bom) returned '%s' after writing "
+		       "%ld bytes\n", code2str(res), last_out - buffer);
+
+		int no_bom_chars_written = (last_out - buffer);
+
+		encoded = "\xef\xbb\xbf";
+		encoded += multi.get<char>();
+
+		begin = encoded.data();
+		end = encoded.data() + encoded.size();
+		last = nullptr;
+		last_out = nullptr;
+		memset(buffer, 0, bufsize);
+
+		res = cvt.in(state, begin, end, last,
+		             buffer, buffer + bufsize, last_out);
+
+		printf("in() conversion(with bom) returned '%s' after writing "
+		       "%ld bytes\n", code2str(res), last_out - buffer);
+
+		int with_bom_chars_written = (last_out - buffer);
+
+		if (res == std::codecvt_base::ok)
+		{
+			if ((MODE & std::consume_header) == std::consume_header)
+				assert(no_bom_chars_written == with_bom_chars_written);
+			else
+				assert(no_bom_chars_written == (with_bom_chars_written - 1));
+		}
+	}
 }
 
 template <typename T, std::codecvt_mode MODE>
