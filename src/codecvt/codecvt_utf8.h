@@ -159,28 +159,38 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 		assert(from_begin <= from_end);
 		assert(to_begin <= to_end);
 
-		for (from_last = from_begin, to_last = to_begin;
-		     (from_last < from_end) && (to_last < to_end);
-		     ++from_last)
+		from_last = from_begin;
+		to_last = to_begin;
+
+		if (  (state.__count == 0)
+		   && this->consume_bom()
+		   && (from_end - from_last) > 2)
+		{
+			if (  (static_cast<uint8_t>(from_last[0]) == 0xefu)
+			   && (static_cast<uint8_t>(from_last[1]) == 0xbbu)
+			   && (static_cast<uint8_t>(from_last[2]) == 0xbfu) )
+			{
+				from_last += 3;
+			}
+		}
+
+		while ( (from_last < from_end) && (to_last < to_end) )
 		{
 			if ( ! utf8::update_mbstate(state, *from_last))
 				return error;
 
-			// TODO: check to see if value < limits<Elem>::max()
-
 			if (state.__count == 0)
 			{
 
-				if (state.__value.__wch > Maxcode)
+				if (state.__value.__wch > this->max_encodable())
 					return error;
-				else if ( ! (  this->consume_bom()
-				            && (to_last == to_begin)
-				            && state.__value.__wch == 0xfefful) )
+				else
 				{
 					*to_last = state.__value.__wch;
 					++to_last;
 				}
 			}
+			++from_last;
 		}
 
 		return (((state.__count != 0) || (from_last < from_end) ) ?
@@ -337,7 +347,7 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 
 		return ( (state.__count == 0) ?  ok : partial );
 	}
-#if 0
+
 	virtual result
 	do_in(mbstate_t &state,
 	      const char * from_begin,
@@ -345,8 +355,50 @@ class codecvt_utf8<char16_t, Maxcode, Mode>
 	      const char * & from_last,
 	      char16_t * to_begin,
 	      char16_t * to_end,
-	      char16_t * & to_last) const override;
-#endif
+	      char16_t * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_last = from_begin;
+		to_last = to_begin;
+
+		if (  (state.__count == 0)
+		   && this->consume_bom()
+		   && (from_end - from_last) > 2)
+		{
+			if (  (static_cast<uint8_t>(from_last[0]) == 0xefu)
+			   && (static_cast<uint8_t>(from_last[1]) == 0xbbu)
+			   && (static_cast<uint8_t>(from_last[2]) == 0xbfu) )
+			{
+				from_last += 3;
+			}
+		}
+
+		while ( (from_last < from_end) && (to_last < to_end) )
+		{
+			if ( ! utf8::update_mbstate(state, *from_last))
+				return error;
+
+			if (state.__count == 0)
+			{
+
+				if (state.__value.__wch > this->max_encodable())
+					return error;
+				else
+				{
+					*to_last = state.__value.__wch;
+					++to_last;
+				}
+			}
+			++from_last;
+		}
+
+		return (((state.__count != 0) || (from_last < from_end) ) ?
+		        partial : ok );
+	}
 
 	virtual int
 	do_length(mbstate_t & state,
@@ -499,7 +551,6 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 		return ( (state.__count == 0) ?  ok : partial );
 	}
 
-#if 0
 	virtual result
 	do_in(mbstate_t &state,
 	      const char * from_begin,
@@ -507,8 +558,50 @@ class codecvt_utf8<char32_t, Maxcode, Mode>
 	      const char * & from_last,
 	      char32_t * to_begin,
 	      char32_t * to_end,
-	      char32_t * & to_last) const override;
-#endif
+	      char32_t * & to_last) const override
+	{
+		namespace utf8 = utf8_conversion;
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_last = from_begin;
+		to_last = to_begin;
+
+		if (  (state.__count == 0)
+		   && this->consume_bom()
+		   && (from_end - from_last) > 2)
+		{
+			if (  (static_cast<uint8_t>(from_last[0]) == 0xefu)
+			   && (static_cast<uint8_t>(from_last[1]) == 0xbbu)
+			   && (static_cast<uint8_t>(from_last[2]) == 0xbfu) )
+			{
+				from_last += 3;
+			}
+		}
+
+		while ( (from_last < from_end) && (to_last < to_end) )
+		{
+			if ( ! utf8::update_mbstate(state, *from_last))
+				return error;
+
+			if (state.__count == 0)
+			{
+
+				if (state.__value.__wch > this->max_encodable())
+					return error;
+				else
+				{
+					*to_last = state.__value.__wch;
+					++to_last;
+				}
+			}
+			++from_last;
+		}
+
+		return (((state.__count != 0) || (from_last < from_end) ) ?
+		        partial : ok );
+	}
 
 	virtual int
 	do_length(mbstate_t & state,
