@@ -1,8 +1,20 @@
 #ifndef GUARD_CODECVT_MODE_H
 #define GUARD_CODECVT_MODE_H 1
 
+#include <type_traits>
 
 namespace std {
+
+template <typename T> struct is_character : std::false_type { };
+template <> struct is_character<char>     : std::true_type { };
+template <> struct is_character<wchar_t>  : std::true_type { };
+template <> struct is_character<char16_t> : std::true_type { };
+template <> struct is_character<char32_t> : std::true_type { };
+
+template <typename T> struct is_wide_character : std::false_type { };
+template <> struct is_wide_character<wchar_t>  : std::true_type { };
+template <> struct is_wide_character<char16_t> : std::true_type { };
+template <> struct is_wide_character<char32_t> : std::true_type { };
 
 constexpr char32_t max_unicode_codepoint()
 { return 0x10ffffu; }
