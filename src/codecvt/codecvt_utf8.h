@@ -166,12 +166,10 @@ class codecvt_utf8<wchar_t, Maxcode, Mode>
 			if ( ! utf8::update_mbstate(state, *from_last))
 				return error;
 
-			// TODO: check to see if value < limits<Elem>::max()
-
 			if (state.__count == 0)
 			{
 
-				if (state.__value.__wch > Maxcode)
+				if (state.__value.__wch > this->max_encodable())
 					return error;
 				else if ( ! (  this->consume_bom()
 				            && (to_last == to_begin)
