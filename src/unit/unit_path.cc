@@ -543,14 +543,14 @@ class Test_Path : public CppUnit::TestFixture
 		for (const auto & s : { ".", "..", "foo.", "foo", "/foo", "foo/" })
 		{
 			path p(s);
-			printf("%s\n", s);
+			if (config::verbose) printf("%s\n", s);
 			CPPUNIT_ASSERT(p.has_stem());
 		}
 
 		for (const auto & s : { "", ".ext" })
 		{
 			path p(s);
-			printf("%s\n", s);
+			if (config::verbose) printf("%s\n", s);
 			CPPUNIT_ASSERT(!p.has_stem());
 		}
 	}
@@ -587,14 +587,14 @@ class Test_Path : public CppUnit::TestFixture
 		for (const auto & s : { "", ".", "..", "foo", "/foo", "foo/" })
 		{
 			path p(s);
-			printf("%s\n", s);
+			if (config::verbose) printf("%s\n", s);
 			CPPUNIT_ASSERT(!p.has_extension());
 		}
 
 		for (const auto & s : { ".ext", })
 		{
 			path p(s);
-			printf("%s\n", s);
+			if (config::verbose) printf("%s\n", s);
 			CPPUNIT_ASSERT(!p.has_stem());
 		}
 	}
