@@ -12,7 +12,7 @@ constexpr char32_t bom_value()
 
 namespace utf8_conversion {
 
-constexpr uint32_t length_limits[] = {
+constexpr uint32_t length_limits[6] = {
 	0x00000080ul,
 	0x00000800ul,
 	0x00010000ul,
@@ -21,7 +21,7 @@ constexpr uint32_t length_limits[] = {
 	0x80000000ul
 };
 
-constexpr uint8_t leader_prefix[] = {
+constexpr uint8_t leader_prefix[6] = {
 	0x00u,
 	0xc0u,
 	0xe0u,

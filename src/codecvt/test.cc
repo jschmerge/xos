@@ -207,13 +207,14 @@ void check_codecvt_utf8()
 	printf("max_length() = %d\n", cvt.max_length());
 
 	bool expect_error = false;
+
 	for (auto c : multi.get<char32_t>())
 	{
 		if (c > MAX)
 			expect_error = true;
 	}
 
-	for (auto c : multi.get<char16_t>())
+	for (auto c : multi.get<T>())
 	{
 		if (utf16_conversion::is_surrogate(c))
 			expect_error = true;
@@ -274,7 +275,7 @@ void check_codecvt_utf8()
 			assert(count == (length_end - length_start));
 		}
 
-		assert(expect_error || res == std::codecvt_base::ok);
+		assert(expect_error ^ (res == std::codecvt_base::ok));
 	}
 
 	{
@@ -296,6 +297,9 @@ void check_codecvt_utf8()
 
 		int no_bom_chars_written = (last_out - buffer);
 
+		if (res == std::codecvt_base::ok)
+			assert(buffer == multi.get<T>());
+
 		encoded = "\xef\xbb\xbf";
 		encoded += multi.get<char>();
 
@@ -313,12 +317,19 @@ void check_codecvt_utf8()
 
 		int with_bom_chars_written = (last_out - buffer);
 
+		assert(expect_error ^ (res == std::codecvt_base::ok));
+
 		if (res == std::codecvt_base::ok)
 		{
 			if ((MODE & std::consume_header) == std::consume_header)
+			{
 				assert(no_bom_chars_written == with_bom_chars_written);
-			else
+				assert(buffer == multi.get<T>());
+			} else
+			{
 				assert(no_bom_chars_written == (with_bom_chars_written - 1));
+				assert((buffer + 1) == multi.get<T>());
+			}
 		}
 	}
 }
