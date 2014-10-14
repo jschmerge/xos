@@ -25,6 +25,9 @@ codecvt<char16_t, char, mbstate_t>::do_out(
 	namespace utf8 = utf8_conversion;
 	namespace utf16 = utf16_conversion;
 
+	assert(from_begin <= from_end);
+	assert(to_begin <= to_end);
+
 	result res = ok;
 
 	from_next = from_begin;
