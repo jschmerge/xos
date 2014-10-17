@@ -1,8 +1,0 @@
-*find info about posix committee*
-
-Basic 2 operand operators - as needed -trivial
-
-iostream operators - necessary, but not a huge priority due to implicit
-std::string conversions
-
-->filetime - oportunity to mix-in some good posix compatible code, perhaps WP on it
