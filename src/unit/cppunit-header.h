@@ -6,8 +6,6 @@
 /// these headers directly... This allows us to stick workarounds here
 ///
 #include <iostream>
-#include <utility>
-#include <tuple>
 
 #include <cppunit/BriefTestProgressListener.h>
 #include <cppunit/CompilerOutputter.h>
@@ -25,8 +23,6 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
-
-#include "../utility/index_sequence.h"
 
 //
 // Redefinition to use unique_ptr instead of auto_ptr - unchanged otherwise
@@ -54,21 +50,4 @@ namespace config {
 	extern bool verbose;
 };
 
-template <typename RESULT, typename ...Args>
-struct args_and_result
-{
-	args_and_result(const Args&... args, const RESULT & res)
-	  : operands(args...), result(res)
-		{ }
-
-	template <typename F>
-	RESULT apply(F func)
-	{
-		return apply_function(func, operands);
-	}
-
-	std::tuple<const Args...> operands;
-	const RESULT result;
-};
-
-#endif // GUARD_UNIT_HEADER_H
+#endif // GUARD_CPPUNIT_HEADER_H

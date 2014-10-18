@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "cppunit-header.h"
+#include "args-result.h"
 
 namespace fs = filesystem::v1;
 class Test_directory_entry : public CppUnit::TestFixture

@@ -1,4 +1,3 @@
-// #include "../unicode/utfconv.h"
 #include "../codecvt/codecvt_specializations.h"
 #include "../codecvt/codecvt_utf8.h"
 #include "../codecvt/utf_conversion_helpers.h"
@@ -6,21 +5,7 @@
 #include <cstring>
 
 #include "cppunit-header.h"
-
-struct multistring {
-	multistring(const char * _ns, const wchar_t * _ws,
-	            const char16_t * _s16, const char32_t * _s32)
-	: ns(_ns), ws(_ws), s16(_s16), s32(_s32)
-	{ }
-
-	template <typename T>
-	const std::basic_string<T> & get() const;
-
-	std::string    ns;
-	std::wstring   ws;
-	std::u16string s16;
-	std::u32string s32;
-};
+#include "multistring.h"
 
 //
 // Stub for testing specialization
@@ -43,18 +28,7 @@ class u32cvt : public std::codecvt<char32_t, char, std::mbstate_t>
 };
 
 
-#define TRIPLE_CAT_(a_, b_, c_) a_ ## b_ ## c_
-#define TRIPLE_CAT(a_, b_, c_) TRIPLE_CAT_(a_, b_, c_)
-#define NARROW(s_) TRIPLE_CAT(, s_, )
-#define WIDE(s_) TRIPLE_CAT(L, s_, )
-#define UTF8(s_) TRIPLE_CAT(u8, s_, )
-#define UTF16(s_) TRIPLE_CAT(u, s_, )
-#define UTF32(s_) TRIPLE_CAT(U, s_, )
-
-#define DEF_MULTISTRING(name, literalval) \
-	multistring name(NARROW(literalval), WIDE(literalval), \
-	                 UTF16(literalval), UTF32(literalval))
-
+#if 0
 const char * code2str(std::codecvt_base::result r)
 {
 	switch (r)
@@ -66,6 +40,7 @@ const char * code2str(std::codecvt_base::result r)
 	}
 	return nullptr;
 }
+#endif
 
 class Test_Unicode : public CppUnit::TestFixture
 {
