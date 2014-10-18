@@ -21,21 +21,16 @@ template<> class codecvt<char16_t, char, mbstate_t>
 	static locale::id id;
 
 	explicit
-	codecvt(size_t __refs = 0)
-	: __codecvt_abstract_base<char16_t, char, mbstate_t>(__refs)
-	{ }
+	codecvt(size_t __refs = 0);
 
 	// Constructor is for compatibility with the codecvt<char, char, mbstate_t>
 	// and codecvt<char, wchar_t, mbstate_t> specializations
 	explicit
-	codecvt(__c_locale, size_t __refs = 0)
-	: __codecvt_abstract_base<char16_t, char, mbstate_t>(__refs)
-	{ }
+	codecvt(__c_locale, size_t __refs = 0);
 
  protected:
 	virtual
-	~codecvt()
-	{ }
+	~codecvt();
 
 	virtual result
 	do_out(mbstate_t &, const char16_t *, const char16_t *, const char16_t * &,
@@ -88,20 +83,16 @@ template<> class codecvt<char32_t, char, mbstate_t>
 	static locale::id id;
 
 	explicit
-	codecvt(size_t __refs = 0)
-	: __codecvt_abstract_base<char32_t, char, mbstate_t>(__refs)
-	{ }
+	codecvt(size_t __refs = 0);
 
 	// Constructor is for compatibility with the codecvt<char, char, mbstate_t>
 	// and codecvt<char, wchar_t, mbstate_t> specializations
 	explicit
-	codecvt(__c_locale, size_t __refs = 0)
-	: __codecvt_abstract_base<char32_t, char, mbstate_t>(__refs)
-	{ }
+	codecvt(__c_locale, size_t __refs = 0);
 
  protected:
-	virtual ~codecvt()
-	{ }
+	virtual
+	~codecvt();
 
 	virtual result
 	do_out(mbstate_t &, const char32_t *, const char32_t *, const char32_t * &,

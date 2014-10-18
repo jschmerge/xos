@@ -12,6 +12,17 @@ namespace std {
 //////////////////////////////////////////////////////////////////////
 locale::id codecvt<char16_t, char, mbstate_t>::id;
 
+codecvt<char16_t, char, mbstate_t>::codecvt(size_t __refs)
+: __codecvt_abstract_base<char16_t, char, mbstate_t>(__refs)
+{ }
+
+codecvt<char16_t, char, mbstate_t>::codecvt(__c_locale, size_t __refs)
+: __codecvt_abstract_base<char16_t, char, mbstate_t>(__refs)
+{ }
+
+codecvt<char16_t, char, mbstate_t>::~codecvt()
+{ }
+
 codecvt_base::result
 codecvt<char16_t, char, mbstate_t>::do_out(
 	mbstate_t & state,
@@ -197,7 +208,11 @@ codecvt<char16_t, char, mbstate_t>::do_always_noconv() const noexcept
 // sizes, we're erring on the side of caution and choosing four
 int
 codecvt<char16_t, char, mbstate_t>::do_max_length() const noexcept
-{ return 4; }
+{
+	namespace utf8 = utf8_conversion;
+	namespace utf16 = utf16_conversion;
+	return utf8::bytes_needed(utf16::max_encodable_value());
+}
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -205,6 +220,17 @@ codecvt<char16_t, char, mbstate_t>::do_max_length() const noexcept
 //
 //////////////////////////////////////////////////////////////////////
 locale::id codecvt<char32_t, char, mbstate_t>::id;
+
+codecvt<char32_t, char, mbstate_t>::codecvt(size_t __refs)
+: __codecvt_abstract_base<char32_t, char, mbstate_t>(__refs)
+{ }
+
+codecvt<char32_t, char, mbstate_t>::codecvt(__c_locale, size_t __refs)
+: __codecvt_abstract_base<char32_t, char, mbstate_t>(__refs)
+{ }
+
+codecvt<char32_t, char, mbstate_t>::~codecvt()
+{ }
 
 codecvt_base::result
 codecvt<char32_t, char, mbstate_t>::do_out(
