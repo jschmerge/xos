@@ -59,9 +59,9 @@ unittest_OBJS     = cppunit-main.o \
 
 
 PROGRESS ?= brief
-bin/unittest: ../filesystem/lib/libfilesystem.a
-bin/unittest.debug: ../filesystem/lib/libfilesystem.debug.a
-bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a
+bin/unittest: ../filesystem/lib/libfilesystem.a ../codecvt/lib/libcodecvt.a
+bin/unittest.debug: ../filesystem/lib/libfilesystem.debug.a ../codecvt/lib/libcodecvt.debug.a
+bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a ../codecvt/lib/libcodecvt.coverage.a
 
 include ../Makefile.include
 

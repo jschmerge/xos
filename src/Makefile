@@ -1,13 +1,16 @@
 all:
 	$(MAKE) -C filesystem
+	$(MAKE) -C codecvt
 	$(MAKE) -C unit
 
 debug:
 	$(MAKE) -C filesystem $@
+	$(MAKE) -C codecvt $@
 	$(MAKE) -C unit $@
 
 coverage:
 	$(MAKE) -C filesystem $@
+	$(MAKE) -C codecvt $@
 	$(MAKE) -C unit $@
 
 check: all
@@ -44,11 +47,13 @@ codecount:
 clean:
 	$(MAKE) -C filesystem clean
 	$(MAKE) -C unit clean
+	$(MAKE) -C codecvt clean
 	rm -f *.info
 
 realclean:
 	$(MAKE) -C filesystem realclean
 	$(MAKE) -C unit realclean
+	$(MAKE) -C codecvt realclean
 	rm -f *.info
 	rm -rf coverage-report
 
