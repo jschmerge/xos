@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "path_traits.h"
-#include "../unicode/utfconv.h"
+#include "../codecvt/codecvt"
 
 namespace filesystem {
 inline namespace v1 {
@@ -48,8 +48,14 @@ class path
 
 	template <class Source>
 	void dispatch_initialization(Source & src);
-	template <class EcharT>
-	void do_construction(const EcharT * src, std::size_t len);
+
+	template <class ECharT>
+	enable_if_t<std::is_same<ECharT, char>::value>
+	do_construction(const ECharT * src, std::size_t len);
+
+	template <class ECharT>
+	enable_if_t<! std::is_same<ECharT, char>::value>
+	do_construction(const ECharT * src, std::size_t len);
 
 	// appends
 	path & operator /= (const path & p);
@@ -274,10 +280,18 @@ path::dispatch_initialization(const std::basic_string<ECharT, T, A> & src)
 }
 
 template <class ECharT>
-void path::do_construction(const ECharT * src, std::size_t len)
+enable_if_t<std::is_same<ECharT, char>::value>
+path::do_construction(const ECharT * src, std::size_t len)
+{
+	pathname.assign(src, len);
+}
+
+template <class ECharT>
+enable_if_t<! std::is_same<ECharT, char>::value>
+path::do_construction(const ECharT * src, std::size_t len)
 {
 	using result = std::codecvt_base::result;
-	codecvt_utf8<ECharT> cvt;
+	std::codecvt_utf8<ECharT> cvt;
 
 	pathname.resize((len * cvt.max_length()) + 1, '\0');
 	if ( ! cvt.always_noconv())
@@ -297,10 +311,6 @@ void path::do_construction(const ECharT * src, std::size_t len)
 					 std::make_error_code(std::errc::invalid_argument));
 
 		pathname.erase(to_next - pathname.data());
-	} else
-	{
-		memcpy(const_cast<char*>(pathname.data()), src, len);
-		pathname.resize(len);
 	}
 }
 
