@@ -1,0 +1,12 @@
+// <codecvt> -*- C++ -*-
+
+#ifndef GUARD_CODECVT_MODULE
+#define GUARD_CODECVT_MODULE 1
+
+#include "codecvt_specializations.h"
+#include "codecvt_mode.h"
+#include "codecvt_utf8.h"
+#include "codecvt_utf16.h"
+#include "codecvt_utf8_utf16.h"
+
+#endif // GUARD_CODECVT_MODULE
