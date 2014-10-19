@@ -210,6 +210,62 @@ namespace bug
 static const std::string sep(80, '-');
 
 template <typename T, unsigned long MAX, std::codecvt_mode MODE>
+void check_codecvt_utf16()
+{
+	std::codecvt_utf16<T, MAX, MODE> cvt;
+	std::string type_name = demangle(typeid(T).name());
+
+	printf("%s\ncodecvt_utf16<%s, 0x%lx, %s>\n%s\n", sep.c_str(),
+	       type_name.c_str(), MAX, mode2str(MODE), sep.c_str());
+
+	printf("always_noconv() = %s\n", cvt.always_noconv() ? "true" : "false");
+	test_assert(!cvt.always_noconv());
+
+	printf("encoding() = %d\n", cvt.encoding());
+	test_assert(cvt.encoding() == 0);
+
+	printf("max_length() = %d\n", cvt.max_length());
+
+//	bool expect_error = false;
+//
+//	for (auto c : multi.get<char32_t>())
+//	{
+//		if (c > MAX)
+//			expect_error = true;
+//	}
+//
+//	for (auto c : multi.get<T>())
+//	{
+//		if (utf16_conversion::is_surrogate(c))
+//			expect_error = true;
+//	}
+
+	std::codecvt_base::result res;
+	auto state = std::mbstate_t();
+
+	{
+		const T * begin = multi.get<T>().data();
+		const T * end = multi.get<T>().data() + multi.get<T>().size();
+		const T * last = nullptr;
+
+		const size_t bufsize = 256;
+		char buffer_out[bufsize];
+		char * last_out;
+		memset(buffer_out, 0, bufsize);
+
+		res = cvt.out(state, begin, end, last,
+		              buffer_out, buffer_out + bufsize, last_out);
+
+		printf("out() conversion returned '%s' after writing %ld bytes\n",
+		       code2str(res), last_out - buffer_out);
+
+		if (res == std::codecvt_base::ok)
+		{
+		}
+	}
+}
+
+template <typename T, unsigned long MAX, std::codecvt_mode MODE>
 void check_codecvt_utf8()
 {
 	std::codecvt_utf8<T, MAX, MODE> cvt;
@@ -360,10 +416,17 @@ void check_all_enums()
 	constexpr unsigned long max =
 	  bug::min<unsigned long>(0x7ffffffful, std::numeric_limits<T>::max());
 
+#if 0
 	check_codecvt_utf8<T, 0xff, MODE>();
 	check_codecvt_utf8<T, 0xffff, MODE>();
 	check_codecvt_utf8<T, 0x10ffff, MODE>();
 	check_codecvt_utf8<T, max, MODE>();
+#endif
+
+	check_codecvt_utf16<T, 0xff, MODE>();
+	check_codecvt_utf16<T, 0xffff, MODE>();
+	check_codecvt_utf16<T, 0x10ffff, MODE>();
+	check_codecvt_utf16<T, max, MODE>();
 }
 
 template <typename T>

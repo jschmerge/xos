@@ -41,11 +41,12 @@ LIBS_coverage     = $(LIBS_base)
 LIBS              = $(LIBS_$(BUILD))
 
 TARGETS           = test
-test_OBJS         = test.o codecvt_specializations.o codecvt_utf8.o
-
 LIB_TARGETS       = libcodecvt
+
 libcodecvt_OBJS   = codecvt_specializations.o \
-                    codecvt_utf8.o
+                    codecvt_utf8.o \
+                    codecvt_utf16.o
+
+test_OBJS         = test.o $(libcodecvt_OBJS)
 
 include ../Makefile.include
-

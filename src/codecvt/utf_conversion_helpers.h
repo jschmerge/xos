@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cwchar>
+#include <cstring>
 #include <iterator>
 
 constexpr char32_t bom_value()
@@ -257,6 +258,64 @@ inline char16_t extract_leader_value(std::mbstate_t & s)
 	}
 
 	return value;
+}
+
+inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
+{
+	bool rc = true;
+	char16_t tmp = L'\0';
+
+	memset(&s, 0, sizeof(s));
+
+	if (is_surrogate(c) || (c > max_encodable_value()))
+	{
+		rc = false;
+	}
+	else if (c > surrogate_transform_value)
+	{
+		tmp = low_surrogate_value(c);
+		s.__value.__wchb[0] = little_endian ?
+		                      ((tmp >> 8) & 0xffu) :
+		                      (tmp & 0xffu);
+
+		s.__value.__wchb[1] = little_endian ?
+		                      (tmp & 0xffu) :
+		                      ((tmp >> 8) & 0xffu);
+		
+		tmp = high_surrogate_value(c);
+		s.__value.__wchb[2] = little_endian ?
+		                      ((tmp >> 8) & 0xffu) :
+		                      (tmp & 0xffu);
+
+		s.__value.__wchb[3] = little_endian ?
+		                      (tmp & 0xffu) :
+		                      ((tmp >> 8) & 0xffu);
+		
+		s.__count = 4;
+	} else
+	{
+		tmp = c;
+
+		s.__value.__wchb[0] = little_endian ?
+		                      ((tmp >> 8) & 0xffu) :
+		                      (tmp & 0xffu);
+
+		s.__value.__wchb[1] = little_endian ?
+		                      (tmp & 0xffu) :
+		                      ((tmp >> 8) & 0xffu);
+		s.__count = 2;
+	}
+
+#if 0
+	printf("----------------\n");
+	for (int i = 0; i < s.__count; ++i)
+	{
+		printf("%s value[%d] = %02hhx\n", __PRETTY_FUNCTION__,
+		       i, s.__value.__wchb[i]);
+	}
+#endif
+
+	return rc;
 }
 
 } // namespace utf16_conversion

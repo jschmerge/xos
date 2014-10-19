@@ -68,6 +68,7 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 	       char * to_end,
 	       char * & to_last) const override
 	{
+		namespace utf16 = utf16_conversion;
 		result res = codecvt_base::ok;
 
 		assert(from_begin <= from_end);
@@ -80,16 +81,25 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 		      && (from_last < from_end)
 		      && (to_last < to_end) )
 		{
-			// to is char
-			// from is wchar/char16/char32
-			if (state.__count == 0)
+			if (  (static_cast<uint32_t>(*from_last) > this->max_encodable())
+			   || (utf16::is_surrogate(*from_last)) )
 			{
-				utf16_conversion::update_mbstate(state, *from_last);
-				state.__count *= 2;
-				++from_last;
+				res = codecvt_base::error;
+			}
+			else if (state.__count == 0)
+			{
+				if (utf16::set_mbstate(state, *from_last,
+				                       this->little_endian_out()))
+				{
+					++from_last;
+				} else
+				{
+					res = codecvt_base::error;
+				}
 			}
 
-			res = this->do_unshift(state, to_last, to_end, to_last);
+			if (res == codecvt_base::ok)
+				res = this->do_unshift(state, to_last, to_end, to_last);
 		}
 
 		return res;
@@ -101,22 +111,16 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 	           char * to_end,
 	           char * & to_last) const override
 	{
-		result res = codecvt_base::ok;
 		assert(to_begin <= to_end);
 
-		// XXX implement me!
 		to_last = to_begin;
 
-		for (int i = state.__count;
-		     (res == codecvt_base::ok) && (i != 0);
-		     ++i)
+//		printf("--> ");
+		for (; (to_last < to_end) && (state.__count != 0);
+		     --state.__count, ++to_last)
 		{
-		// 		switch (i)
-		// 		{
-		// 		case -1:
-		// 		case -2:
-		// 		case -3:
-		// 		case -4:
+//			printf("%02hhx ", state.__value.__wchb[state.__count - 1]);
+			*to_last = state.__value.__wchb[state.__count - 1];
 		}
 
 		return ( (state.__count == 0) ?
@@ -124,6 +128,7 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 		         codecvt_base::partial );
 	}
 
+/*
 	virtual codecvt_base::result
 	do_in(mbstate_t & state,
 	      const char * from_begin,
@@ -138,6 +143,7 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 	          const char * from_begin,
 	          const char * from_end,
 	          size_t) const override;
+*/
 
 	virtual int
 	do_encoding() const noexcept override
@@ -147,9 +153,66 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 	do_always_noconv() const noexcept override
 	{ return false; }
 
+/*
 	virtual int
 	do_max_length() const noexcept override;
+*/
 };
+
+//
+// massive number of specializations here - for all combos of the
+// codecvt_mode enum plus all three wide char types. Unfortunately,
+// we can't burry the functions defined in the class in a source
+// file, but we can at least provide some coverage of the common
+// cases.
+//
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint()>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	little_endian>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	generate_header>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(generate_header | little_endian)>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	consume_header>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | little_endian)>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header)>;
+extern template class codecvt_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header | little_endian)>;
+
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint()>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	little_endian>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	generate_header>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(generate_header | little_endian)>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	consume_header>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | little_endian)>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header)>;
+extern template class codecvt_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header | little_endian)>;
+
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint()>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	little_endian>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	generate_header>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(generate_header | little_endian)>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	consume_header>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | little_endian)>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header)>;
+extern template class codecvt_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header | little_endian)>;
 
 } // namespace std
 
