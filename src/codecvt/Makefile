@@ -10,7 +10,7 @@ INCLUDES_coverage = $(INCLUDES_base)
 INCLUDES          = $(INCLUDES_$(BUILD))
 
 DEFINES_base      =
-DEFINES_release   = $(DEFINES_base) #-DNDEBUG
+DEFINES_release   = $(DEFINES_base) -DNDEBUG
 DEFINES_debug     = $(DEFINES_base) -D_GLIBCXX_DEBUG
 DEFINES_coverage  = $(DEFINES_base)
 DEFINES           = $(DEFINES_$(BUILD))

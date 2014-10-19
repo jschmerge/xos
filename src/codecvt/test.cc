@@ -1,5 +1,4 @@
-#include "codecvt_specializations.h"
-#include "codecvt_utf8.h"
+#include "codecvt"
 
 #include <cxxabi.h>
 
@@ -9,6 +8,25 @@
 #include <memory>
 #include <limits>
 #include <typeinfo>
+
+std::string make_msg(const char * fname, size_t line, const char * msg)
+{
+	std::string ret(fname);
+	ret += ": ";
+	ret += std::to_string(line);
+	ret += msg;
+
+	return ret;
+}
+
+#define test_assert_line(x, file, line) \
+	if (! (x)) { \
+		throw std::runtime_error(make_msg(file, line,  \
+	                                      ": Assertion '" #x "' failed")); \
+	}
+
+#define test_assert(x) test_assert_line(x, __FILE__, __LINE__)
+	
 
 struct multistring {
 	multistring(const char * _ns, const wchar_t * _ws,
@@ -124,8 +142,9 @@ void checku16()
 	printf("literal(decode) = %s\n", buffer);
 
 	s = std::mbstate_t();
-	assert(cvt.length(s, multi.get<char>().data(),
-	                  multi.get<char>().data() + multi.get<char>().length(),
+	test_assert(cvt.length(s, multi.get<char>().data(),
+	                       multi.get<char>().data()
+	                         + multi.get<char>().length(),
 	                  multi.get<char16_t>().length())
 	          == static_cast<int>(multi.get<char>().length()));
 
@@ -141,11 +160,12 @@ void checku16()
 	           buffer16, buffer16 + 40, end16);
 
 	printf("-> in returned %s\n", code2str(r));
-	assert(r == std::codecvt_base::ok);
+	test_assert(r == std::codecvt_base::ok);
 
-	assert(static_cast<size_t>(end16 - buffer16)
-	         == multi.get<char16_t>().length());
-	assert(!memcmp(buffer16, multi.get<char16_t>().data(), end16 - buffer16));
+	test_assert(static_cast<size_t>(end16 - buffer16)
+	              == multi.get<char16_t>().length());
+	test_assert(!memcmp(buffer16, multi.get<char16_t>().data(),
+	                    end16 - buffer16));
 }
 
 const char * mode2str(std::codecvt_mode m)
@@ -199,10 +219,10 @@ void check_codecvt_utf8()
 	       type_name.c_str(), MAX, mode2str(MODE), sep.c_str());
 
 	printf("always_noconv() = %s\n", cvt.always_noconv() ? "true" : "false");
-	assert(!cvt.always_noconv());
+	test_assert(!cvt.always_noconv());
 
 	printf("encoding() = %d\n", cvt.encoding());
-	assert(cvt.encoding() == 0);
+	test_assert(cvt.encoding() == 0);
 
 	printf("max_length() = %d\n", cvt.max_length());
 
@@ -257,7 +277,7 @@ void check_codecvt_utf8()
 					       reference.at(x));
 				}
 			}
-			assert(out_string == reference);
+			test_assert(out_string == reference);
 
 			state = std::mbstate_t();
 			const char * length_start = out_string.data();
@@ -272,10 +292,10 @@ void check_codecvt_utf8()
 			int count = cvt.length(state, length_start, length_end,
 			                       multi.get<T>().length());
 
-			assert(count == (length_end - length_start));
+			test_assert(count == (length_end - length_start));
 		}
 
-		assert(expect_error ^ (res == std::codecvt_base::ok));
+		test_assert(expect_error ^ (res == std::codecvt_base::ok));
 	}
 
 	{
@@ -298,7 +318,7 @@ void check_codecvt_utf8()
 		int no_bom_chars_written = (last_out - buffer);
 
 		if (res == std::codecvt_base::ok)
-			assert(buffer == multi.get<T>());
+			test_assert(buffer == multi.get<T>());
 
 		encoded = "\xef\xbb\xbf";
 		encoded += multi.get<char>();
@@ -317,17 +337,17 @@ void check_codecvt_utf8()
 
 		int with_bom_chars_written = (last_out - buffer);
 
-		assert(expect_error ^ (res == std::codecvt_base::ok));
+		test_assert(expect_error ^ (res == std::codecvt_base::ok));
 
 		if (res == std::codecvt_base::ok)
 		{
 			if ((MODE & std::consume_header) == std::consume_header)
 			{
-				assert(no_bom_chars_written == with_bom_chars_written);
-				assert(buffer == multi.get<T>());
+				test_assert(no_bom_chars_written == with_bom_chars_written);
+				test_assert(buffer == multi.get<T>());
 			} else
 			{
-				assert(no_bom_chars_written == (with_bom_chars_written - 1));
+				test_assert(no_bom_chars_written == (with_bom_chars_written-1));
 				assert((buffer + 1) == multi.get<T>());
 			}
 		}
@@ -371,19 +391,27 @@ int main()
 	auto state = std::mbstate_t();
 	for (char32_t i = 0; i < 0x10ffff; ++i)
 	{
+		if (utf16_conversion::is_surrogate(i))
+			continue;
+
 		auto res = cvt.out(state, &i, (&i) + 1, doneptr, outbuf, end, ptr2);
 //		if ((i % 0x10000) == 0 || ((i < 0x10000) && ((i % 0x100) == 0)))
 //			printf("processing mega-plane 0x%08x, current len = %ld\n",
 //			       i, ptr2 - outbuf);
 
-		assert(res == std::codecvt_base::ok);
+		try {
+		test_assert(res == std::codecvt_base::ok);
+		} catch (...)
+		{
+			printf("failed value = %08x\n", i);
+		}
 
 		int length = ptr2 - outbuf;
 
 		state = std::mbstate_t();
 		int l2 = cvt.length(state, outbuf, ptr2, 20);
 
-		assert(length == l2);
+		test_assert(length == l2);
 
 		char32_t redecoded = 0, * lastptr = nullptr;
 		const char * ptr1 = nullptr;
@@ -391,8 +419,8 @@ int main()
 		res = cvt.in(state, outbuf, outbuf + length, ptr1,
 		             &redecoded, (&redecoded) + 1, lastptr);
 
-		assert(res == std::codecvt_base::ok);
-		assert(i == redecoded);
+		test_assert(res == std::codecvt_base::ok);
+		test_assert(i == redecoded);
 	}
 
 	checku16();
