@@ -77,6 +77,13 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 		from_last = from_begin;
 		to_last = to_begin;
 
+		if ((state.__count) == 0 && this->generate_bom())
+		{
+			if (! utf16::set_mbstate(state, bom_value(),
+				                     this->little_endian_out()))
+				res = codecvt_base::error;
+		}
+
 		while (  (res == codecvt_base::ok)
 		      && (from_last < from_end)
 		      && (to_last < to_end) )
@@ -153,10 +160,14 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 	do_always_noconv() const noexcept override
 	{ return false; }
 
-/*
 	virtual int
-	do_max_length() const noexcept override;
-*/
+	do_max_length() const noexcept override
+	{
+		int val = 4;
+		if (this->consume_bom())
+			val += 2;
+		return val;
+	}
 };
 
 //

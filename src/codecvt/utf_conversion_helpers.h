@@ -270,39 +270,42 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 	if (is_surrogate(c) || (c > max_encodable_value()))
 	{
 		rc = false;
-	}
-	else if (c > surrogate_transform_value)
+	} else if (c > surrogate_transform_value)
 	{
 		tmp = low_surrogate_value(c);
-		s.__value.__wchb[0] = little_endian ?
-		                      ((tmp >> 8) & 0xffu) :
-		                      (tmp & 0xffu);
+		if (little_endian)
+		{
+			s.__value.__wchb[0] = ((tmp >> 8) & 0xffu);
+			s.__value.__wchb[1] = (tmp & 0xffu);
 
-		s.__value.__wchb[1] = little_endian ?
-		                      (tmp & 0xffu) :
-		                      ((tmp >> 8) & 0xffu);
-		
-		tmp = high_surrogate_value(c);
-		s.__value.__wchb[2] = little_endian ?
-		                      ((tmp >> 8) & 0xffu) :
-		                      (tmp & 0xffu);
+			tmp = high_surrogate_value(c);
+			s.__value.__wchb[2] = ((tmp >> 8) & 0xffu);
+			s.__value.__wchb[3] = (tmp & 0xffu);
+		} else
+		{
+			s.__value.__wchb[0] = (tmp & 0xffu);
+			s.__value.__wchb[1] = ((tmp >> 8) & 0xffu);
 
-		s.__value.__wchb[3] = little_endian ?
-		                      (tmp & 0xffu) :
-		                      ((tmp >> 8) & 0xffu);
+			tmp = high_surrogate_value(c);
+			s.__value.__wchb[2] = (tmp & 0xffu);
+			s.__value.__wchb[3] = ((tmp >> 8) & 0xffu);
+		}
 		
 		s.__count = 4;
 	} else
 	{
 		tmp = c;
 
-		s.__value.__wchb[0] = little_endian ?
-		                      ((tmp >> 8) & 0xffu) :
-		                      (tmp & 0xffu);
+		if (little_endian)
+		{
+			s.__value.__wchb[0] = ((tmp >> 8) & 0xffu);
+			s.__value.__wchb[1] = (tmp & 0xffu);
+		} else
+		{
+			s.__value.__wchb[0] = (tmp & 0xffu);
+			s.__value.__wchb[1] = ((tmp >> 8) & 0xffu);
+		}
 
-		s.__value.__wchb[1] = little_endian ?
-		                      (tmp & 0xffu) :
-		                      ((tmp >> 8) & 0xffu);
 		s.__count = 2;
 	}
 

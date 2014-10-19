@@ -22,11 +22,19 @@ std::string make_msg(const char * fname, size_t line, const char * msg)
 #define test_assert_line(x, file, line) \
 	if (! (x)) { \
 		throw std::runtime_error(make_msg(file, line,  \
-	                                      ": Assertion '" #x "' failed")); \
-	}
+	                                      ": Assertion '" #x "' failed")); }
 
 #define test_assert(x) test_assert_line(x, __FILE__, __LINE__)
 	
+struct u16cvt : public std::codecvt<char16_t, char, std::mbstate_t> {
+	using codecvt<char16_t, char, std::mbstate_t>::codecvt;
+	virtual ~u16cvt() { };
+};
+
+struct u32cvt : public std::codecvt<char32_t, char, std::mbstate_t> {
+	using codecvt<char32_t, char, std::mbstate_t>::codecvt;
+	virtual ~u32cvt() { };
+};
 
 struct multistring {
 	multistring(const char * _ns, const wchar_t * _ws,
@@ -37,25 +45,40 @@ struct multistring {
 	template <typename T>
 	const std::basic_string<T> & get() const;
 
+	template <typename T>
+	const std::basic_string<char> byte_oriented_string(bool little_endian);
+
 	std::string    ns;
 	std::wstring   ws;
 	std::u16string s16;
 	std::u32string s32;
 };
 
-class u16cvt : public std::codecvt<char16_t, char, std::mbstate_t>
+template <>
+const std::basic_string<char>
+multistring::byte_oriented_string<char16_t>(bool little_endian)
 {
- public:
-	using codecvt<char16_t, char, std::mbstate_t>::codecvt;
-	virtual ~u16cvt() { };
-};
+	std::string ret;
+	uint8_t tmp;
 
-class u32cvt : public std::codecvt<char32_t, char, std::mbstate_t>
-{
- public:
-	using codecvt<char32_t, char, std::mbstate_t>::codecvt;
-	virtual ~u32cvt() { };
-};
+	for (auto x : s16)
+	{
+		if (little_endian)
+		{
+			tmp = (x & 0xff);
+			ret += tmp;
+			tmp = ((x >> 8) & 0xff);
+			ret += tmp;
+		} else
+		{
+			tmp = ((x >> 8) & 0xff);
+			ret += tmp;
+			tmp = (x & 0xff);
+			ret += tmp;
+		}
+	}
+	return ret;
+}
 
 #define FULL_RANGE "z\u5916\u56FD\u8A9E\u306E\u5B66\u7FD2\u3068" \
 	               "\u6559\u6388\U0001f0df \U0010FFFF"
@@ -215,7 +238,7 @@ void check_codecvt_utf16()
 	std::codecvt_utf16<T, MAX, MODE> cvt;
 	std::string type_name = demangle(typeid(T).name());
 
-	printf("%s\ncodecvt_utf16<%s, 0x%lx, %s>\n%s\n", sep.c_str(),
+	printf("%s\ncodecvt_utf16<%s,0x%lx,%s>\n%s\n", sep.c_str(),
 	       type_name.c_str(), MAX, mode2str(MODE), sep.c_str());
 
 	printf("always_noconv() = %s\n", cvt.always_noconv() ? "true" : "false");
@@ -226,19 +249,19 @@ void check_codecvt_utf16()
 
 	printf("max_length() = %d\n", cvt.max_length());
 
-//	bool expect_error = false;
-//
-//	for (auto c : multi.get<char32_t>())
-//	{
-//		if (c > MAX)
-//			expect_error = true;
-//	}
-//
-//	for (auto c : multi.get<T>())
-//	{
-//		if (utf16_conversion::is_surrogate(c))
-//			expect_error = true;
-//	}
+	bool expect_error = false;
+
+	for (auto c : multi.get<char32_t>())
+	{
+		if (c > MAX)
+			expect_error = true;
+	}
+
+	for (auto c : multi.get<T>())
+	{
+		if (utf16_conversion::is_surrogate(c))
+			expect_error = true;
+	}
 
 	std::codecvt_base::result res;
 	auto state = std::mbstate_t();
@@ -259,9 +282,27 @@ void check_codecvt_utf16()
 		printf("out() conversion returned '%s' after writing %ld bytes\n",
 		       code2str(res), last_out - buffer_out);
 
+		printf("---> ");
+		for (int i = 0; i < (last_out - buffer_out); ++i)
+			printf("%02hhx ", buffer_out[i]);
+		putchar('\n');
+
 		if (res == std::codecvt_base::ok)
 		{
+			bool le = ((MODE & std::little_endian) == std::little_endian);
+			bool header =
+			       ((MODE & std::generate_header) == std::generate_header);
+
+			std::string correct_val( (header) ?
+			                         (le ? "\xff\xfe" : "\xfe\xff") :
+			                         "");
+			correct_val += multi.byte_oriented_string<char16_t>(le);
+
+			std::string converted(buffer_out, last_out - buffer_out);
+			test_assert(correct_val == converted);
 		}
+
+		test_assert(expect_error ^ (res == std::codecvt_base::ok));
 	}
 }
 
