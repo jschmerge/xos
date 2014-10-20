@@ -243,20 +243,50 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 			s.__value.__wchb[1] = c;
 			++s.__count;
 			break;
+
 		 case 1:
 			s.__value.__wchb[0] = c;
-			++s.__count;
+			if (  (static_cast<uint8_t>(c) < 0xd8u)
+			   || (static_cast<uint8_t>(c) > 0xdfu) )
+			{
+				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[1]);
+				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
+				s.__value.__wch = tmp;
+				s.__count = 0;
+			} else
+			{
+				++s.__count;
+			}
 			break;
+
 		 case 2:
 			s.__value.__wchb[3] = c;
 			++s.__count;
 			break;
+
 		 case 3:
-			if (  (static_cast<uint8_t>(c) < 0xdcu)
-			   || (static_cast<uint8_t>(c) > 0xdfu) )
-				return false;
-			s.__value.__wchb[2] = c;
-			++s.__count;
+			if (  (static_cast<uint8_t>(c) >= 0xdcu)
+			   && (static_cast<uint8_t>(c) <= 0xdfu) )
+			{
+				s.__value.__wchb[2] = c;
+
+/*
+				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[1]);
+				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
+				s.__value.__wch = tmp;
+*/
+				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[3]);
+				tmp |= (static_cast<uint8_t>(s.__value.__wchb[2] & 0x03) << 8);
+				tmp |= (static_cast<uint8_t>(s.__value.__wchb[1] ) << 10);
+				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0] & 0x03) << 18);
+				tmp += 0x10000u;
+				s.__value.__wch = tmp;
+
+				s.__count = 0;
+			} else
+			{
+				rc = false;
+			}
 			break;
 		}
 	} else
@@ -268,20 +298,37 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 			s.__value.__wchb[0] = c;
 			++s.__count;
 			break;
+
 		 case 1:
 			s.__value.__wchb[1] = c;
-			++s.__count;
+			if (  (static_cast<uint8_t>(c) >= 0xd8u)
+			   && (static_cast<uint8_t>(c) <= 0xdfu) )
+			{
+				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[1]);
+				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
+				s.__value.__wch = tmp;
+				s.__count = 0;
+			} else
+			{
+				++s.__count;
+			}
 			break;
+
 		 case 2:
-			if (  (static_cast<uint8_t>(c) < 0xdcu)
-			   || (static_cast<uint8_t>(c) > 0xdfu) )
-				return false;
-			s.__value.__wchb[2] = c;
-			++s.__count;
+			if (  (static_cast<uint8_t>(c) >= 0xdcu)
+			   && (static_cast<uint8_t>(c) <= 0xdfu) )
+			{
+				s.__value.__wchb[2] = c;
+				++s.__count;
+			} else
+			{
+				rc = false;
+			}
 			break;
+
 		 case 3:
 			s.__value.__wchb[3] = c;
-			++s.__count;
+			s.__count = 0;
 			break;
 		}
 	}
@@ -368,17 +415,17 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 		s.__count = 2;
 	}
 
-#if 0
-	printf("----------------\n");
-	for (int i = 0; i < s.__count; ++i)
-	{
-		printf("%s value[%d] = %02hhx\n", __PRETTY_FUNCTION__,
-		       i, s.__value.__wchb[i]);
-	}
-#endif
-
 	return rc;
 }
+
+/*
+template <typename T>
+bool convert_back(std::mbstate_t & s, T & c)
+{
+	bool rc = false;
+	return rc;
+}
+*/
 
 } // namespace utf16_conversion
 

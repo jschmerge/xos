@@ -161,11 +161,13 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 			if (  static_cast<uint8_t>(from_last[0]) == 0xfeu
 			   && static_cast<uint8_t>(from_last[1]) == 0xffu)
 			{
+				printf("FOUND BIG ENDIAN BOM\n");
 				le = false;
 				from_last += 2;
 			} else if (  static_cast<uint8_t>(from_last[0]) == 0xffu
 			          && static_cast<uint8_t>(from_last[1]) == 0xfeu)
 			{
+				printf("FOUND LITTLE ENDIAN BOM\n");
 				le = true;
 				from_last += 2;
 			}
@@ -175,9 +177,13 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 		      && (from_last < from_end)
 		      && (to_last < to_end) )
 		{
-			if (state.__count == 0)
+			if (state.__count == 0 && state.__value.__wch != 0)
 			{
+				printf("%06x\n", state.__value.__wch);
+				memset(&state, 0, sizeof(state));
 			}
+
+			printf("FROM_LAST = %02hhx\n", *from_last);
 
 			if (utf16::update_mbstate(state, *from_last, le))
 				++from_last;

@@ -300,6 +300,19 @@ void check_codecvt_utf16()
 
 			std::string converted(buffer_out, last_out - buffer_out);
 			test_assert(correct_val == converted);
+
+			{
+				std::codecvt_base::result res2;
+				const char * cptr = nullptr;
+				T buffer_x[bufsize];
+				T * last = nullptr;
+				state = std::mbstate_t();
+				res2 = cvt.in(state, buffer_out, last_out, cptr,
+				              buffer_x, buffer_x + bufsize, last);
+				printf("in() conversion returned '%s' after writing "
+				       "%ld bytes\n",
+				       code2str(res2), last - buffer_x);
+			}
 		}
 
 		test_assert(expect_error ^ (res == std::codecvt_base::ok));
