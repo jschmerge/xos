@@ -135,7 +135,6 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 		         codecvt_base::partial );
 	}
 
-/*
 	virtual codecvt_base::result
 	do_in(mbstate_t & state,
 	      const char * from_begin,
@@ -143,13 +142,57 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 	      const char * & from_last,
 	      intern_type * to_begin,
 	      intern_type * to_end,
-	      intern_type * & to_last) const override;
+	      intern_type * & to_last) const override
+	{
+		namespace utf16 = utf16_conversion;
 
+		result res = codecvt_base::ok;
+		bool le = this->little_endian_out();
+
+		assert(from_begin <= from_end);
+		assert(to_begin <= to_end);
+
+		from_last = from_begin;
+		to_last = to_begin;
+
+		if (  this->consume_bom()
+		   && ((from_end - from_last) > 1))
+		{
+			if (  static_cast<uint8_t>(from_last[0]) == 0xfeu
+			   && static_cast<uint8_t>(from_last[1]) == 0xffu)
+			{
+				le = false;
+				from_last += 2;
+			} else if (  static_cast<uint8_t>(from_last[0]) == 0xffu
+			          && static_cast<uint8_t>(from_last[1]) == 0xfeu)
+			{
+				le = true;
+				from_last += 2;
+			}
+		}
+
+		while (  (res == codecvt_base::ok)
+		      && (from_last < from_end)
+		      && (to_last < to_end) )
+		{
+			if (state.__count == 0)
+			{
+			}
+
+			if (utf16::update_mbstate(state, *from_last, le))
+				++from_last;
+			else
+				res = codecvt_base::error;
+		}
+		return res;
+	}
+
+/*
 	virtual int
 	do_length(mbstate_t & state,
 	          const char * from_begin,
 	          const char * from_end,
-	          size_t) const override;
+	          size_t max) const override;
 */
 
 	virtual int

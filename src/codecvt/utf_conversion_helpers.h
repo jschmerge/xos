@@ -230,6 +230,65 @@ inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 	return rc;
 }
 
+inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
+{
+	bool rc = true;
+
+	if (le)
+	{
+		switch (s.__count)
+		{
+		 case 0:
+			s.__value.__wch = 0;
+			s.__value.__wchb[1] = c;
+			++s.__count;
+			break;
+		 case 1:
+			s.__value.__wchb[0] = c;
+			++s.__count;
+			break;
+		 case 2:
+			s.__value.__wchb[3] = c;
+			++s.__count;
+			break;
+		 case 3:
+			if (  (static_cast<uint8_t>(c) < 0xdcu)
+			   || (static_cast<uint8_t>(c) > 0xdfu) )
+				return false;
+			s.__value.__wchb[2] = c;
+			++s.__count;
+			break;
+		}
+	} else
+	{
+		switch (s.__count)
+		{
+		 case 0:
+			s.__value.__wch = 0;
+			s.__value.__wchb[0] = c;
+			++s.__count;
+			break;
+		 case 1:
+			s.__value.__wchb[1] = c;
+			++s.__count;
+			break;
+		 case 2:
+			if (  (static_cast<uint8_t>(c) < 0xdcu)
+			   || (static_cast<uint8_t>(c) > 0xdfu) )
+				return false;
+			s.__value.__wchb[2] = c;
+			++s.__count;
+			break;
+		 case 3:
+			s.__value.__wchb[3] = c;
+			++s.__count;
+			break;
+		}
+	}
+
+	return rc;
+}
+
 constexpr char16_t high_surrogate_value(char32_t c)
 {
 	return (surrogate_min
