@@ -470,12 +470,10 @@ void check_all_enums()
 	constexpr unsigned long max =
 	  bug::min<unsigned long>(0x7ffffffful, std::numeric_limits<T>::max());
 
-#if 0
 	check_codecvt_utf8<T, 0xff, MODE>();
 	check_codecvt_utf8<T, 0xffff, MODE>();
 	check_codecvt_utf8<T, 0x10ffff, MODE>();
 	check_codecvt_utf8<T, max, MODE>();
-#endif
 
 	check_codecvt_utf16<T, 0xff, MODE>();
 	check_codecvt_utf16<T, 0xffff, MODE>();
