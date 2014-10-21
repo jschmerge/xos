@@ -270,11 +270,6 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 			{
 				s.__value.__wchb[2] = c;
 
-/*
-				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[1]);
-				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
-				s.__value.__wch = tmp;
-*/
 				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[3]);
 				tmp |= (static_cast<uint8_t>(s.__value.__wchb[2] & 0x03) << 8);
 				tmp |= (static_cast<uint8_t>(s.__value.__wchb[1] ) << 10);
@@ -294,15 +289,17 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 		switch (s.__count)
 		{
 		 case 0:
+//			printf("CASE 0\n");
 			s.__value.__wch = 0;
 			s.__value.__wchb[0] = c;
 			++s.__count;
 			break;
 
 		 case 1:
+//			printf("CASE 1\n");
 			s.__value.__wchb[1] = c;
-			if (  (static_cast<uint8_t>(c) >= 0xd8u)
-			   && (static_cast<uint8_t>(c) <= 0xdfu) )
+			if (  (static_cast<uint8_t>(s.__value.__wchb[0]) < 0xd8u)
+			   || (static_cast<uint8_t>(s.__value.__wchb[0]) > 0xdfu) )
 			{
 				std::wint_t tmp = static_cast<uint8_t>(s.__value.__wchb[1]);
 				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
@@ -315,6 +312,7 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 			break;
 
 		 case 2:
+//			printf("CASE 2\n");
 			if (  (static_cast<uint8_t>(c) >= 0xdcu)
 			   && (static_cast<uint8_t>(c) <= 0xdfu) )
 			{
@@ -322,11 +320,13 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 				++s.__count;
 			} else
 			{
+//				printf("ERROR %02hhx\n", c);
 				rc = false;
 			}
 			break;
 
 		 case 3:
+//			printf("CASE 3 %02hhx\n", c);
 			s.__value.__wchb[3] = c;
 			s.__count = 0;
 			break;

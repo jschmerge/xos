@@ -161,13 +161,11 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 			if (  static_cast<uint8_t>(from_last[0]) == 0xfeu
 			   && static_cast<uint8_t>(from_last[1]) == 0xffu)
 			{
-				printf("FOUND BIG ENDIAN BOM\n");
 				le = false;
 				from_last += 2;
 			} else if (  static_cast<uint8_t>(from_last[0]) == 0xffu
 			          && static_cast<uint8_t>(from_last[1]) == 0xfeu)
 			{
-				printf("FOUND LITTLE ENDIAN BOM\n");
 				le = true;
 				from_last += 2;
 			}
@@ -179,27 +177,88 @@ class codecvt_utf16 : public codecvt<Elem, char, mbstate_t>
 		{
 			if (state.__count == 0 && state.__value.__wch != 0)
 			{
-				printf("%06x\n", state.__value.__wch);
-				memset(&state, 0, sizeof(state));
+				*to_last = state.__value.__wch;
+				++to_last;
+				state.__value.__wch = 0;
 			}
-
-			printf("FROM_LAST = %02hhx\n", *from_last);
 
 			if (utf16::update_mbstate(state, *from_last, le))
 				++from_last;
 			else
 				res = codecvt_base::error;
 		}
+
+		if (  res == codecvt_base::ok
+		   && state.__count == 0
+		   && state.__value.__wch != 0
+		   && to_last < to_end)
+		{
+			*to_last = state.__value.__wch;
+			++to_last;
+			state.__value.__wch = 0;
+		}
+
 		return res;
 	}
 
-/*
 	virtual int
 	do_length(mbstate_t & state,
 	          const char * from_begin,
 	          const char * from_end,
-	          size_t max) const override;
-*/
+	          size_t max) const override
+	{
+		namespace utf16 = utf16_conversion;
+		assert(from_begin <= from_end);
+
+		result res = codecvt_base::ok;
+		bool le = this->little_endian_out();
+		const char * from_last = from_begin;
+		size_t converted = 0;
+
+		if (  this->consume_bom()
+		   && ((from_end - from_last) > 1))
+		{
+			if (  static_cast<uint8_t>(from_last[0]) == 0xfeu
+			   && static_cast<uint8_t>(from_last[1]) == 0xffu)
+			{
+				le = false;
+				from_last += 2;
+			} else if (  static_cast<uint8_t>(from_last[0]) == 0xffu
+			          && static_cast<uint8_t>(from_last[1]) == 0xfeu)
+			{
+				le = true;
+				from_last += 2;
+			}
+		}
+
+		while (  (res == codecvt_base::ok)
+		      && (from_last < from_end)
+		      && (converted < max) )
+		{
+			if (state.__count == 0 && state.__value.__wch != 0)
+			{
+				++converted;
+				state.__value.__wch = 0;
+			}
+
+			if (utf16::update_mbstate(state, *from_last, le))
+				++from_last;
+			else
+				res = codecvt_base::error;
+		}
+
+		if (  res == codecvt_base::ok
+		   && state.__count == 0
+		   && state.__value.__wch != 0
+		   && converted < max)
+		{
+			++converted;
+			state.__value.__wch = 0;
+		}
+
+		return (from_last - from_begin);
+	}
+
 
 	virtual int
 	do_encoding() const noexcept override
