@@ -45,7 +45,8 @@ LIB_TARGETS       = libcodecvt
 
 libcodecvt_OBJS   = codecvt_specializations.o \
                     codecvt_utf8.o \
-                    codecvt_utf16.o
+                    codecvt_utf16.o \
+                    codecvt_utf8_utf16.o
 
 test_OBJS         = test.o $(libcodecvt_OBJS)
 

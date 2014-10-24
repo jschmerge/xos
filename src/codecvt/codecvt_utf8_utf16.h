@@ -240,6 +240,54 @@ class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 	}
 };
 
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint()>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	little_endian>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	generate_header>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(generate_header | little_endian)>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	consume_header>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | little_endian)>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header)>;
+extern template class codecvt_utf8_utf16<wchar_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header | little_endian)>;
+
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint()>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	little_endian>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	generate_header>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(generate_header | little_endian)>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	consume_header>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | little_endian)>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header)>;
+extern template class codecvt_utf8_utf16<char16_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header | little_endian)>;
+
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint()>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	little_endian>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	generate_header>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(generate_header | little_endian)>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	consume_header>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | little_endian)>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header)>;
+extern template class codecvt_utf8_utf16<char32_t, max_unicode_codepoint(),
+	codecvt_mode(consume_header | generate_header | little_endian)>;
+
 } // namespace std
 
 #endif // GUARD_CODECVT_UTF8_UTF16_H
