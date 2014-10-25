@@ -75,6 +75,18 @@ class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 		from_last = from_begin;
 		to_last = to_begin;
 
+		if (this->generate_bom() && (from_last < from_end))
+		{
+			if (bom_value() > this->max_encodable())
+				return codecvt_base::error;
+
+			state.__value.__wch = bom_value();
+			char val = utf8::extract_leader_byte(state);
+
+			*to_last = val;
+			++to_last;
+		}
+
 		while (  (to_last < to_end)
 		      && (from_last < from_end)
 		      && (res == codecvt_base::ok))
@@ -112,11 +124,11 @@ class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 	{
 		namespace utf8 = utf8_conversion;
 
-		assert((state.__count) >= 0 && (state.__count < do_max_length()));
+		assert((state.__count) >= 0 && (state.__count < this->do_max_length()));
 
 		to_last = to_begin;
 
-		while ((to_last < to_end) && state.__count > 0)
+		while ((to_last < to_end) && (state.__count > 0))
 		{
 			*to_last = utf8::next_byte(state);
 			++to_last;
@@ -146,6 +158,18 @@ class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 
 		from_last = from_begin;
 		to_last = to_begin;
+
+		if (  (state.__count == 0)
+		   && this->consume_bom()
+		   && (from_end - from_last) > 2)
+		{
+			if (  (static_cast<uint8_t>(from_last[0]) == 0xefu)
+			   && (static_cast<uint8_t>(from_last[1]) == 0xbbu)
+			   && (static_cast<uint8_t>(from_last[2]) == 0xbfu) )
+			{
+				from_last += 3;
+			}
+		}
 
 		while (  (res == codecvt_base::ok)
 		      && (from_last < from_end)
@@ -195,11 +219,23 @@ class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 		namespace utf16 = utf16_conversion;
 
 		size_t count = 0;
-		const char * i = from_begin;
+		const char * from_last = from_begin;
 
-		while (  (i < from_end)
+		if (  (state.__count == 0)
+		   && this->consume_bom()
+		   && (from_end - from_last) > 2)
+		{
+			if (  (static_cast<uint8_t>(from_last[0]) == 0xefu)
+			   && (static_cast<uint8_t>(from_last[1]) == 0xbbu)
+			   && (static_cast<uint8_t>(from_last[2]) == 0xbfu) )
+			{
+				from_last += 3;
+			}
+		}
+
+		while (  (from_last < from_end)
 		      && (count < max)
-		      && utf8::update_mbstate(state, *i))
+		      && utf8::update_mbstate(state, *from_last))
 		{
 			if (state.__count == 0)
 			{
@@ -215,12 +251,11 @@ class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 				}
 				state.__value.__wch = 0;
 			}
-			++i;
+			++from_last;
 		}
 
-		return (i - from_begin);
+		return (from_last - from_begin);
 	}
-
 
 	virtual int
 	do_encoding() const noexcept override

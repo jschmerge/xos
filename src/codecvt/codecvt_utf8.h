@@ -78,7 +78,6 @@ class codecvt_utf8
 		from_last = from_begin;
 		to_last = to_begin;
 
-		// we only ever trip this once
 		if (this->generate_bom() && (from_last < from_end))
 		{
 			if (bom_value() > this->max_encodable())
@@ -129,7 +128,7 @@ class codecvt_utf8
 	{
 		namespace utf8 = utf8_conversion;
 
-		assert((state.__count) >= 0 && (state.__count < this->max_length()));
+		assert((state.__count) >= 0 && (state.__count < this->do_max_length()));
 
 		to_last = to_begin;
 
@@ -141,7 +140,7 @@ class codecvt_utf8
 		}
 
 		return ( (state.__count == 0) ?
-		         codecvt_base::codecvt_base::ok :
+		         codecvt_base::ok :
 		         codecvt_base::partial );
 	}
 
@@ -206,28 +205,33 @@ class codecvt_utf8
 		namespace utf8 = utf8_conversion;
 
 		size_t count = 0;
-		const char * i = from_begin;
+		const char * from_last = from_begin;
 
-		while (  (i < from_end)
+		if (  (state.__count == 0)
+		   && this->consume_bom()
+		   && (from_end - from_last) > 2)
+		{
+			if (  (static_cast<uint8_t>(from_last[0]) == 0xefu)
+			   && (static_cast<uint8_t>(from_last[1]) == 0xbbu)
+			   && (static_cast<uint8_t>(from_last[2]) == 0xbfu) )
+			{
+				from_last += 3;
+			}
+		}
+
+		while (  (from_last < from_end)
 		      && (count < max)
-		      && utf8::update_mbstate(state, *i))
+		      && utf8::update_mbstate(state, *from_last))
 		{
 			if (state.__count == 0)
 			{
 				if (state.__value.__wch > Maxcode)
 					break;
-
-				if ( ! (  this->consume_bom()
-				       && (state.__value.__wch == 0xfeff)
-				       && ((i - from_begin) == 2) ) )
-				{
-					++count;
-				}
 			}
-			++i;
+			++from_last;
 		}
 
-		return (i - from_begin);
+		return (from_last - from_begin);
 	}
 
 	virtual int
