@@ -160,12 +160,14 @@ inline bool update_mbstate(std::mbstate_t & s, const char c)
 		{
 			s.__value.__wch = c;
 			s.__count = 0;
-		} else
+		}
+		else
 		{
 			s.__value.__wch = leader_bits(c, s.__count);
 			s.__count--;
 		}
-	} else
+	}
+	else
 	{
 		s.__value.__wch <<= continuation_bits_per_byte;
 		s.__value.__wch |= continuation_bits(c);
@@ -205,23 +207,27 @@ inline bool update_mbstate(std::mbstate_t & s, char16_t c)
 		{
 			s.__value.__wch = c;
 			s.__count = 0; // superfluous
-		} else if (c < low_surrogate_min)
+		}
+		else if (c < low_surrogate_min)
 		{
 			s.__value.__wch = (c & surrogate_data_bitmask);
 			s.__value.__wch <<= surrogate_data_bits;
 			s.__count = -1;
-		} else
+		}
+		else
 		{
 			rc = false;
 		}
-	} else if (s.__count == -1)
+	}
+	else if (s.__count == -1)
 	{
 		if (c >= low_surrogate_min && c <= surrogate_max)
 		{
 			s.__value.__wch |= (c & ten_bit_mask);
 			s.__value.__wch += surrogate_transform_value;
 			s.__count = 0;
-		} else
+		}
+		else
 		{
 			rc = false;
 		}
@@ -253,7 +259,8 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
 				s.__value.__wch = tmp;
 				s.__count = 0;
-			} else
+			}
+			else
 			{
 				++s.__count;
 			}
@@ -278,25 +285,25 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 				s.__value.__wch = tmp;
 
 				s.__count = 0;
-			} else
+			}
+			else
 			{
 				rc = false;
 			}
 			break;
 		}
-	} else
+	}
+	else
 	{
 		switch (s.__count)
 		{
 		 case 0:
-//			printf("CASE 0\n");
 			s.__value.__wch = 0;
 			s.__value.__wchb[0] = c;
 			++s.__count;
 			break;
 
 		 case 1:
-//			printf("CASE 1\n");
 			s.__value.__wchb[1] = c;
 			if (  (static_cast<uint8_t>(s.__value.__wchb[0]) < 0xd8u)
 			   || (static_cast<uint8_t>(s.__value.__wchb[0]) > 0xdfu) )
@@ -305,28 +312,27 @@ inline bool update_mbstate(std::mbstate_t & s, char c, bool le)
 				tmp |= (static_cast<uint8_t>(s.__value.__wchb[0]) << 8);
 				s.__value.__wch = tmp;
 				s.__count = 0;
-			} else
+			}
+			else
 			{
 				++s.__count;
 			}
 			break;
 
 		 case 2:
-//			printf("CASE 2\n");
 			if (  (static_cast<uint8_t>(c) >= 0xdcu)
 			   && (static_cast<uint8_t>(c) <= 0xdfu) )
 			{
 				s.__value.__wchb[2] = c;
 				++s.__count;
-			} else
+			}
+			else
 			{
-//				printf("ERROR %02hhx\n", c);
 				rc = false;
 			}
 			break;
 
 		 case 3:
-//			printf("CASE 3 %02hhx\n", c);
 			s.__value.__wchb[3] = c;
 			s.__count = 0;
 			break;
@@ -356,7 +362,8 @@ inline char16_t extract_leader_value(std::mbstate_t & s)
 	if (s.__value.__wch < surrogate_transform_value)
 	{
 		value = s.__value.__wch;
-	} else
+	}
+	else
 	{
 		value = high_surrogate_value(s.__value.__wch);
 		s.__value.__wch = low_surrogate_value(s.__value.__wch);
@@ -376,7 +383,8 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 	if (is_surrogate(c) || (c > max_encodable_value()))
 	{
 		rc = false;
-	} else if (c > surrogate_transform_value)
+	}
+	else if (c > surrogate_transform_value)
 	{
 		tmp = low_surrogate_value(c);
 		if (little_endian)
@@ -387,7 +395,8 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 			tmp = high_surrogate_value(c);
 			s.__value.__wchb[2] = ((tmp >> 8) & 0xffu);
 			s.__value.__wchb[3] = (tmp & 0xffu);
-		} else
+		}
+		else
 		{
 			s.__value.__wchb[0] = (tmp & 0xffu);
 			s.__value.__wchb[1] = ((tmp >> 8) & 0xffu);
@@ -398,7 +407,8 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 		}
 		
 		s.__count = 4;
-	} else
+	}
+	else
 	{
 		tmp = c;
 
@@ -406,7 +416,8 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 		{
 			s.__value.__wchb[0] = ((tmp >> 8) & 0xffu);
 			s.__value.__wchb[1] = (tmp & 0xffu);
-		} else
+		}
+		else
 		{
 			s.__value.__wchb[0] = (tmp & 0xffu);
 			s.__value.__wchb[1] = ((tmp >> 8) & 0xffu);
@@ -417,15 +428,6 @@ inline bool set_mbstate(std::mbstate_t & s, char32_t c, bool little_endian)
 
 	return rc;
 }
-
-/*
-template <typename T>
-bool convert_back(std::mbstate_t & s, T & c)
-{
-	bool rc = false;
-	return rc;
-}
-*/
 
 } // namespace utf16_conversion
 
