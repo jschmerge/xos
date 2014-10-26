@@ -312,6 +312,11 @@ void check_codecvt_utf16()
 				printf("in() conversion returned '%s' after writing "
 				       "%ld bytes\n",
 				       code2str(res2), last - buffer_x);
+				printf("in() consumed %ld bytes\n", cptr - buffer_out);
+				state = std::mbstate_t();
+				int length_ret = cvt.length(state, buffer_out, last_out,
+				                            last - buffer_x);
+				printf("length() returned %d\n", length_ret);
 			}
 		}
 
