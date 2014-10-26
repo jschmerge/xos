@@ -160,10 +160,7 @@ class Test_codecvt : public CppUnit::TestFixture
 
 		CPPUNIT_ASSERT(bmp_max.get<T>().size() != 0);
 		for (size_t i = 0; i < bmp_max.get<T>().length(); ++i)
-		{
 			input_buffer[i] = bmp_max.get<T>()[i];
-			printf("---> %08X\n", static_cast<uint32_t>(input_buffer[i]));
-		}
 		input_buffer[bmp_max.get<T>().length()] = 0;
 
 		memset(&state, 0, sizeof(state));
