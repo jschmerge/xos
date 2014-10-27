@@ -158,8 +158,6 @@ class Test_codecvt : public CppUnit::TestFixture
 		              && static_cast<uint8_t>(output_buffer[1]) == 0xbfu
 		              && static_cast<uint8_t>(output_buffer[2]) == 0xbfu);
 	}
-
-
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_codecvt);
