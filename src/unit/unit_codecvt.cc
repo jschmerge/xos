@@ -33,6 +33,7 @@ class Test_codecvt : public CppUnit::TestFixture
 	CPPUNIT_TEST(max_length<char16_t>);
 	CPPUNIT_TEST(out<char16_t>);
 	CPPUNIT_TEST(in<char16_t>);
+	CPPUNIT_TEST(length<char16_t>);
 
 	CPPUNIT_TEST(construction<char32_t>);
 	CPPUNIT_TEST(encoding<char32_t>);
@@ -40,6 +41,7 @@ class Test_codecvt : public CppUnit::TestFixture
 	CPPUNIT_TEST(max_length<char32_t>);
 	CPPUNIT_TEST(out<char32_t>);
 	CPPUNIT_TEST(in<char32_t>);
+	CPPUNIT_TEST(length<char32_t>);
 	CPPUNIT_TEST_SUITE_END();
 
 	typedef std::codecvt_base::result result;
@@ -184,10 +186,6 @@ class Test_codecvt : public CppUnit::TestFixture
 		typedef std::codecvt<T, char, std::mbstate_t> cvt_t;
 		deletable_facet<cvt_t> cvt;
 		result r = std::codecvt_base::ok;
-#if 0
-		T input_buffer[2] = { 0, 0 };
-		std::mbstate_t state;
-#endif
 		const char * input_buffer = ascii_max.get<char>().c_str();
 		const char * input_end = input_buffer + ascii_max.get<char>().length();
 		const char * input_last = nullptr;
@@ -200,10 +198,24 @@ class Test_codecvt : public CppUnit::TestFixture
 		           out_buffer, out_buffer + 2, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		printf("\n%zd", ascii_max.get<T>().length());
-		printf("\n%02x %02x\n", ascii_max.get<T>()[0], out_buffer[0]);
-		printf("%02x %02x\n", ascii_max.get<T>()[1], out_buffer[1]);
+//		printf("\n%zd", ascii_max.get<T>().length());
+//		printf("\n%02x %02x\n", ascii_max.get<T>()[0], out_buffer[0]);
+//		printf("%02x %02x\n", ascii_max.get<T>()[1], out_buffer[1]);
 		CPPUNIT_ASSERT(ascii_max.get<T>()[0] == out_buffer[0]);
+	}
+
+	template<typename T>
+	void length()
+	{
+		typedef std::codecvt<T, char, std::mbstate_t> cvt_t;
+		deletable_facet<cvt_t> cvt;
+
+		const char * input_buffer = ascii_max.get<char>().c_str();
+		const char * input_end = input_buffer + ascii_max.get<char>().length();
+		std::mbstate_t state = std::mbstate_t();
+		size_t len = cvt.length(state, input_buffer, input_end, 1);
+		CPPUNIT_ASSERT(len == 1);
+
 	}
 };
 
