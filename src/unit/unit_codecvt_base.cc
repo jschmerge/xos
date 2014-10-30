@@ -75,5 +75,22 @@ class Test_codecvt_base<CVT<CHAR_T, OTHER...>> : public CppUnit::TestFixture
 	}
 };
 
+template <typename> class Test_codecvtx;
+
+template <template<class, class...> class CVT, typename CHAR_T, typename... OTHER> 
+class Test_codecvtx<CVT<CHAR_T, OTHER...>>
+  : public Test_codecvt_base<CVT<CHAR_T, OTHER...>>
+{
+ public:
+	typedef Test_codecvt_base<CVT<CHAR_T, OTHER...>> parent;
+	CPPUNIT_TEST_SUB_SUITE(Test_codecvtx, parent);
+	CPPUNIT_TEST(foo);
+	CPPUNIT_TEST_SUITE_END();
+
+	void foo()
+	{
+	}
+};
+
 typedef std::codecvt<char16_t, char, std::mbstate_t> foo;
-CPPUNIT_TEST_SUITE_REGISTRATION(Test_codecvt_base<foo>);
+CPPUNIT_TEST_SUITE_REGISTRATION(Test_codecvtx<foo>);

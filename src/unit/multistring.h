@@ -38,13 +38,13 @@ struct multistring {
 
 #define DEF_MULTISTRING(name, literalval) \
 	multistring name(NARROW(literalval), \
-	                 sizeof(NARROW(literalval)) / sizeof(char), \
+	                 (sizeof(NARROW(literalval)) - 1)/ sizeof(char), \
 	                 WIDE(literalval), \
-	                 sizeof(WIDE(literalval)) / sizeof(wchar_t), \
+	                 (sizeof(WIDE(literalval)) - 1)/ sizeof(wchar_t), \
 	                 UTF16(literalval), \
-	                 sizeof(UTF16(literalval)) / sizeof(char16_t), \
+	                 (sizeof(UTF16(literalval)) - 1)/ sizeof(char16_t), \
 	                 UTF32(literalval), \
-	                 sizeof(UTF32(literalval)) / sizeof(char32_t))
+	                 (sizeof(UTF32(literalval)) - 1)/ sizeof(char32_t))
 
 template<>
 inline const std::basic_string<char> & multistring::get<char>() const
