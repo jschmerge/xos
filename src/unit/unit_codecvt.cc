@@ -20,9 +20,14 @@ struct deletable_facet : Facet
 static const DEF_MULTISTRING(nul_char, "\x0");
 static const DEF_MULTISTRING(ascii_max, "\x7f");
 
+// XXX - add test for this
+static const DEF_MULTISTRING(bom, "\ufeff");
+
 // Bug in gcc converts u"\uffff" into {0xd7ff, 0xdffff } - workaround for that
 static const multistring bmp_max(u8"\uffff", L"\xffff",
                                  u"\xffff", U"\xffff");
+
+static const DEF_MULTISTRING(max_unicode, "\U0010ffff");
 
 class Test_codecvt : public CppUnit::TestFixture
 {
@@ -191,13 +196,17 @@ class Test_codecvt : public CppUnit::TestFixture
 		const char * input_last = nullptr;
 		std::mbstate_t state = std::mbstate_t();
 
-		T out_buffer[2];
+		const size_t outSz = 3;
+		T out_buffer[outSz];
 		T * out_end = nullptr;
 
+		memset(out_buffer, 0, outSz * sizeof(T));
 		r = cvt.in(state, input_buffer, input_end, input_last,
-		           out_buffer, out_buffer + 2, out_end);
+		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
+		for (size_t i = 0; i < nul_char.get<T>().length(); ++i)
+			printf("%06x %06x\n", nul_char.get<T>()[i], out_buffer[i]);
 		CPPUNIT_ASSERT(nul_char.get<T>()[0] == out_buffer[0]);
 
 		/////
@@ -207,23 +216,46 @@ class Test_codecvt : public CppUnit::TestFixture
 		input_last = nullptr;
 		state = std::mbstate_t();
 
+		memset(out_buffer, 0, outSz * sizeof(T));
 		r = cvt.in(state, input_buffer, input_end, input_last,
-		           out_buffer, out_buffer + 2, out_end);
+		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		CPPUNIT_ASSERT(ascii_max.get<T>()[0] == out_buffer[0]);
+		for (size_t i = 0; i < ascii_max.get<T>().length(); ++i)
+			printf("%06x %06x\n", ascii_max.get<T>()[i], out_buffer[i]);
+		CPPUNIT_ASSERT(ascii_max.get<T>() == out_buffer);
 
 		/////
+
 		input_buffer = bmp_max.get<char>().c_str();
 		input_end = input_buffer + bmp_max.get<char>().length();
 		input_last = nullptr;
 		state = std::mbstate_t();
 
+		memset(out_buffer, 0, outSz * sizeof(T));
 		r = cvt.in(state, input_buffer, input_end, input_last,
-		           out_buffer, out_buffer + 2, out_end);
+		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		CPPUNIT_ASSERT(bmp_max.get<T>()[0] == out_buffer[0]);
+		for (size_t i = 0; i < bmp_max.get<T>().length(); ++i)
+			printf("%06x %06x\n", bmp_max.get<T>()[i], out_buffer[i]);
+		CPPUNIT_ASSERT(bmp_max.get<T>() == out_buffer);
+
+		/////
+
+		input_buffer = max_unicode.get<char>().c_str();
+		input_end = input_buffer + max_unicode.get<char>().length();
+		input_last = nullptr;
+		state = std::mbstate_t();
+
+		memset(out_buffer, 0, outSz * sizeof(T));
+		r = cvt.in(state, input_buffer, input_end, input_last,
+		           out_buffer, out_buffer + outSz, out_end);
+
+		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
+		for (size_t i = 0; i < max_unicode.get<T>().length(); ++i)
+			printf("%06x %06x\n", max_unicode.get<T>()[i], out_buffer[i]);
+		CPPUNIT_ASSERT(max_unicode.get<T>() == out_buffer);
 	}
 
 	template<typename T>
@@ -249,6 +281,12 @@ class Test_codecvt : public CppUnit::TestFixture
 		state = std::mbstate_t();
 		len = cvt.length(state, input_buffer, input_end, 1);
 		CPPUNIT_ASSERT(len == bmp_max.get<char>().length());
+
+		input_buffer = max_unicode.get<char>().c_str();
+		input_end = input_buffer + max_unicode.get<char>().length();
+		state = std::mbstate_t();
+		len = cvt.length(state, input_buffer, input_end, 1);
+		CPPUNIT_ASSERT(len == max_unicode.get<char>().length());
 
 	}
 };
