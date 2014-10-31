@@ -205,8 +205,8 @@ class Test_codecvt : public CppUnit::TestFixture
 		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		for (size_t i = 0; i < nul_char.get<T>().length(); ++i)
-			printf("%06x %06x\n", nul_char.get<T>()[i], out_buffer[i]);
+//		for (size_t i = 0; i < nul_char.get<T>().length(); ++i)
+//			printf("%06x %06x\n", nul_char.get<T>()[i], out_buffer[i]);
 		CPPUNIT_ASSERT(nul_char.get<T>()[0] == out_buffer[0]);
 
 		/////
@@ -221,8 +221,8 @@ class Test_codecvt : public CppUnit::TestFixture
 		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		for (size_t i = 0; i < ascii_max.get<T>().length(); ++i)
-			printf("%06x %06x\n", ascii_max.get<T>()[i], out_buffer[i]);
+//		for (size_t i = 0; i < ascii_max.get<T>().length(); ++i)
+//			printf("%06x %06x\n", ascii_max.get<T>()[i], out_buffer[i]);
 		CPPUNIT_ASSERT(ascii_max.get<T>() == out_buffer);
 
 		/////
@@ -237,8 +237,8 @@ class Test_codecvt : public CppUnit::TestFixture
 		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		for (size_t i = 0; i < bmp_max.get<T>().length(); ++i)
-			printf("%06x %06x\n", bmp_max.get<T>()[i], out_buffer[i]);
+//		for (size_t i = 0; i < bmp_max.get<T>().length(); ++i)
+//			printf("%06x %06x\n", bmp_max.get<T>()[i], out_buffer[i]);
 		CPPUNIT_ASSERT(bmp_max.get<T>() == out_buffer);
 
 		/////
@@ -253,8 +253,8 @@ class Test_codecvt : public CppUnit::TestFixture
 		           out_buffer, out_buffer + outSz, out_end);
 
 		CPPUNIT_ASSERT(r == std::codecvt_base::ok);
-		for (size_t i = 0; i < max_unicode.get<T>().length(); ++i)
-			printf("%06x %06x\n", max_unicode.get<T>()[i], out_buffer[i]);
+//		for (size_t i = 0; i < max_unicode.get<T>().length(); ++i)
+//			printf("%06x %06x\n", max_unicode.get<T>()[i], out_buffer[i]);
 		CPPUNIT_ASSERT(max_unicode.get<T>() == out_buffer);
 	}
 
