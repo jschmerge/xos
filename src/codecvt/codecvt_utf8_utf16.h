@@ -23,6 +23,11 @@ template <typename Elem, unsigned long Maxcode = 0x10ffff,
 class codecvt_utf8_utf16 : public codecvt<Elem, char, mbstate_t>
 {
  public:
+	static_assert(is_wide_character<Elem>::value,
+	              "Element type must be a wide character type");
+	static_assert(Maxcode <= 0x10fffful,
+	              "max code must be less than or equal to 0x10ffff");
+
 	typedef Elem                 intern_type;
 	typedef char                 extern_type;
 	typedef mbstate_t            state_type;

@@ -483,7 +483,6 @@ void check_all_enums()
 	check_codecvt_utf16<T, 0xff, MODE>();
 	check_codecvt_utf16<T, 0xffff, MODE>();
 	check_codecvt_utf16<T, 0x10ffff, MODE>();
-	check_codecvt_utf16<T, max, MODE>();
 }
 
 template <typename T>

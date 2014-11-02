@@ -27,10 +27,9 @@ class codecvt_utf8
 {
  public:
 	static_assert(is_wide_character<Elem>::value,
-	              "codecvt_utf8: Elem type must be a wide character type");
-
+	              "Element type must be a wide character type");
 	static_assert(Maxcode <= 0x7ffffffful,
-	              "codecvt_utf8: max code must be less than 0x7ffffffu");
+	              "max code must be less than or equal to 0x7ffffffu");
 
 	typedef Elem      intern_type;
 	typedef char      extern_type;
