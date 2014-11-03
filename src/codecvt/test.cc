@@ -544,7 +544,10 @@ int main()
 
 	checku16();
 
+	printf("wchar_t\n");
 	check_all<wchar_t>();
+	printf("char16_t\n");
 	check_all<char16_t>();
+	printf("char32_t\n");
 	check_all<char32_t>();
 }
