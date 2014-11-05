@@ -2,6 +2,7 @@
 # Project-specific details & settings
 ####
 BUILD            ?= release
+TOPDIR           ?= ..
 
 INCLUDES_base     =
 INCLUDES_release  = $(INCLUDES_base)
@@ -65,7 +66,7 @@ bin/unittest: ../filesystem/lib/libfilesystem.a ../codecvt/lib/libcodecvt.a
 bin/unittest.debug: ../filesystem/lib/libfilesystem.debug.a ../codecvt/lib/libcodecvt.debug.a
 bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a ../codecvt/lib/libcodecvt.coverage.a
 
-include ../Makefile.include
+include $(TOPDIR)/Makefile.include
 
 check: $(TARGETS)
 	bin/unittest -p $(PROGRESS)

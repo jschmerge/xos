@@ -1,7 +1,7 @@
 #ifndef GUARD_FILE_STATUS_H
 #define GUARD_FILE_STATUS_H 1
 
-#include "../utility/bitmask_operators.h"
+#include "utility/bitmask_operators.h"
 
 namespace filesystem {
 inline namespace v1 {

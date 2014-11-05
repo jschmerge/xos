@@ -4,7 +4,7 @@
 #include <chrono>
 #include <system_error>
 
-#include "../utility/bitmask_operators.h"
+#include "utility/bitmask_operators.h"
 #include "path.h"
 #include "file_status.h"
 
