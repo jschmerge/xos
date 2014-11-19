@@ -22,7 +22,6 @@ constexpr uint32_t Crc32c = 0x1edc6f41;
 
 } // namespace Polynomial
 
-
 uint32_t crc32(const char * data, size_t length, uint32_t seed = 0);
 
 //////////////////////////////////////////////////////////////////////
@@ -90,6 +89,9 @@ class Crc
 	static bool tableInitialized;
 	static table_type crcTable;
 };
+
+typedef Crc<uint32_t, Polynomial::Crc32> CRC_32;
+typedef Crc<uint32_t, Polynomial::Crc32c> CRC_32c;
 
 template<class T, T P> SpinLock Crc<T, P>::tableLock{};
 template<class T, T P> bool Crc<T, P>::tableInitialized{false};
