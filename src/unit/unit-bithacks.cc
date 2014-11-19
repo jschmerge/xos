@@ -183,7 +183,6 @@ class Test_byteReverse : public CppUnit::TestFixture
 
 			for (size_t i = 0; i < sizeof(T); ++i)
 			{
-#if 0
 				if (s.top() != getByte(rx, i))
 				{
 					std::cout << std::hex << static_cast<uint32_t>(s.top())
@@ -191,10 +190,8 @@ class Test_byteReverse : public CppUnit::TestFixture
 					          << static_cast<uint32_t>(getByte(rx, i))
 					          << " do not match" << std::endl;
 					std::cout << std::dec;
+					CPPUNIT_ASSERT(false);
 				}
-#else
-				CPPUNIT_ASSERT(s.top() == getByte(rx, i));
-#endif
 				s.pop();
 			}
 		}
@@ -208,16 +205,10 @@ CPPUNIT_TEST_SUITE_REGISTRATION(Test_byteReverse);
 class Test_numLeadingZeros : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_numLeadingZeros);
-	CPPUNIT_TEST(numLeadingZerosTest<uint8_t>);
-	CPPUNIT_TEST(numLeadingZerosTest<uint16_t>);
-	CPPUNIT_TEST(numLeadingZerosTest<uint32_t>);
-	CPPUNIT_TEST(numLeadingZerosTest<uint64_t>);
-
-	CPPUNIT_TEST(nlzTest<uint8_t>);
-	CPPUNIT_TEST(nlzTest<uint16_t>);
-	CPPUNIT_TEST(nlzTest<uint32_t>);
-	CPPUNIT_TEST(nlzTest<uint64_t>);
-
+	CPPUNIT_TEST(correctCount<uint8_t>);
+	CPPUNIT_TEST(correctCount<uint16_t>);
+	CPPUNIT_TEST(correctCount<uint32_t>);
+	CPPUNIT_TEST(correctCount<uint64_t>);
 	CPPUNIT_TEST(testLog<uint8_t>);
 	CPPUNIT_TEST(testLog<uint16_t>);
 	CPPUNIT_TEST(testLog<uint32_t>);
@@ -226,20 +217,7 @@ class Test_numLeadingZeros : public CppUnit::TestFixture
 
  protected:
 	template<class T>
-	void nlzTest()
-	{
-		T value = 1;
-
-		for (size_t i = 0; i < bitsIn<T>(); ++i)
-		{
-			size_t correctValue = bitsIn<T>() - i - 1;
-
-			CPPUNIT_ASSERT(nlz<T>(value << i) == correctValue);
-		}
-	}
-
-	template<class T>
-	void numLeadingZerosTest()
+	void correctCount()
 	{
 		T value = 1;
 

@@ -1,6 +1,6 @@
 
-#include "../filesystem/path.h"
-#include "../filesystem/path_iterator.h"
+#include "filesystem/path.h"
+#include "filesystem/path_iterator.h"
 
 #include <cstdio>
 #include <iostream>

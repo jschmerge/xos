@@ -4,7 +4,7 @@
 BUILD            ?= release
 TOPDIR           ?= ..
 
-INCLUDES_base     =
+INCLUDES_base     = -I $(TOPDIR)/
 INCLUDES_release  = $(INCLUDES_base)
 INCLUDES_debug    = $(INCLUDES_base)
 INCLUDES_coverage = $(INCLUDES_base)
@@ -55,7 +55,9 @@ unittest_OBJS     = cppunit-main.o \
                     unit_path.o \
                     unit_path_iterator.o \
                     unit_bithacks.o \
-                    unit_average.o \
+                    unit-average.o \
+                    unit-bithacks.o \
+                    unit-crc.o \
                     unit_codecvt_base.o \
                     unit_codecvt.o \
                     unit_unicode.o
