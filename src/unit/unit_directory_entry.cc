@@ -1,6 +1,6 @@
-#include "../filesystem/file_status.h"
-#include "../filesystem/path.h"
-#include "../filesystem/directory_entry.h"
+#include "filesystem/file_status.h"
+#include "filesystem/path.h"
+#include "filesystem/directory_entry.h"
 
 #include <iostream>
 
