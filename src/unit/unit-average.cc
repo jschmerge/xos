@@ -11,6 +11,16 @@
 class Test_Average : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_Average);
+#if 0
+	CPPUNIT_TEST(simpleSequence<int8_t>);
+	CPPUNIT_TEST(simpleSequence<uint8_t>);
+	CPPUNIT_TEST(simpleSequence<int16_t>);
+	CPPUNIT_TEST(simpleSequence<uint16_t>);
+	CPPUNIT_TEST(simpleSequence<int32_t>);
+	CPPUNIT_TEST(simpleSequence<uint32_t>);
+	CPPUNIT_TEST(simpleSequence<int64_t>);
+	CPPUNIT_TEST(simpleSequence<uint64_t>);
+#endif
 	CPPUNIT_TEST(simpleSequence<float>);
 	CPPUNIT_TEST(simpleSequence<double>);
 	CPPUNIT_TEST(simpleSequence<long double>);
@@ -37,7 +47,6 @@ class Test_Average : public CppUnit::TestFixture
 		}
 
 		accum /= values.size();
-#if 0
 		if (std::abs(accum - avg.mean()) > std::max(accum, avg.mean()))
 		{
 			std::cout << "\n" << std::setprecision(9) << accum << " " 
@@ -47,10 +56,6 @@ class Test_Average : public CppUnit::TestFixture
 			          << std::endl;
 			CPPUNIT_ASSERT(accum == avg.mean());
 		}
-#else
-		CPPUNIT_ASSERT(std::abs(accum - avg.mean()) <=
-		                 std::max(accum, avg.mean()));
-#endif
 	}
 };
 
