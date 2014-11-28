@@ -7,7 +7,9 @@ class my_config : public program_config
  public:
 	my_config()
 	  : program_config({
-		{ argument_type::none, "help", 'h', "Prints this message" }
+		{ argument_type::none, "help", 'h', "Prints this message" },
+		{ argument_type::required, "required", 'r', "Required argument" },
+		{ argument_type::required, "optional", 'o', "Optional argument" },
 	    })
 	{
 	}

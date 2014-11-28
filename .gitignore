@@ -22,3 +22,5 @@ bin
 *.exe
 *.out
 *.app
+
+.ycm_extra_conf.pyc

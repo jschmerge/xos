@@ -14,7 +14,7 @@ program_config::~program_config()
 
 
 //////////////////////////////////////////////////////////////////////
-std::string program_config::usage_message(const size_t termWidth)
+std::string program_config::usage_message(const size_t termWidth) const
 {
 	std::string usage;
 	std::string line = "usage: " + m_program_name + ' ';
@@ -29,7 +29,6 @@ std::string program_config::usage_message(const size_t termWidth)
 			again = false;
 			size_t oldLen = line.length();
 
-
 			if (  opt.m_argument_type == argument_type::required
 			   && opt.m_short_switch != 0)
 			{
@@ -37,16 +36,16 @@ std::string program_config::usage_message(const size_t termWidth)
 				        "|-" + static_cast<char>(opt.m_short_switch) +
 				        " <arg>] ";
 
-				long_help += "[--" + opt.m_long_switch +
-				             "|-" + static_cast<char>(opt.m_short_switch) +
-				             " <arg>] : " + opt.m_help_message + '\n';
+				long_help += "--" + opt.m_long_switch +
+				             "/-" + static_cast<char>(opt.m_short_switch) +
+				             " <arg> : " + opt.m_help_message + '\n';
 
 			} else if (  opt.m_argument_type == argument_type::required
 			          && opt.m_short_switch == 0)
 			{
 				line += "[--" + opt.m_long_switch + " <arg>] ";
 
-				long_help += "[--" + opt.m_long_switch + " <arg>] : "
+				long_help += "--" + opt.m_long_switch + " <arg> : "
 				             + opt.m_help_message + '\n';
 
 			} else if (opt.m_argument_type == argument_type::none)
@@ -54,9 +53,9 @@ std::string program_config::usage_message(const size_t termWidth)
 				line += "[--" + opt.m_long_switch +
 				        "|-" + static_cast<char>(opt.m_short_switch) +
 				        "] ";
-				long_help += "[--" + opt.m_long_switch +
-				             "|-" + static_cast<char>(opt.m_short_switch) +
-				             "] : " + opt.m_help_message + '\n';
+				long_help += "--" + opt.m_long_switch +
+				             "/-" + static_cast<char>(opt.m_short_switch) +
+				             " : " + opt.m_help_message + '\n';
 			}
 
 			if (line.length() >= termWidth)
@@ -90,7 +89,13 @@ bool program_config::process_option(const config_option & opt,
 
 
 //////////////////////////////////////////////////////////////////////
-bool program_config::parse_command_line(int /*argc*/, char ** /*argv*/)
+bool program_config::parse_command_line(int argc, char ** argv)
 {
+	m_program_name = argv[0];
+
+	for (int i = 0; i < argc; ++i)
+	{
+	}
+
 	return true;
 }
