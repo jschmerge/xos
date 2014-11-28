@@ -4,7 +4,7 @@
 BUILD             ?= release
 TOPDIR            ?= ..
 
-INCLUDES_base     ?=
+INCLUDES_base     ?= -I ..
 INCLUDES_release  ?= $(INCLUDES_base)
 INCLUDES_debug    ?= $(INCLUDES_base)
 INCLUDES_coverage ?= $(INCLUDES_base)

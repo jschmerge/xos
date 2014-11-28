@@ -2,16 +2,26 @@
 #define GUARD_PROGRAM_CONFIG_H 1
 
 #include <string>
-#include <set>
+#include <vector>
 
-enum class argument_type
+#include "utility/bitmask_operators.h"
+
+enum class argument_type : uint32_t
 {
-	none,
-	optional,
-	required,
-	optional_list,
-	required_list,
+	none                 = 0x00000000,
+	has_argument         = 0x00000001,
+	missing_argument_ok  = 0x00000002,
+	argument_is_sequence = 0x00000004,
+	has_short_switch     = 0x00000008,
+	has_long_switch      = 0x00000010,
+
+	optional            = (has_argument | missing_argument_ok),
+	required            = (has_argument),
+	optional_sequence   = (optional | argument_is_sequence),
+	required_sequence   = (required | argument_is_sequence),
 };
+
+DEFINE_BITMASK_OPERATORS(argument_type, uint32_t);
 
 struct config_option
 {
@@ -42,7 +52,7 @@ class program_config
 	program_config(std::initializer_list<config_option> && list);
 
 	std::string m_program_name;
-	std::set<config_option> m_options;
+	std::vector<config_option> m_options;
 };
 
 #endif // GUARD_PROGRAM_CONFIG_H

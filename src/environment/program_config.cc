@@ -1,44 +1,19 @@
 #include "program_config.h"
 
-#if 0
-enum class argument_type
-{
-	none,
-	optional,
-	required,
-	optional_list,
-	required_list,
-};
-
-struct config_option
-{
-	argument_type arg_type;
-	std::string long_switch;
-	int short_switch;
-	std::string help_message;
-};
-
-inline bool operator < (const config_option & a, const config_option & b)
-{
-	return (a.short_switch < b.short_switch);
-}
-
- protected:
-
-	std::set<config_option> m_options;
-#endif
-
+//////////////////////////////////////////////////////////////////////
 program_config::program_config(std::initializer_list<config_option> && list)
   : m_program_name("program")
   , m_options(list)
 {
 }
 
+//////////////////////////////////////////////////////////////////////
 program_config::~program_config()
 {
 }
 
 
+//////////////////////////////////////////////////////////////////////
 std::string program_config::usage_message(const size_t termWidth)
 {
 	std::string usage;
@@ -103,6 +78,7 @@ std::string program_config::usage_message(const size_t termWidth)
 	return usage;
 }
 
+//////////////////////////////////////////////////////////////////////
 bool program_config::process_option(const config_option & opt,
                                     const std::string)
 {
@@ -112,8 +88,9 @@ bool program_config::process_option(const config_option & opt,
 	return true;
 }
 
-#if 0
 
-bool parse_command_line(int argc, char ** argv);
-#endif
-
+//////////////////////////////////////////////////////////////////////
+bool program_config::parse_command_line(int /*argc*/, char ** /*argv*/)
+{
+	return true;
+}
