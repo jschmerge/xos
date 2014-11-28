@@ -1,7 +1,7 @@
 all:
-	$(MAKE) -C filesystem
-	$(MAKE) -C codecvt
-	$(MAKE) -C unit
+	$(MAKE) -C filesystem $@
+	$(MAKE) -C codecvt $@
+	$(MAKE) -C unit $@
 
 debug:
 	$(MAKE) -C filesystem $@
