@@ -2,6 +2,7 @@
 # Project-specific details & settings
 ####
 BUILD           ?= release
+TOPDIR            ?= ..
 
 CXX = g++
 
@@ -41,5 +42,5 @@ TARGETS          = readtest filetypes
 readtest_OBJS    = main.o descriptor.o
 filetypes_OBJS   = filetypes.o 
 
-include Makefile.include
+include $(TOPDIR)/Makefile.include
 

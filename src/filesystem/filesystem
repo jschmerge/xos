@@ -11,6 +11,8 @@
 
 #include "path_traits.h"
 #include "path.h"
+#include "directory_iterator.h"
+#include "recursive_directory_iterator.h"
 #include "filesystem_error.h"
 #include "fs_operations.h"
 

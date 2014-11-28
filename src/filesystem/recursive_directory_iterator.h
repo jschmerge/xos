@@ -100,15 +100,15 @@ class recursive_directory_iterator
 		saved_iterator_state(const path & p, long value)
 		  : directory(p), tellptr(value) { }
 
-		saved_iterator_state(const saved_iterator_state & other) = default;
+		saved_iterator_state(const saved_iterator_state &) = default;
 
-		saved_iterator_state(saved_iterator_state && other) = default;
-
-		saved_iterator_state &
-		operator = (const saved_iterator_state & other) = default;
+		saved_iterator_state(saved_iterator_state &&) = default;
 
 		saved_iterator_state &
-		operator = (saved_iterator_state && other) = default;
+		operator = (const saved_iterator_state &) = default;
+
+		saved_iterator_state &
+		operator = (saved_iterator_state &&) = default;
 
 		path directory;
 		long tellptr;

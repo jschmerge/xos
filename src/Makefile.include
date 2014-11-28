@@ -4,13 +4,21 @@
 ######################################################################
 BUILD ?= release
 
-CC     ?= gcc
-CXX    ?= g++
-LD     ?= ld
-OBJCPY ?= objcopy
+CC             ?= gcc
+CXX            ?= g++
+LD             ?= ld
+OBJCPY         ?= objcopy
 
-DBG_TARGETS = $(TARGETS:%=%.debug)
-COV_TARGETS = $(TARGETS:%=%.coverage)
+DESTDIR        ?= $(shell pwd)
+
+BINDIR          = bin
+DEPDIR          = .deps
+OBJDIR          = .objs
+LIBDIR          = $(shell pwd)/lib
+INCLUDEDIR      = $(shell pwd)/include
+
+DBG_TARGETS     = $(TARGETS:%=%.debug)
+COV_TARGETS     = $(TARGETS:%=%.coverage)
 
 DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
 COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
@@ -26,9 +34,9 @@ WS = $(BLANK) $(BLANK)
 #$(info $(WS)  LDFLAGS = '$(LDFLAGS)')
 #$(info $(WS)     LIBS = '$(LIBS)')
 
-####
+#
 # Cute stuff to beautify make output - use 'make V=1' to see command output
-####
+#
 V           ?= 0
 Q_0          = @
 Q            = $(Q_$(V))
@@ -75,13 +83,9 @@ HIDEOUTPUT_0 = "/dev/null"
 HIDEOUTPUT_1 = "/dev/stdout"
 HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 
-####
+######################################################################
 # Auto-rules
-####
-BINDIR  = bin
-DEPDIR  = .deps
-OBJDIR  = .objs
-LIBDIR  = $(shell pwd)/lib
+######################################################################
 
 #
 # Create dependency '.d' file
@@ -141,18 +145,74 @@ $(OBJDIR)/%.coverage.o: %.c
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
 	$(QCCCOV)$(CC) $(CFLAGS_coverage) -c $< -o $@
 
+.PHONY: all release debug coverage subdirs libs
+
 #
 # TARGETS
 #
 all: release
 
-release: $(TARGETS) $(LIB_TARGETS)
+release:
+	$(MAKE) libs-copy
+	if [ -n "$(TARGETS)" ]; then $(MAKE) $(TARGETS); fi
 
-debug: $(DBG_TARGETS) $(DBG_LIB_TARGETS)
+debug:
+	$(MAKE) libs-copy
+	if [ -n "$(TARGETS)" ]; then $(MAKE) $(DBG_TARGETS); fi
 
-coverage: $(COV_TARGETS) $(COV_LIB_TARGETS)
+coverage:
+	$(MAKE) libs-copy
+	if [ -n "$(TARGETS)" ]; then $(MAKE) $(COV_TARGETS); fi
 
-libs: 
+check: subdirs
+
+libs: subdirs $(LIB_TARGETS)
+
+debug-libs: subdirs $(DBG_LIB_TARGETS)
+
+coverage-libs: subdirs $(COV_LIB_TARGETS)
+
+libs-copy: subdirs libs debug-libs coverage-libs
+	@mkdir -p $(DESTDIR)/lib
+	@for l in lib/*; do \
+		if [ -f $$l ]; then \
+			if [ -f $(DESTDIR)/$$l ]; then \
+				if [ $$l -nt $(DESTDIR)/$$l ]; then \
+					echo cp -f $$l $(DESTDIR)/$$l; \
+					cp -f $$l $(DESTDIR)/$$l; \
+				fi \
+			else \
+				echo cp -f $$l $(DESTDIR)/$$l; \
+				cp -f $$l $(DESTDIR)/$$l; \
+			fi; \
+		fi; \
+	done
+
+tags: subdirs
+	ctags -R .
+
+docs: doc/html
+
+doc/html: doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
+	rm -rf $@
+	doxygen doc/Doxyfile
+
+clean:
+	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) \
+	core core.[0123456789]* a.out *.symbols
+
+docclean: subdirs
+	rm -rf doc/html
+
+realclean: subdirs clean docclean
+	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags
+
+subdirs:
+	@for d in $(SUBDIRS); do \
+		echo "Making '$(MAKECMDGOALS)' in $$d"; \
+		$(MAKE) DESTDIR=$(DESTDIR) -C $$d $(MAKECMDGOALS); \
+	done
+
 
 #
 # This is the main bit of logic in this file. MAKE_PROGRAM gets expanded
@@ -268,18 +328,5 @@ $(foreach T, $(LIB_TARGETS),$(eval $(call MAKE_LIBRARY, $(T))))
 # expansion above
 #
 DEPS     = $(OBJS:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
-
-tags:
-	ctags -R .
-
-clean:
-	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) \
-	core core.[0123456789]* a.out *.symbols
-
-docclean:
-	rm -rf doc/html
-
-realclean: clean docclean
-	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags
 
 -include $(DEPS)

@@ -4,7 +4,7 @@
 #include <utility>
 #include <tuple>
 
-#include "../utility/index_sequence.h"
+#include "utility/index_sequence.h"
 
 template <typename RESULT, typename ...Args>
 struct args_and_result

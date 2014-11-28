@@ -6,8 +6,8 @@
 #include <system_error>
 #include <iterator>
 
-#include "../utility/util.h"
-#include "../utility/bitmask_operators.h"
+#include "utility/util.h"
+#include "utility/bitmask_operators.h"
 
 #include "path.h"
 #include "directory_entry.h"
