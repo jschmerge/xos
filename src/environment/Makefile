@@ -45,8 +45,10 @@ TARGETS            = test
 
 LIB_TARGETS        = libenv
 
-libenv_HEADERS     =
-libenv_OBJS        =
+libenv_HEADERS     = program_config.h
+
+libenv_OBJS        = program_config.o
+
 test_OBJS          = test.o $(libenv_OBJS)
 
 include $(TOPDIR)/Makefile.include
