@@ -32,6 +32,8 @@ struct config_option
 	std::string m_long_switch;
 	int m_short_switch;
 	std::string m_help_message;
+
+	std::string option_synopsis() const;
 };
 
 //////////////////////////////////////////////////////////////////////

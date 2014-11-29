@@ -1,6 +1,31 @@
 #include "program_config.h"
 
 //////////////////////////////////////////////////////////////////////
+std::string config_option::option_synopsis() const
+{
+	std::string fmt;
+	if (  m_argument_type == argument_type::required
+	   && m_short_switch != 0)
+	{
+		fmt += "--" + m_long_switch +
+		        "/-" + static_cast<char>(m_short_switch) +
+		        " <arg>";
+
+	} else if (  m_argument_type == argument_type::required
+	          && m_short_switch == 0)
+	{
+		fmt += "--" + m_long_switch + " <arg>";
+
+	} else if (m_argument_type == argument_type::none)
+	{
+		fmt += "--" + m_long_switch +
+		        "/-" + static_cast<char>(m_short_switch);
+	}
+
+	return fmt;
+}
+
+//////////////////////////////////////////////////////////////////////
 program_config::program_config(std::initializer_list<config_option> && list)
   : m_program_name("program")
   , m_options(list)
@@ -29,34 +54,9 @@ std::string program_config::usage_message(const size_t termWidth) const
 			again = false;
 			size_t oldLen = line.length();
 
-			if (  opt.m_argument_type == argument_type::required
-			   && opt.m_short_switch != 0)
-			{
-				line += "[--" + opt.m_long_switch +
-				        "|-" + static_cast<char>(opt.m_short_switch) +
-				        " <arg>] ";
-
-				long_help += "--" + opt.m_long_switch +
-				             "/-" + static_cast<char>(opt.m_short_switch) +
-				             " <arg> : " + opt.m_help_message + '\n';
-
-			} else if (  opt.m_argument_type == argument_type::required
-			          && opt.m_short_switch == 0)
-			{
-				line += "[--" + opt.m_long_switch + " <arg>] ";
-
-				long_help += "--" + opt.m_long_switch + " <arg> : "
-				             + opt.m_help_message + '\n';
-
-			} else if (opt.m_argument_type == argument_type::none)
-			{
-				line += "[--" + opt.m_long_switch +
-				        "|-" + static_cast<char>(opt.m_short_switch) +
-				        "] ";
-				long_help += "--" + opt.m_long_switch +
-				             "/-" + static_cast<char>(opt.m_short_switch) +
-				             " : " + opt.m_help_message + '\n';
-			}
+			std::string fmt = opt.option_synopsis();
+			line += '[' + fmt + "] ";
+			long_help += fmt + " : " + opt.m_help_message + '\n';
 
 			if (line.length() >= termWidth)
 			{
@@ -86,7 +86,6 @@ bool program_config::process_option(const config_option & opt,
 
 	return true;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 bool program_config::parse_command_line(int argc, char ** argv)

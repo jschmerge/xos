@@ -1,0 +1,5 @@
+dash -> dash -> longopt
+                         -> equal -> arg
+     -> char -> is(shortopt) -> if(has arg) -> next_is_arg
+         ^                   -> else -+
+         +----------------------------+
