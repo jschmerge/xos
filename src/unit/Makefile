@@ -31,11 +31,12 @@ CXXFLAGS           = $(CXXFLAGS_$(BUILD))
 
 LDFLAGS_base      ?= 
 LDFLAGS_release   ?= $(CFLAGG_release) $(LDFLAGS_base)
-LDFLAGS_debug     ?= $(CFLAGG_debug) $(LDFLAGS_base) -rdynamic
+LDFLAGS_debug     ?= $(CFLAGG_debug) $(LDFLAGS_base) \
+                     -rdynamic -fsanitize=address
 LDFLAGS_coverage  ?= $(CFLAGG_coverage) $(LDFLAGS_base)
 LDFLAGS            = $(LDFLAGS_$(BUILD))
 
-LIBS_base         ?=
+LIBS_base         ?= 
 # XXX FIXME - we need a way of tweaking this for the various build modes
 LIBS_release      ?= ../filesystem/lib/libfilesystem.a $(LIBS_base)
 LIBS_debug        ?= ../filesystem/lib/libfilesystem.debug.a $(LIBS_base)

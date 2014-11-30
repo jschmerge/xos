@@ -1,0 +1,77 @@
+{advance_to_start}
+        |
+   <more elements?> - (no) -> [done]
+        |
+      (yes)
+        |
+        v
+{start_of_element}
+        |
+        |           [end_of_options]
+        |                  ^
+        |                  |
+        |                  |
+        |                 '\0'
+        |                  |
+        +----- + '-' + '-' + [long_option]
+               |     |             ^
+               |     |             |
+               |     |             |
+               |     |             |
+               |     |             +------------------+
+               |     |                                |
+               |     + !'-' <long_opt_only?> - (true) +
+               |                        |
+               |                     (false)
+               |                        |
+               |                     [short_option]
+               |
+               + !'-' -> [non_option_param] -> [advance_to_start]
+
+
+             [start_of_element] [error]
+                           ^       ^
+                           |       |
+          [advance_to_next_argv]   |
+                           |       |
+                          (no) (optional)
+                           |       |
+               + '\0' - <takes_argument> - (required) ---+
+               |                                         |
+               |                                  [advance_to_argument]
+               |                                         |
+               |                                         v
+               + '=' <takes_argument?>-(required) -> [argument]
+               |            |     |                      ^
+               |            |     |                      |
+               |          (no)  (optional)---------------+
+               |            |
+               |            +-> [error]
+{long_option} -+ !'=' + -+
+       ^                 |
+       |                 |
+       +-----------------+
+
+
+    +-----------------+
+    |                 |
+    v                 |
+{argument} -+- !'\0' -+
+    ^       |
+    |       + - '\0' -> [advance_to_start]
+  (yes)
+    |
+<more elements?> - (no) -> [error]
+    |
+{advance_to_argument}
+
+{short_option} -+- !'\0' - <takes_argument?> - (required) -+- !'\0' -> [argument]
+       ^                     |           |                 | 
+       |                    (no)    (optional)             v
+       |                     |           |        [advance_to_argument]
+       +---------------------+           |
+                                         |
+                                         |
+                                         +- '\0' -> [advance_to_start]
+                                         |
+                                         +- !'\0' -> [argument]

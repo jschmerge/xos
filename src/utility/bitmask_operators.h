@@ -21,6 +21,6 @@
 	inline enum_type & operator ^= (enum_type & a, const enum_type & b) \
 	{ a = (a ^ b); return a; }                                          \
 	inline constexpr bool is_set(enum_type set, enum_type value)        \
-	{ return ((set & value) != enum_type::none); }
+	{ return ((set & value) == value); }
 
 #endif // GUARD_BITMASK_OPERATORS_H

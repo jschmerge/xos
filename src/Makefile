@@ -15,7 +15,8 @@ export DEFINES           = $(DEFINES_$(BUILD))
 
 export CFLAGS_base       = -Wall -Wextra -pthread -g3
 export CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES) -O3
-export CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug)
+export CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug) \
+                           -fsanitize=address
 export CFLAGS_coverage   = $(CFLAGS_base) $(DEFINES_coverage) \
                            $(INCLUDES_coverage) -fprofile-arcs -ftest-coverage
 export CFLAGS            = $(CFLAGS_$(BUILD))
@@ -28,7 +29,7 @@ export CXXFLAGS          = $(CXXFLAGS_$(BUILD))
 
 export LDFLAGS_base      =
 export LDFLAGS_release   = $(LDFLAGS_base)
-export LDFLAGS_debug     = $(LDFLAGS_base) -rdynamic
+export LDFLAGS_debug     = $(LDFLAGS_base) -rdynamic -fsanitize=address
 export LDFLAGS_coverage  = $(LDFLAGS_base)
 export LDFLAGS           = $(LDFLAGS_$(BUILD))
 
@@ -37,7 +38,7 @@ export USERLIBS_release  = $(USERLIBS)
 export USERLIBS_debug    = $(USERLIBS:%=%.debug)
 export USERLIBS_coverage = $(USERLIBS:%=%.coverage)
 
-export LIBS_base         = -L $(shell pwd)/lib -lrt -ldl -lreadline \
+export LIBS_base         = -L $(shell pwd)/lib -lrt -ldl \
                             $(USERLIBS_$(BUILD))
 export LIBS_release      = $(LIBS_base)
 export LIBS_debug        = $(LIBS_base)
@@ -48,14 +49,15 @@ SUBDIRS           = codecvt filesystem unit
 
 include Makefile.include
 
-#check: all
-#	$(MAKE) -C unit $@
-#
+check debug-check converage-check: all
+	$(MAKE) -C unit $@
+
 #debug-check: debug
 #	$(MAKE) -C unit $@
 #
 #coverage-check: coverage
 #	$(MAKE) -C unit $@
+
 #
 #coverage.info: coverage
 #	@./unit/bin/unittest.coverage -p foo > /dev/null 2>&1 || true
