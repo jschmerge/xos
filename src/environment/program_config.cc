@@ -10,6 +10,28 @@
 std::string config_option::option_synopsis() const
 {
 	std::string fmt;
+
+	if (  is_set(m_argument_type, argument_type::has_short_switch)
+	   && is_set(m_argument_type, argument_type::has_long_switch))
+	{
+		fmt += '-';
+		fmt += static_cast<char>(m_short_switch);
+		fmt += "/--";
+		fmt += m_long_switch;
+	} else if (is_set(m_argument_type, argument_type::has_short_switch) )
+	{
+		fmt += '-';
+		fmt += static_cast<char>(m_short_switch);
+	} else if (is_set(m_argument_type, argument_type::has_long_switch))
+	{
+		fmt += "--";
+		fmt += m_long_switch;
+	} else
+		throw std::logic_error("Option is neither long nor short");
+
+	fmt += " ]";
+/*
+
 	if (  m_argument_type == argument_type::required
 	   && m_short_switch != 0)
 	{
@@ -27,6 +49,7 @@ std::string config_option::option_synopsis() const
 		fmt += "--" + m_long_switch +
 		        "/-" + static_cast<char>(m_short_switch);
 	}
+*/
 
 	return fmt;
 }
@@ -210,8 +233,6 @@ void program_config::build_parser()
 
 			while (prev_state->transitions.size() == 1)
 			{
-				printf("###==> %s is unique\n", longopt.c_str());
-
 				prev_state->transitions[0] = terminus->transitions[0];
 				if (terminus->transitions.find('=')
 				      != terminus->transitions.end())
@@ -225,22 +246,7 @@ void program_config::build_parser()
 		}
 	}
 
-	for (auto & x : m_states)
-	{
-		printf("STATE: %s\n", x.first.c_str());
-		for (const std::pair<int, state*> & y : x.second.transitions)
-		{
-			if (y.first > 0)
-				printf("\t'%c' -> %s\n", y.first,
-				       y.second->name.c_str());
-			else if (y.first == 0)
-				printf("\tNUL -> %s\n", y.second->name.c_str());
-			else
-				printf("\tDEFAULT -> %s\n", y.second->name.c_str());
-		}
-	}
-
-	printf("-> Total of %zd states defied\n", m_states.size());
+	dump_state();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -282,7 +288,6 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			} else
 				throw std::runtime_error("Bad option");
 
-//			state_cursor = state_cursor->transitions[*arg];
 			new_state = state_cursor->name;
 
 			if (std::isprint(*arg))
@@ -296,3 +301,27 @@ bool program_config::parse_command_line(int argc, char ** argv)
 
 	return true;
 }
+
+//////////////////////////////////////////////////////////////////////
+void program_config::dump_state()
+{
+	for (auto & x : m_states)
+	{
+		printf("STATE: %s\n", x.first.c_str());
+		for (const std::pair<int, state*> & y : x.second.transitions)
+		{
+			if  (y.second  == nullptr)
+				throw std::logic_error("I'm dumb");
+			if (y.first > 0)
+				printf("\t'%c' -> %s\n", y.first,
+				       y.second->name.c_str());
+			else if (y.first == 0)
+				printf("\tNUL -> %s\n", y.second->name.c_str());
+			else
+				printf("\tDEFAULT -> %s\n", y.second->name.c_str());
+		}
+	}
+
+	printf("-> Total of %zd states defied\n", m_states.size());
+}
+
