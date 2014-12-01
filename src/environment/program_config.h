@@ -2,6 +2,7 @@
 #define GUARD_PROGRAM_CONFIG_H 1
 
 #include <string>
+#include <memory>
 #include <vector>
 #include <map>
 
@@ -28,7 +29,6 @@ DEFINE_BITMASK_OPERATORS(argument_type, uint32_t);
 //////////////////////////////////////////////////////////////////////
 struct config_option
 {
-#if 0
 	config_option(argument_type t, const std::string & l_opt, char s_opt,
 	              const std::string & help)
 	  : m_argument_type(t & argument_type::arg_mask)
@@ -45,6 +45,8 @@ struct config_option
 			m_argument_type |= argument_type::has_long_switch;
 		else
 			m_argument_type &= ~argument_type::has_long_switch;
+
+		printf("long opt = %s\n", m_long_switch.c_str());
 	}
 
 	config_option(const config_option & other)
@@ -52,7 +54,9 @@ struct config_option
 	  , m_long_switch(other.m_long_switch)
 	  , m_short_switch(other.m_short_switch)
 	  , m_help_message(other.m_help_message)
-		{ }
+	{
+		printf("<%s> long opt = %s\n", __func__, m_long_switch.c_str());
+	}
 
 	config_option & operator = (const config_option & other)
 	{
@@ -63,9 +67,9 @@ struct config_option
 			m_short_switch = other.m_short_switch;
 			m_help_message = other.m_help_message;
 		}
+		printf("<%s> long opt = %s\n", __func__, m_long_switch.c_str());
 		return *this;
 	}
-#endif
 
 	argument_type m_argument_type;
 	std::string m_long_switch;
@@ -85,24 +89,12 @@ struct state
 		{ }
 
 	state(const state & other) = delete;
-
-	state(state && other) noexcept
-	  : name(std::move(other.name))
-	  , transitions(std::move(other.transitions))
-		{ }
-
+	state(state && other) noexcept = delete;
 	state & operator = (const state &) = delete;
-
-	state & operator = (state && other) noexcept
-	{
-		using std::swap;
-		swap(name, other.name);
-		swap(transitions, other.transitions);
-		return *this;
-	}
+	state & operator = (state && other) noexcept = delete;
 
 	std::string name;
-	std::map<int, state*> transitions;
+	std::map<int, std::shared_ptr<state>> transitions;
 
 	bool is_placeholder() const
 	{ return (  transitions.size() == 1
@@ -126,7 +118,7 @@ class program_config
 	bool parse_command_line(int argc, char ** argv);
 
  protected:
-	program_config(std::initializer_list<config_option> && list);
+	program_config(const std::initializer_list<config_option> & list);
 
 	void dump_state();
 
@@ -134,8 +126,13 @@ class program_config
 	std::vector<config_option> m_options;
 
  private:
+	void declare_state(const std::string & name);
+	void declare_transition(const std::string & old_state,
+                            const std::string & new_state,
+                            int value);
+
 	void build_parser();
-	std::map<std::string, state> m_states;
+	std::map<std::string, std::shared_ptr<state>> m_states;
 
 };
 
