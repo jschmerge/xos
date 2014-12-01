@@ -141,7 +141,14 @@ void program_config::declare_transition(const std::string & old_state,
                                         const std::string & new_state,
                                         int value)
 {
-	m_states[old_state]->transitions[value] = m_states[new_state];
+	assert (old_state.c_str() != nullptr);
+	assert (new_state.c_str() != nullptr);
+
+	printf("Declaring transition '%s' -> '%s' on %c\n", old_state.c_str(),
+	       new_state.c_str(), value);
+
+	fflush(stdout);
+	m_states.at(old_state)->transitions[value] = m_states.at(new_state);
 }
 
 
@@ -172,7 +179,7 @@ void program_config::build_parser()
 	declare_transition("start_of_element", "non_option_arg", -1);
 
 //m_states["dash"].transitions['-'] = &m_states["dash_dash"];
-	declare_transition("dash", "dash_dash", -1);
+	declare_transition("dash", "dash_dash", '-');
 
 //m_states["dash"].transitions[0] = &m_states["next_argument"];
 	declare_transition("dash", "next_argument", 0);
@@ -214,6 +221,8 @@ void program_config::build_parser()
 			declare_state(shortopt);
 			declare_transition("dash", shortopt, opt.m_short_switch);
 
+			printf("XXX shortopt %s\n", shortopt.c_str());
+
 			if (is_set(opt.m_argument_type, argument_type::optional))
 			{
 				declare_transition(shortopt, "parameter", -1);
@@ -222,11 +231,12 @@ void program_config::build_parser()
 			{
 				declare_transition(shortopt, "parameter", -1);
 				declare_transition(shortopt, "next_as_param", 0);
-			} else if(opt.m_argument_type == argument_type::none)
+			} else if((opt.m_argument_type & argument_type::arg_mask) == argument_type::none)
 			{
 				declare_transition(shortopt, "dash", -1);
 				declare_transition(shortopt, "next_argument", 0);
-			}
+			} else
+				assert(0);
 		}
  
 		if (opt.m_long_switch.size())
@@ -258,7 +268,7 @@ void program_config::build_parser()
 				declare_transition(longopt, "next_as_param", 0);
 //				m_states[longopt].transitions['='] = &m_states["parameter"];
 				declare_transition(longopt, "parameter", '=');
-			} else if (opt.m_argument_type == argument_type::none)
+			} else if ((opt.m_argument_type & argument_type::arg_mask) == argument_type::none)
 			{
 //				m_states[longopt].transitions[0] = &m_states["next_argument"];
 				declare_transition(longopt, "next_argument", 0);
@@ -274,13 +284,15 @@ void program_config::build_parser()
 			std::string longopt = "--" + opt.m_long_switch;
 
 			auto terminus = m_states[longopt];
+
 			assert(terminus != nullptr);
 
 			longopt.pop_back();
 			auto prev_state = m_states[longopt];
+
 			assert(prev_state != nullptr);
 
-			while (prev_state->transitions.size() == 1)
+			while (longopt != "--" && prev_state->transitions.size() == 1)
 			{
 //				prev_state->transitions[0] = terminus->transitions[0];
 				declare_transition(prev_state->name,
@@ -297,13 +309,13 @@ void program_config::build_parser()
 				}
 
 				longopt.pop_back();
-				prev_state = m_states[longopt];
+
+				if (longopt != "--")
+					prev_state = m_states[longopt];
 			}
 		}
 	}
 
-#if 0
-#endif
 	dump_state();
 }
 
@@ -313,8 +325,7 @@ bool program_config::parse_command_line(int argc, char ** argv)
 	set_program_name(argv[0]);
 	build_parser();
 
-#if 0
-	const state * state_cursor = &m_states["start"];
+	auto state_cursor = m_states["start"];
 
 	printf("----------------------------------------------\n");
 	for (int i = 1; i < argc; ++i)
@@ -355,9 +366,10 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			else
 				printf("(%-20s + x%02x) -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
+#if 0
+#endif
 		} while (*arg++);
 	}
-#endif
 
 	return true;
 }
@@ -382,6 +394,6 @@ void program_config::dump_state()
 		}
 	}
 
-	printf("-> Total of %zd states defied\n", m_states.size());
+	printf("-> Total of %zd states defined\n", m_states.size());
 }
 
