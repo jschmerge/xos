@@ -144,8 +144,15 @@ void program_config::declare_transition(const std::string & old_state,
 	assert (old_state.c_str() != nullptr);
 	assert (new_state.c_str() != nullptr);
 
-	printf("Declaring transition '%s' -> '%s' on %c\n", old_state.c_str(),
-	       new_state.c_str(), value);
+	if (isprint(value))
+	{
+		printf("Declaring transition '%s' -> '%s' on '%c'\n",
+		       old_state.c_str(), new_state.c_str(), value);
+	} else
+	{
+		printf("Declaring transition '%s' -> '%s' on '\\x%02x'\n",
+		       old_state.c_str(), new_state.c_str(), value);
+	}
 
 	fflush(stdout);
 	m_states.at(old_state)->transitions[value] = m_states.at(new_state);
@@ -276,7 +283,6 @@ void program_config::build_parser()
 		}
 	}
 
-	dump_state();
 	for (const auto & opt : m_options)
 	{
 		if (opt.m_long_switch.size())
@@ -328,9 +334,11 @@ bool program_config::parse_command_line(int argc, char ** argv)
 	auto state_cursor = m_states["start"];
 
 	printf("----------------------------------------------\n");
+	printf("PARSING COMMAND LINE:\n");
 	for (int i = 1; i < argc; ++i)
 	{
 		const char * arg = argv[i];
+		printf("-----> ARGV[%d] = '%s'\n", i, arg);
 
 		do {
 			std::string old_state;

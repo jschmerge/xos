@@ -45,8 +45,6 @@ struct config_option
 			m_argument_type |= argument_type::has_long_switch;
 		else
 			m_argument_type &= ~argument_type::has_long_switch;
-
-		printf("long opt = %s\n", m_long_switch.c_str());
 	}
 
 	config_option(const config_option & other)
@@ -55,7 +53,6 @@ struct config_option
 	  , m_short_switch(other.m_short_switch)
 	  , m_help_message(other.m_help_message)
 	{
-		printf("<%s> long opt = %s\n", __func__, m_long_switch.c_str());
 	}
 
 	config_option & operator = (const config_option & other)
@@ -67,7 +64,6 @@ struct config_option
 			m_short_switch = other.m_short_switch;
 			m_help_message = other.m_help_message;
 		}
-		printf("<%s> long opt = %s\n", __func__, m_long_switch.c_str());
 		return *this;
 	}
 
