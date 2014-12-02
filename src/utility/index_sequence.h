@@ -26,7 +26,9 @@ auto dispatch_function(Func f, std::tuple<Args ...> & args,
                        const index_sequence<IDX ...> &)
 	-> typename std::result_of<Func(Args & ...)>::type
 {
-	return f(std::get<IDX>(args)...);
+//	return f(std::get<IDX>(args)...);
+
+	return f(std::forward<Args>(std::get<IDX>(args))...);
 }
 
 /// apply_function calls a function with the arguments supplied as a tuple
