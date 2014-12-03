@@ -22,6 +22,7 @@ int main(int argc, char ** argv)
 	my_config conf;
 
 	conf.parse_command_line(argc, argv);
-	printf("%s", conf.usage_message(80).c_str());
+	printf("------------------------------------\n"
+	       "%s", conf.usage_message(80).c_str());
 	return 0;
 }

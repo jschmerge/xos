@@ -278,15 +278,6 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			std::string old_state;
 			std::string new_state;
 
-			while (state_cursor->is_placeholder())
-			{
-				old_state = state_cursor->name;
-				state_cursor = state_cursor->transitions.at(-1);
-				new_state = state_cursor->name;
-				printf("%-28s -> %s\n\n", old_state.c_str(),
-			           new_state.c_str());
-			}
-
 			old_state = state_cursor->name;
 
 			if (state_cursor->transitions.find(*arg)
@@ -308,8 +299,6 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			else
 				printf("(%-20s + x%02x) -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
-#if 0
-#endif
 		} while (*arg++);
 	}
 

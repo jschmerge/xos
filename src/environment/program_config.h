@@ -91,12 +91,7 @@ struct state
 
 	std::string name;
 	std::map<int, std::shared_ptr<state>> transitions;
-
-	bool is_placeholder() const
-	{ return (  transitions.size() == 1
-	         && transitions.find(-1) != transitions.end()); }
 };
-
 
 //////////////////////////////////////////////////////////////////////
 class program_config
