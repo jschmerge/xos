@@ -366,8 +366,6 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			else
 				printf("(%-20s + x%02x) -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
-#if 0
-#endif
 		} while (*arg++);
 	}
 
