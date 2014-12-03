@@ -139,60 +139,24 @@ void program_config::declare_transition(const std::string & old_state,
 void program_config::build_parser()
 {
 	declare_state("start");
-	declare_state("start_of_element");
-	declare_state("next_argument");
 	declare_state("dash");
 	declare_state("dash_dash");
-	declare_state("end_of_options");
 	declare_state("non_option_arg");
 	declare_state("non_option_arg2");
-	declare_state("next_as_param");
 	declare_state("parameter");
 
-//m_states["start"].transitions[-1] = &m_states["start_of_element"];
-	declare_transition("start", "start_of_element", -1);
-
-//m_states["next_argument"].transitions[-1] = &m_states["start_of_element"];
-	declare_transition("next_argument", "start_of_element", -1);
-
-//m_states["start_of_element"].transitions['-'] = &m_states["dash"];
-	declare_transition("start_of_element", "dash", '-');
-
-//m_states["start_of_element"].transitions[-1] = &m_states["non_option_arg"];
-	declare_transition("start_of_element", "non_option_arg", -1);
-
-//m_states["dash"].transitions['-'] = &m_states["dash_dash"];
+	declare_transition("start", "dash", '-');
+	declare_transition("start", "non_option_arg", -1);
 	declare_transition("dash", "dash_dash", '-');
-
-//m_states["dash"].transitions[0] = &m_states["next_argument"];
-	declare_transition("dash", "next_argument", 0);
-
-//m_states["dash_dash"].transitions[0] = &m_states["end_of_options"];
-	declare_transition("dash_dash", "end_of_options", 0);
-
-//m_states["next_as_param"].transitions[-1] = &m_states["parameter"];
-	declare_transition("next_as_param", "parameter", -1);
-
-//m_states["parameter"].transitions[-1] = &m_states["parameter"];
+	declare_transition("dash", "start", 0);
+	declare_transition("dash_dash", "non_option_arg2", 0);
 	declare_transition("parameter", "parameter", -1);
-
-//m_states["parameter"].transitions[0] = &m_states["next_argument"];
-	declare_transition("parameter", "next_argument", 0);
-
-//m_states["non_option_arg"].transitions[-1] = &m_states["non_option_arg"];
+	declare_transition("parameter", "start", 0);
 	declare_transition("non_option_arg", "non_option_arg", -1);
-
-//m_states["non_option_arg"].transitions[0] = &m_states["next_argument"];
-	declare_transition("non_option_arg", "next_argument", 0);
-
-//m_states["end_of_options"].transitions[-1] = &m_states["non_option_arg2"];
-	declare_transition("end_of_options", "non_option_arg2", -1);
-
-//m_states["non_option_arg2"].transitions[-1] = &m_states["non_option_arg2"];
+	declare_transition("non_option_arg", "start", 0);
 	declare_transition("non_option_arg2", "non_option_arg2", -1);
-
-//m_states["non_option_arg2"].transitions[0] = &m_states["end_of_options"];
-	declare_transition("non_option_arg2", "end_of_options", 0);
+	declare_transition("non_option_arg2", "non_option_arg2", -1);
+	declare_transition("non_option_arg2", "non_option_arg2", 0);
 
 	for (const auto & opt : m_options)
 	{
@@ -204,22 +168,22 @@ void program_config::build_parser()
 			declare_state(shortopt);
 			declare_transition("dash", shortopt, opt.m_short_switch);
 
-			printf("XXX shortopt %s\n", shortopt.c_str());
-
 			if (is_set(opt.m_argument_type, argument_type::optional))
 			{
 				declare_transition(shortopt, "parameter", -1);
-				declare_transition(shortopt, "next_argument", 0);
+				declare_transition(shortopt, "start", 0);
 			} else if (is_set(opt.m_argument_type, argument_type::required))
 			{
 				declare_transition(shortopt, "parameter", -1);
-				declare_transition(shortopt, "next_as_param", 0);
-			} else if((opt.m_argument_type & argument_type::arg_mask) == argument_type::none)
+				declare_transition(shortopt, "parameter", 0);
+			} else if((opt.m_argument_type & argument_type::arg_mask)
+			             == argument_type::none)
 			{
 				declare_transition(shortopt, "dash", -1);
-				declare_transition(shortopt, "next_argument", 0);
+				declare_transition(shortopt, "start", 0);
 			} else
-				assert(0);
+				throw std::logic_error(
+				        "option does not have paramters set correctly");
 		}
  
 		if (opt.m_long_switch.size())
@@ -241,21 +205,19 @@ void program_config::build_parser()
 
 			if (is_set(opt.m_argument_type, argument_type::optional))
 			{
-//				m_states[longopt].transitions[0] = &m_states["next_argument"];
-				declare_transition(longopt, "next_argument", 0);
-//				m_states[longopt].transitions['='] = &m_states["parameter"];
+				declare_transition(longopt, "start", 0);
 				declare_transition(longopt, "parameter", '=');
 			} else if (is_set(opt.m_argument_type, argument_type::required))
 			{
-//				m_states[longopt].transitions[0] = &m_states["next_as_param"];
-				declare_transition(longopt, "next_as_param", 0);
-//				m_states[longopt].transitions['='] = &m_states["parameter"];
+				declare_transition(longopt, "parameter", 0);
 				declare_transition(longopt, "parameter", '=');
-			} else if ((opt.m_argument_type & argument_type::arg_mask) == argument_type::none)
+			} else if ((opt.m_argument_type & argument_type::arg_mask)
+			              == argument_type::none)
 			{
-//				m_states[longopt].transitions[0] = &m_states["next_argument"];
-				declare_transition(longopt, "next_argument", 0);
-			}
+				declare_transition(longopt, "start", 0);
+			} else
+				throw std::logic_error(
+				        "option does not have paramters set correctly");
 		}
 	}
 
@@ -276,18 +238,14 @@ void program_config::build_parser()
 
 			while (longopt != "--" && prev_state->transitions.size() == 1)
 			{
-//				prev_state->transitions[0] = terminus->transitions[0];
 				declare_transition(prev_state->name,
 				                   terminus->transitions[0]->name, 0);
-
 
 				if (terminus->transitions.find('=')
 				      != terminus->transitions.end())
 				{
-//					prev_state->transitions['='] = terminus->transitions['='];
 					declare_transition(prev_state->name,
-					                   terminus->transitions['=']->name,
-					                   '=');
+					                   terminus->transitions['=']->name, '=');
 				}
 
 				longopt.pop_back();
