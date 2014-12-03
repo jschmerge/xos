@@ -75,6 +75,7 @@ class Test_Crc : public CppUnit::TestFixture
 
 	void tearDown() {
 		close(randomData);
+		unlink("data");
 	}
 
 	void testThreadedCreation()
