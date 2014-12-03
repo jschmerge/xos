@@ -27,32 +27,8 @@ std::string config_option::option_synopsis() const
 	{
 		fmt += "--";
 		fmt += m_long_switch;
-	}
-#if 0
-	else
+	} else
 		throw std::logic_error("Option is neither long nor short");
-#endif
-
-/*
-
-	if (  m_argument_type == argument_type::required
-	   && m_short_switch != 0)
-	{
-		fmt += "--" + m_long_switch +
-		        "/-" + static_cast<char>(m_short_switch) +
-		        " <arg>";
-
-	} else if (  m_argument_type == argument_type::required
-	          && m_short_switch == 0)
-	{
-		fmt += "--" + m_long_switch + " <arg>";
-
-	} else if (m_argument_type == argument_type::none)
-	{
-		fmt += "--" + m_long_switch +
-		        "/-" + static_cast<char>(m_short_switch);
-	}
-*/
 
 	return fmt;
 }
@@ -84,20 +60,20 @@ std::string program_config::usage_message(const size_t termWidth) const
 	for (const auto & opt : m_options)
 	{
 		bool again = false;
+		std::string fmt = opt.option_synopsis();
+		long_help += "  " + fmt + " : " + opt.m_help_message + '\n';
+
 		do {
 			again = false;
 			size_t oldLen = line.length();
 
-			std::string fmt = opt.option_synopsis();
 			line += '[' + fmt + "] ";
-			long_help += "  " + fmt + " : " + opt.m_help_message + '\n';
 
 			if (line.length() >= termWidth)
 			{
 				line.erase(oldLen);
 				usage += line + '\n';
-
-				line = std::string(' ', prefixLen);
+				line = std::string(prefixLen, ' ');
 				again = true;
 			}
 		} while (again);
