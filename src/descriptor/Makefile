@@ -1,8 +1,15 @@
 ####
 # Project-specific details & settings
 ####
-BUILD           ?= release
+
+TARGETS          = readtest filetypes
+
+readtest_OBJS    = main.o descriptor.o
+filetypes_OBJS   = filetypes.o 
+
 TOPDIR            ?= ..
+include $(TOPDIR)/Makefile.include
+
 
 CXX = g++
 
@@ -36,11 +43,4 @@ LIBS_base        = -lrt -ldl
 LIBS_release     = $(LIBS_base)
 LIBS_debug       = $(LIBS_base)
 LIBS             = $(LIBS_$(BUILD))
-
-TARGETS          = readtest filetypes
-
-readtest_OBJS    = main.o descriptor.o
-filetypes_OBJS   = filetypes.o 
-
-include $(TOPDIR)/Makefile.include
 

@@ -9,8 +9,6 @@ CXX            ?= g++
 LD             ?= ld
 OBJCPY         ?= objcopy
 
-DESTDIR        ?= $(shell pwd)
-
 BINDIR          = bin
 DEPDIR          = .deps
 OBJDIR          = .objs
@@ -27,12 +25,13 @@ COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
 # Print out our settings
 #
 WS = $(BLANK) $(BLANK)
-#$(info $(WS) INCLUDES = '$(INCLUDES)')
-#$(info $(WS)  DEFINES = '$(DEFINES)')
-#$(info $(WS)   CFLAGS = '$(CFLAGS)')
-#$(info $(WS) CXXFLAGS = '$(CXXFLAGS)')
-#$(info $(WS)  LDFLAGS = '$(LDFLAGS)')
-#$(info $(WS)     LIBS = '$(LIBS)')
+
+#$(info $(WS) INCLUDES_base = '$(INCLUDES_base)')
+#$(info $(WS)  DEFINES_base = '$(DEFINES_base)')
+#$(info $(WS)   CFLAGS_base = '$(CFLAGS_base)')
+#$(info $(WS) CXXFLAGS_base = '$(CXXFLAGS_base)')
+#$(info $(WS)  LDFLAGS_base = '$(LDFLAGS_base)')
+#$(info $(WS)     LIBS_base = '$(LIBS_base)')
 
 #
 # Cute stuff to beautify make output - use 'make V=1' to see command output
@@ -92,38 +91,34 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 #
 $(DEPDIR)/%.d: %.cc
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEP)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CXXFLAGS) $< > $@
+	$(QDEP)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CXXFLAGS_release) $< > $@
 
 $(DEPDIR)/%.debug.d: %.cc
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
-		$(CXXFLAGS_debug) $< > $@
+	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' $(CXXFLAGS_debug) $< > $@
 
 $(DEPDIR)/%.coverage.d: %.cc
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPCOV)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
-		$(CXXFLAGS_coverage) $< > $@
+	$(QDEPCOV)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' $(CXXFLAGS_coverage) $< > $@
 
 $(DEPDIR)/%.d: %.c
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEP)$(CC) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CFLAGS) $< > $@
+	$(QDEP)$(CC) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CFLAGS_release) $< > $@
 
 $(DEPDIR)/%.debug.d: %.c
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
-		$(CFLAGS_debug) $< > $@
+	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' $(CFLAGS_debug) $< > $@
 
 $(DEPDIR)/%.coverage.d: %.c
 	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPCOV)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
-		$(CFLAGS_coverage) $< > $@
+	$(QDEPCOV)$(CC) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' $(CFLAGS_coverage) $< > $@
 
 #
 # Source unit compilation
 #
 $(OBJDIR)/%.o: %.cc
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
-	$(QCXX)$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(QCXX)$(CXX) $(CXXFLAGS_release) -c $< -o $@
 
 $(OBJDIR)/%.debug.o: %.cc
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
@@ -135,7 +130,7 @@ $(OBJDIR)/%.coverage.o: %.cc
 
 $(OBJDIR)/%.o: %.c
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
-	$(QCC)$(CC) $(CFLAGS) -c $< -o $@
+	$(QCC)$(CC) $(CFLAGS_release) -c $< -o $@
 
 $(OBJDIR)/%.debug.o: %.c
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
@@ -145,72 +140,68 @@ $(OBJDIR)/%.coverage.o: %.c
 	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
 	$(QCCCOV)$(CC) $(CFLAGS_coverage) -c $< -o $@
 
-.PHONY: all release debug coverage subdirs libs
 
 #
 # TARGETS
 #
+
+#.PHONY: all release debug coverage subdirs libs
+
 all: release
 
-release:
-	$(MAKE) libs-copy
-	if [ -n "$(TARGETS)" ]; then $(MAKE) $(TARGETS); fi
+release: subdirs $(LIB_TARGETS) $(TARGETS)
 
-debug:
-	$(MAKE) libs-copy
-	if [ -n "$(TARGETS)" ]; then $(MAKE) $(DBG_TARGETS); fi
+debug: subdirs $(DBG_LIB_TARGETS) $(DBG_TARGETS)
 
-coverage:
-	$(MAKE) libs-copy
-	if [ -n "$(TARGETS)" ]; then $(MAKE) $(COV_TARGETS); fi
+coverage: subdirs $(COV_LIB_TARGETS) $(COV_TARGETS)
 
 check: subdirs
 
-libs: subdirs $(LIB_TARGETS)
+# libs: subdirs $(LIB_TARGETS)
 
-debug-libs: subdirs $(DBG_LIB_TARGETS)
+# debug-libs: subdirs $(DBG_LIB_TARGETS)
 
-coverage-libs: subdirs $(COV_LIB_TARGETS)
+# coverage-libs: subdirs $(COV_LIB_TARGETS)
 
-libs-copy: subdirs libs debug-libs coverage-libs
-	@mkdir -p $(DESTDIR)/lib
-	@for l in lib/*; do \
-		if [ -f $$l ]; then \
-			if [ -f $(DESTDIR)/$$l ]; then \
-				if [ $$l -nt $(DESTDIR)/$$l ]; then \
-					echo cp -f $$l $(DESTDIR)/$$l; \
-					cp -f $$l $(DESTDIR)/$$l; \
-				fi \
-			else \
-				echo cp -f $$l $(DESTDIR)/$$l; \
-				cp -f $$l $(DESTDIR)/$$l; \
-			fi; \
-		fi; \
-	done
+# libs-copy: subdirs
+#	@mkdir -p $(DESTDIR)/lib
+#	@for l in lib/*; do \
+#		if [ -f $$l ]; then \
+#			if [ -f $(DESTDIR)/$$l ]; then \
+#				if [ $$l -nt $(DESTDIR)/$$l ]; then \
+#					echo cp -f $$l $(DESTDIR)/$$l; \
+#					cp -f $$l $(DESTDIR)/$$l; \
+#				fi \
+#			else \
+#				echo cp -f $$l $(DESTDIR)/$$l; \
+#				cp -f $$l $(DESTDIR)/$$l; \
+#			fi; \
+#		fi; \
+#	done
 
-tags: subdirs
-	ctags -R .
+# tags: subdirs
+#	ctags -R .
 
-docs: doc/html
+# docs: doc/html
 
-doc/html: doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
-	rm -rf $@
-	doxygen doc/Doxyfile
+# doc/html: doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
+#	rm -rf $@
+#	doxygen doc/Doxyfile
 
-clean:
+clean: subdirs
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) \
-	core core.[0123456789]* a.out *.symbols
+	*.info core core.[0123456789]* a.out *.symbols
 
 docclean: subdirs
 	rm -rf doc/html
 
 realclean: subdirs clean docclean
-	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags
+	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags coverage-report
 
 subdirs:
 	@for d in $(SUBDIRS); do \
 		echo "Making '$(MAKECMDGOALS)' in $$d"; \
-		$(MAKE) DESTDIR=$(DESTDIR) -C $$d $(MAKECMDGOALS); \
+		$(MAKE) DESTDIR=$(shell pwd) -C $$d $(MAKECMDGOALS); \
 	done
 
 
@@ -248,16 +239,19 @@ define MAKE_PROGRAM
   #
   $$(EXE): $$($$(PROG)_OBJS)
 	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
-	$$(QLINK)$$(CXX) $$(CXXFLAGS) -o $$@ $$^ $$(LDFLAGS) $$(LIBS)
+	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ \
+		$$(LDFLAGS_release) $$(LIBS_release)
 	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
 	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
 	$$(QLNKSYM)$$(OBJCPY) --add-gnu-debuglink $$@.symbols $$@
 	$$(Q)chmod 644 $$@.symbols
+
   # Debug
   $$(EXE).debug: $$($$(PROG)_DBG_OBJS)
 	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
 	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
 		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
+
   # Coverage
   $$(EXE).coverage: $$($$(PROG)_COV_OBJS)
 	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
@@ -297,16 +291,32 @@ define MAKE_LIBRARY
 	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
+	@if [ -n "$$(DESTDIR)" ]; then \
+		mkdir -p $$(DESTDIR)/lib; \
+	    cp -v $$@ $$(DESTDIR)/lib; \
+	fi
+
   # Debug
   $$(DBG_STATIC_LIB): $$($$(LIBNAME)_DBG_OBJS)
 	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
+	@if [ -n "$$(DESTDIR)" ]; then \
+		mkdir -p $$(DESTDIR)/lib; \
+	    cp -v $$@ $$(DESTDIR)/lib; \
+	fi
+
+
   # Coverage
   $$(COV_STATIC_LIB): $$($$(LIBNAME)_COV_OBJS)
 	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
+	@if [ -n "$$(DESTDIR)" ]; then \
+		mkdir -p $$(DESTDIR)/lib; \
+	    cp -v $$@ $$(DESTDIR)/lib; \
+	fi
+
 
   #
   # a normal equal here causes recursive expansion
