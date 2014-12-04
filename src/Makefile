@@ -12,8 +12,10 @@ export DEFINES_coverage  = $(DEFINES_base)
 
 export CFLAGS_base       = -Wall -Wextra -pthread -g3
 export CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES_release) -O3
-export CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug) -fsanitize=address
-export CFLAGS_coverage   = $(CFLAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) -fprofile-arcs -ftest-coverage
+export CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug) \
+                           -fsanitize=address
+export CFLAGS_coverage   = $(CFLAGS_base) $(DEFINES_coverage) \
+                           $(INCLUDES_coverage) -fprofile-arcs -ftest-coverage
 
 export CXXFLAGS_base     = -std=c++11
 export CXXFLAGS_release  = $(CXXFLAGS_base) $(CFLAGS_release)
@@ -39,9 +41,6 @@ SUBDIRS                  = codecvt filesystem environment unit
 
 include Makefile.include
 
-# check debug-check converage-check: all
-# 	$(MAKE) -C unit $@
-
 # coverage.info:
 # 	$(MAKE) coverage
 # 	@./unit/bin/unittest.coverage -p foo > /dev/null 2>&1 || true
@@ -57,20 +56,3 @@ include Makefile.include
 # 	genhtml $< --demangle-cpp --legend --output-directory coverage-report
 # 	xdg-open coverage-report/index.html 2> /dev/null &
 
-# codecount:
-# 	@LC_ALL=en_GB.utf8 \
-# 		/usr/bin/printf "     Headers: %' 7d\n" \
-# 		$$(find . -name '*.h' | \
-# 		   xargs wc -l | tail -1 | sed -e 's/total//g')
-# 	@LC_ALL=en_GB.utf8 \
-# 		/usr/bin/printf "      Source: %' 7d\n" \
-# 		$$(find . -name '*.cc' -o -name '*.c' | \
-# 		   xargs wc -l | tail -1 | sed -e 's/total//g')
-# 	@LC_ALL=en_GB.utf8 \
-# 		/usr/bin/printf "Total Source: %' 7d\n" \
-# 		$$(find . -name '*.cc' -o -name '*.c' -o -name '*.h' | \
-# 		   xargs wc -l | tail -1 | sed -e 's/total//g')
-# 	@LC_ALL=en_GB.utf8 \
-# 		/usr/bin/printf "       Build: %' 7d\n" \
-# 		$$(find . -name 'Makefile*' \
-# 		   | xargs wc -l | tail -1 | sed -e 's/total//g')

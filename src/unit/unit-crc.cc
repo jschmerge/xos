@@ -26,7 +26,7 @@ class Test_Crc : public CppUnit::TestFixture
 	CPPUNIT_TEST(crcCalculation);
 	CPPUNIT_TEST(crcFile<uint8_t>);
 	CPPUNIT_TEST(crcFile<uint16_t>);
-	CPPUNIT_TEST(crcFile<uint64_t>);
+	CPPUNIT_TEST(crcFile<uint32_t>);
 	CPPUNIT_TEST(crcFile<uint64_t>);
 	CPPUNIT_TEST_SUITE_END();
 

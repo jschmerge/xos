@@ -44,7 +44,6 @@ debug-check: $(DBG_TARGETS)
 coverage-check: $(COV_TARGETS)
 	bin/unittest.coverage -p $(PROGRESS)
 
-
 INCLUDES_base     ?= -I $(TOPDIR)
 INCLUDES_release  ?= $(INCLUDES_base)
 INCLUDES_debug    ?= $(INCLUDES_base)
@@ -57,7 +56,8 @@ DEFINES_coverage  ?= $(DEFINES_base)
 
 CFLAGS_base       ?= -Wall -Wextra -pthread -g3
 CFLAGS_release    ?= $(CFLAGS_base) $(DEFINES_release) $(INCLUDES_release) -O3
-CFLAGS_debug      ?= $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug)
+CFLAGS_debug      ?= $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug) \
+                     -fsanitize=address
 CFLAGS_coverage   ?= $(CFLAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) \
                     -fprofile-arcs -ftest-coverage
 

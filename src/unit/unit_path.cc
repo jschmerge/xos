@@ -194,7 +194,7 @@ class Test_Path : public CppUnit::TestFixture
 			                       string_constant<char>::array_value2) == 0);
 		}
 
-		const unsigned int bad_str[] = { 0x80000000, 0x80 };
+		const unsigned int bad_str[] = { 0x80000000, 0x80, 0 };
 		const char32_t * bad_str_ptr
 		  = reinterpret_cast<const char32_t*>(bad_str);
 
