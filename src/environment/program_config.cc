@@ -30,6 +30,14 @@ std::string config_option::option_synopsis() const
 	} else
 		throw std::logic_error("Option is neither long nor short");
 
+	if (is_set(m_argument_type, argument_type::has_argument))
+	{
+		if (is_set(m_argument_type, argument_type::missing_argument_ok))
+			fmt += " [arg]";
+		else
+			fmt += " <arg>";
+	}
+
 	return fmt;
 }
 
