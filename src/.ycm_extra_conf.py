@@ -11,7 +11,7 @@ c_flags = [
 ]
 
 cxx_flags = [
-  '-I', 'xos/src',
+  '-I', '.',
   '-Wall',
   '-Wextra',
   '-std=c++11',

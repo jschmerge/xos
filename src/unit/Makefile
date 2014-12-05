@@ -1,48 +1,6 @@
 ####
 # Project-specific details & settings
 ####
-BUILD             ?= release
-TOPDIR            ?= ..
-
-INCLUDES_base     ?= -I $(TOPDIR)
-INCLUDES_release  ?= $(INCLUDES_base)
-INCLUDES_debug    ?= $(INCLUDES_base)
-INCLUDES_coverage ?= $(INCLUDES_base)
-INCLUDES           = $(INCLUDES_$(BUILD))
-
-DEFINES_base      ?=
-DEFINES_release   ?= $(DEFINES_base) -DNDEBUG
-DEFINES_debug     ?= $(DEFINES_base) -D_GLIBCXX_DEBUG
-DEFINES_coverage  ?= $(DEFINES_base)
-DEFINES            = $(DEFINES_$(BUILD))
-
-CFLAGS_base       ?= -Wall -Wextra -pthread -g3
-CFLAGS_release    ?= $(CFLAGS_base) $(DEFINES) $(INCLUDES) -O3
-CFLAGS_debug      ?= $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug)
-CFLAGS_coverage   ?= $(CFLAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) \
-                    -fprofile-arcs -ftest-coverage
-CFLAGS             = $(CFLAGS_$(BUILD))
-
-CXXFLAGS_base     ?= -std=c++11
-CXXFLAGS_release  ?= $(CXXFLAGS_base) $(CFLAGS)
-CXXFLAGS_debug    ?= $(CXXFLAGS_base) $(CFLAGS_debug)
-CXXFLAGS_coverage ?= $(CXXFLAGS_base) $(CFLAGS_coverage)
-CXXFLAGS           = $(CXXFLAGS_$(BUILD))
-
-LDFLAGS_base      ?= 
-LDFLAGS_release   ?= $(CFLAGG_release) $(LDFLAGS_base)
-LDFLAGS_debug     ?= $(CFLAGG_debug) $(LDFLAGS_base) \
-                     -rdynamic -fsanitize=address
-LDFLAGS_coverage  ?= $(CFLAGG_coverage) $(LDFLAGS_base)
-LDFLAGS            = $(LDFLAGS_$(BUILD))
-
-LIBS_base         ?= 
-# XXX FIXME - we need a way of tweaking this for the various build modes
-LIBS_release      ?= ../filesystem/lib/libfilesystem.a $(LIBS_base)
-LIBS_debug        ?= ../filesystem/lib/libfilesystem.debug.a $(LIBS_base)
-LIBS_coverage     ?= ../filesystem/lib/libfilesystem.coverage.a $(LIBS_base)
-LIBS               = $(LIBS_$(BUILD)) -lcppunit -lrt -ldl
-
 TARGETS           = unittest
 
 unittest_OBJS     = cppunit-main.o \
@@ -64,12 +22,18 @@ unittest_OBJS     = cppunit-main.o \
                     unit_unicode.o
 
 
-PROGRESS ?= brief
-bin/unittest: ../filesystem/lib/libfilesystem.a ../codecvt/lib/libcodecvt.a
-bin/unittest.debug: ../filesystem/lib/libfilesystem.debug.a ../codecvt/lib/libcodecvt.debug.a
-bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a ../codecvt/lib/libcodecvt.coverage.a
-
+PROGRESS          ?= brief
+TOPDIR            ?= ..
 include $(TOPDIR)/Makefile.include
+
+bin/unittest:          ../filesystem/lib/libfilesystem.a \
+                       ../codecvt/lib/libcodecvt.a
+
+bin/unittest.debug:    ../filesystem/lib/libfilesystem.debug.a \
+                       ../codecvt/lib/libcodecvt.debug.a
+
+bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a \
+                       ../codecvt/lib/libcodecvt.coverage.a
 
 check: $(TARGETS)
 	bin/unittest -p $(PROGRESS)
@@ -78,4 +42,42 @@ debug-check: $(DBG_TARGETS)
 	bin/unittest.debug -p $(PROGRESS)
 
 coverage-check: $(COV_TARGETS)
-	bin/unittest.coverage -p $(PROGRESS)
+	@./bin/unittest.coverage -p foo > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -o foo > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -t foo > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -h > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -r 1 -o none -l > /dev/null 2>&1
+	./bin/unittest.coverage -p verbose
+
+INCLUDES_base     ?= -I $(TOPDIR)
+INCLUDES_release  ?= $(INCLUDES_base)
+INCLUDES_debug    ?= $(INCLUDES_base)
+INCLUDES_coverage ?= $(INCLUDES_base)
+
+DEFINES_base      ?=
+DEFINES_release   ?= $(DEFINES_base) -DNDEBUG
+DEFINES_debug     ?= $(DEFINES_base) -D_GLIBCXX_DEBUG
+DEFINES_coverage  ?= $(DEFINES_base)
+
+CFLAGS_base       ?= -Wall -Wextra -pthread -g3
+CFLAGS_release    ?= $(CFLAGS_base) $(DEFINES_release) $(INCLUDES_release) -O3
+CFLAGS_debug      ?= $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug) \
+                     -fsanitize=address
+CFLAGS_coverage   ?= $(CFLAGS_base) $(DEFINES_coverage) $(INCLUDES_coverage) \
+                    -fprofile-arcs -ftest-coverage
+
+CXXFLAGS_base     ?= -std=c++11
+CXXFLAGS_release  ?= $(CXXFLAGS_base) $(CFLAGS_release)
+CXXFLAGS_debug    ?= $(CXXFLAGS_base) $(CFLAGS_debug)
+CXXFLAGS_coverage ?= $(CXXFLAGS_base) $(CFLAGS_coverage)
+
+LDFLAGS_base      ?= 
+LDFLAGS_release   ?= $(CFLAGG_release) $(LDFLAGS_base)
+LDFLAGS_debug     ?= $(CFLAGG_debug) $(LDFLAGS_base) \
+                     -rdynamic -fsanitize=address
+LDFLAGS_coverage  ?= $(CFLAGG_coverage) $(LDFLAGS_base)
+
+LIBS_base         += -lcppunit
+LIBS_release      += $(LIBS_base)
+LIBS_debug        += $(LIBS_base)
+LIBS_coverage     += $(LIBS_base)

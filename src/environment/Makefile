@@ -1,8 +1,18 @@
 ####
 # Project-specific details & settings
 ####
-BUILD             ?= release
+TARGETS            = test
+
+LIB_TARGETS        = libenv
+
+libenv_HEADERS     = program_config.h
+
+libenv_OBJS        = program_config.o
+
+test_OBJS          = test.o $(libenv_OBJS)
+
 TOPDIR            ?= ..
+include $(TOPDIR)/Makefile.include
 
 INCLUDES_base     ?= -I ..
 INCLUDES_release  ?= $(INCLUDES_base)
@@ -41,14 +51,3 @@ LIBS_debug        ?= $(LIBS_base)
 LIBS_coverage     ?= $(LIBS_base)
 LIBS              ?= $(LIBS_$(BUILD))
 
-TARGETS            = test
-
-LIB_TARGETS        = libenv
-
-libenv_HEADERS     = program_config.h
-
-libenv_OBJS        = program_config.o
-
-test_OBJS          = test.o $(libenv_OBJS)
-
-include $(TOPDIR)/Makefile.include
