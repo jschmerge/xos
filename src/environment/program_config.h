@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <functional>
 
 #include "utility/bitmask_operators.h"
 
@@ -25,6 +26,11 @@ enum class argument_type : uint32_t
 };
 
 DEFINE_BITMASK_OPERATORS(argument_type, uint32_t);
+
+struct state;
+
+typedef std::function<bool(state&)> state_cb;
+typedef std::function<bool(state&, state&, int)> transit_cb;
 
 //////////////////////////////////////////////////////////////////////
 struct config_option
@@ -80,8 +86,11 @@ struct state
 {
 	state() : name() { }
 
-	state(const std::string & n)
+	state(const std::string & n, std::function<bool(state&)> on_ingress,
+	                             std::function<bool(state&)> on_egress)
 	  : name(n)
+	  , enter(on_ingress)
+	  , exit(on_egress)
 		{ }
 
 	state(const state & other) = delete;
@@ -90,7 +99,11 @@ struct state
 	state & operator = (state && other) noexcept = delete;
 
 	std::string name;
+	std::function<bool(state&)> enter;
+	std::function<bool(state&)> exit;
+
 	std::map<int, std::shared_ptr<state>> transitions;
+	std::map<int, transit_cb> transition_cb;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -115,15 +128,24 @@ class program_config
 
 	std::string m_program_name;
 	std::vector<config_option> m_options;
+	std::vector<std::string> nonoption_arguments;
 
  private:
-	void declare_state(const std::string & name);
+
+	void declare_state(const std::string & statename,
+                       state_cb on_ingress = nullptr,
+                       state_cb on_egress = nullptr);
+
 	void declare_transition(const std::string & old_state,
                             const std::string & new_state,
-                            int value);
+                            int value,
+	                        transit_cb on_transit = nullptr);
 
 	void build_parser();
 	std::map<std::string, std::shared_ptr<state>> m_states;
+
+	std::string scratch1;
+	std::string scratch2;
 
 };
 
