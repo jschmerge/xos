@@ -1,6 +1,4 @@
 ######################################################################
-# The rest of this is a work in progress, but should not
-# need modification
 ######################################################################
 BUILD ?= release
 
@@ -160,6 +158,14 @@ check: release
 debug-check: debug
 
 coverage-check: coverage 
+
+coverage.info: coverage-check
+	lcov --no-external --capture --directory . --output-file $@ > /dev/null
+
+covreport: coverage.info
+	rm -rf coverage-report
+	genhtml $< --demangle-cpp --legend --output-directory coverage-report
+	xdg-open coverage-report/index.html 2> /dev/null &
 
 # libs: subdirs $(LIB_TARGETS)
 

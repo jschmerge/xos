@@ -22,10 +22,10 @@ unittest_OBJS     = cppunit-main.o \
                     unit_unicode.o
 
 
+PROGRESS          ?= brief
 TOPDIR            ?= ..
 include $(TOPDIR)/Makefile.include
 
-PROGRESS ?= brief
 bin/unittest:          ../filesystem/lib/libfilesystem.a \
                        ../codecvt/lib/libcodecvt.a
 
@@ -42,7 +42,12 @@ debug-check: $(DBG_TARGETS)
 	bin/unittest.debug -p $(PROGRESS)
 
 coverage-check: $(COV_TARGETS)
-	bin/unittest.coverage -p $(PROGRESS)
+	@./bin/unittest.coverage -p foo > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -o foo > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -t foo > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -h > /dev/null 2>&1 || true
+	@./bin/unittest.coverage -r 1 -o none -l > /dev/null 2>&1
+	./bin/unittest.coverage -p verbose
 
 INCLUDES_base     ?= -I $(TOPDIR)
 INCLUDES_release  ?= $(INCLUDES_base)
@@ -76,5 +81,3 @@ LIBS_base         += -lcppunit
 LIBS_release      += $(LIBS_base)
 LIBS_debug        += $(LIBS_base)
 LIBS_coverage     += $(LIBS_base)
-
-
