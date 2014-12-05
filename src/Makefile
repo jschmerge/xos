@@ -1,6 +1,6 @@
 export TOPDIR            = $(shell pwd)
 
-export INCLUDES_base     = -I $(TOPDIR) -I foobar
+export INCLUDES_base     = -I $(TOPDIR)
 export INCLUDES_release  = $(INCLUDES_base)
 export INCLUDES_debug    = $(INCLUDES_base)
 export INCLUDES_coverage = $(INCLUDES_base)
@@ -41,3 +41,6 @@ SUBDIRS                  = codecvt filesystem environment unit
 
 include Makefile.include
 
+filesystem: codecvt
+environment: filesystem
+unit: codecvt filesystem

@@ -159,35 +159,16 @@ debug-check: debug
 
 coverage-check: coverage 
 
-coverage.info: coverage-check
+coverage.info:
+	$(MAKE) coverage-check
 	lcov --no-external --capture --directory . --output-file $@ > /dev/null
 
 covreport: coverage.info
 	rm -rf coverage-report
-	genhtml $< --demangle-cpp --legend --output-directory coverage-report
-	xdg-open coverage-report/index.html 2> /dev/null &
+	genhtml $< --quiet --frames --show-details --demangle-cpp \
+	           --legend --output-directory coverage-report --num-spaces=4
+	chromium-browser coverage-report/index.html
 
-# libs: subdirs $(LIB_TARGETS)
-
-# debug-libs: subdirs $(DBG_LIB_TARGETS)
-
-# coverage-libs: subdirs $(COV_LIB_TARGETS)
-
-# libs-copy: subdirs
-#	@mkdir -p $(DESTDIR)/lib
-#	@for l in lib/*; do \
-#		if [ -f $$l ]; then \
-#			if [ -f $(DESTDIR)/$$l ]; then \
-#				if [ $$l -nt $(DESTDIR)/$$l ]; then \
-#					echo cp -f $$l $(DESTDIR)/$$l; \
-#					cp -f $$l $(DESTDIR)/$$l; \
-#				fi \
-#			else \
-#				echo cp -f $$l $(DESTDIR)/$$l; \
-#				cp -f $$l $(DESTDIR)/$$l; \
-#			fi; \
-#		fi; \
-#	done
 
 tags: subdirs
 	ctags -R .
@@ -225,12 +206,13 @@ docclean: subdirs
 realclean: subdirs clean docclean
 	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags coverage-report
 
-subdirs:
-	@for d in $(SUBDIRS); do \
-		echo "Making '$(MAKECMDGOALS)' in $$d"; \
-		$(MAKE) DESTDIR=$(shell pwd) -C $$d $(MAKECMDGOALS); \
-	done
+.PHONY: $(SUBDIRS)
 
+subdirs: $(SUBDIRS)
+
+$(SUBDIRS):
+	@echo "Making '$(MAKECMDGOALS)' in $@"
+	$(MAKE) DESTDIR=$(shell pwd) -C $@ $(MAKECMDGOALS)
 
 #
 # This is the main bit of logic in this file. MAKE_PROGRAM gets expanded
