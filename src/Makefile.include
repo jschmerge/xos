@@ -89,55 +89,48 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 #
 # Create dependency '.d' file
 #
-$(DEPDIR)/%.d: %.cc
-	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEP)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CXXFLAGS_release) $< > $@
+$(DEPDIR)/%.d: %.cc | $(DEPDIR)
+	$(QDEP)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.o $@' \
+	  $(CXXFLAGS_release) $< > $@
 
-$(DEPDIR)/%.debug.d: %.cc
-	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' $(CXXFLAGS_debug) $< > $@
+$(DEPDIR)/%.debug.d: %.cc | $(DEPDIR)
+	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
+	  $(CXXFLAGS_debug) $< > $@
 
-$(DEPDIR)/%.coverage.d: %.cc
-	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPCOV)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' $(CXXFLAGS_coverage) $< > $@
+$(DEPDIR)/%.coverage.d: %.cc | $(DEPDIR)
+	$(QDEPCOV)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' \
+	  $(CXXFLAGS_coverage) $< > $@
 
-$(DEPDIR)/%.d: %.c
-	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
+$(DEPDIR)/%.d: %.c | $(DEPDIR)
 	$(QDEP)$(CC) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CFLAGS_release) $< > $@
 
-$(DEPDIR)/%.debug.d: %.c
-	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' $(CFLAGS_debug) $< > $@
+$(DEPDIR)/%.debug.d: %.c | $(DEPDIR)
+	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
+	   $(CFLAGS_debug) $< > $@
 
-$(DEPDIR)/%.coverage.d: %.c
-	$(Q)[ -d $(DEPDIR) ] || mkdir -p $(DEPDIR)
-	$(QDEPCOV)$(CC) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' $(CFLAGS_coverage) $< > $@
+$(DEPDIR)/%.coverage.d: %.c | $(DEPDIR)
+	$(QDEPCOV)$(CC) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' \
+	  $(CFLAGS_coverage) $< > $@
 
 #
 # Source unit compilation
 #
-$(OBJDIR)/%.o: %.cc
-	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+$(OBJDIR)/%.o: %.cc | $(OBJDIR)
 	$(QCXX)$(CXX) $(CXXFLAGS_release) -c $< -o $@
 
-$(OBJDIR)/%.debug.o: %.cc
-	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+$(OBJDIR)/%.debug.o: %.cc | $(OBJDIR)
 	$(QCXXDBG)$(CXX) $(CXXFLAGS_debug) -c $< -o $@
 
-$(OBJDIR)/%.coverage.o: %.cc
-	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+$(OBJDIR)/%.coverage.o: %.cc | $(OBJDIR)
 	$(QCXXCOV)$(CXX) $(CXXFLAGS_coverage) -c $< -o $@
 
-$(OBJDIR)/%.o: %.c
-	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
 	$(QCC)$(CC) $(CFLAGS_release) -c $< -o $@
 
-$(OBJDIR)/%.debug.o: %.c
-	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+$(OBJDIR)/%.debug.o: %.c | $(OBJDIR)
 	$(QCC)$(CC) $(CFLAGS_debug) -c $< -o $@
 
-$(OBJDIR)/%.coverage.o: %.c
-	$(Q)[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+$(OBJDIR)/%.coverage.o: %.c | $(OBJDIR)
 	$(QCCCOV)$(CC) $(CFLAGS_coverage) -c $< -o $@
 
 
@@ -216,6 +209,9 @@ $(SUBDIRS):
 	@echo "Making '$(MAKECMDGOALS)' in $@"
 	$(MAKE) DESTDIR=$(shell pwd) -C $@ $(MAKECMDGOALS)
 
+$(DEPDIR) $(OBJDIR) $(BINDIR) $(LIBDIR):
+	$(Q)mkdir -p $@
+
 #
 # This is the main bit of logic in this file. MAKE_PROGRAM gets expanded
 # for each target in TARGETS. It creates both release and debug targets
@@ -248,8 +244,7 @@ define MAKE_PROGRAM
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
   #
-  $$(EXE): $$($$(PROG)_OBJS)
-	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
+  $$(EXE): $$($$(PROG)_OBJS) | $$(BINDIR)
 	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ \
 		$$(LDFLAGS_release) $$(LIBS_release)
 	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
@@ -258,14 +253,12 @@ define MAKE_PROGRAM
 	$$(Q)chmod 644 $$@.symbols
 
   # Debug
-  $$(EXE).debug: $$($$(PROG)_DBG_OBJS)
-	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
+  $$(EXE).debug: $$($$(PROG)_DBG_OBJS) | $$(BINDIR)
 	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
 		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
 
   # Coverage
-  $$(EXE).coverage: $$($$(PROG)_COV_OBJS)
-	$$(Q)[ -d $$(BINDIR) ] || mkdir -p $$(BINDIR)
+  $$(EXE).coverage: $$($$(PROG)_COV_OBJS) | $$(BINDIR)
 	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
 		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
 
@@ -298,8 +291,7 @@ define MAKE_LIBRARY
   $$(LIBNAME).debug: $$(DBG_STATIC_LIB)
   $$(LIBNAME).coverage: $$(COV_STATIC_LIB)
 
-  $$(STATIC_LIB): $$($$(LIBNAME)_OBJS)
-	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+  $$(STATIC_LIB): $$($$(LIBNAME)_OBJS) | $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
 	@if [ -n "$$(DESTDIR)" ]; then \
@@ -308,8 +300,7 @@ define MAKE_LIBRARY
 	fi
 
   # Debug
-  $$(DBG_STATIC_LIB): $$($$(LIBNAME)_DBG_OBJS)
-	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+  $$(DBG_STATIC_LIB): $$($$(LIBNAME)_DBG_OBJS) | $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
 	@if [ -n "$$(DESTDIR)" ]; then \
@@ -319,15 +310,13 @@ define MAKE_LIBRARY
 
 
   # Coverage
-  $$(COV_STATIC_LIB): $$($$(LIBNAME)_COV_OBJS)
-	@[ -d $$(LIBDIR) ] || mkdir -p $$(LIBDIR)
+  $$(COV_STATIC_LIB): $$($$(LIBNAME)_COV_OBJS) | $$(LIBDIR)
 	$$(QAR)ar -cSurv $$@ $$^
 	$$(QRANLIB)ranlib $$@
 	@if [ -n "$$(DESTDIR)" ]; then \
 		mkdir -p $$(DESTDIR)/lib; \
 	    cp -v $$@ $$(DESTDIR)/lib; \
 	fi
-
 
   #
   # a normal equal here causes recursive expansion
@@ -350,4 +339,10 @@ $(foreach T, $(LIB_TARGETS),$(eval $(call MAKE_LIBRARY, $(T))))
 #
 DEPS     = $(OBJS:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
 
--include $(DEPS)
+ifneq ($(MAKECMDGOALS), clean)
+ ifneq ($(MAKECMDGOALS), docclean)
+  ifneq ($(MAKECMDGOALS), realclean)
+   -include $(DEPS)
+  endif
+ endif
+endif
