@@ -1,4 +1,6 @@
 ######################################################################
+# The rest of this is a work in progress, but should not
+# need modification
 ######################################################################
 BUILD ?= release
 

@@ -11,7 +11,8 @@ export DEFINES_debug     = $(DEFINES_base) -D_GLIBCXX_DEBUG
 export DEFINES_coverage  = $(DEFINES_base)
 
 export CFLAGS_base       = -Wall -Wextra -pthread -g3
-export CFLAGS_release    = $(CFLAGS_base) $(DEFINES) $(INCLUDES_release) -O3
+export CFLAGS_release    = $(CFLAGS_base) $(DEFINES_release) \
+                           $(INCLUDES_release) -O3
 export CFLAGS_debug      = $(CFLAGS_base) $(DEFINES_debug) $(INCLUDES_debug) \
                            -fsanitize=address
 export CFLAGS_coverage   = $(CFLAGS_base) $(DEFINES_coverage) \
