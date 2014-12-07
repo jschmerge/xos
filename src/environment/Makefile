@@ -3,13 +3,13 @@
 ####
 TARGETS            = test
 
-LIB_TARGETS        = libenv
+LIB_TARGETS        = libenvironment
 
-libenv_HEADERS     = program_config.h
+libenvironment_HEADERS     = program_config.h
 
-libenv_OBJS        = program_config.o
+libenvironment_OBJS        = program_config.o exceptionTrace.o
 
-test_OBJS          = test.o $(libenv_OBJS)
+test_OBJS          = test.o $(libenvironment_OBJS)
 
 TOPDIR            ?= ..
 
