@@ -96,6 +96,8 @@ struct state
 	  , exit(on_egress)
 		{ }
 
+	~state() { }
+
 	state(const state & other) = delete;
 	state(state && other) noexcept = delete;
 	state & operator = (const state &) = delete;
@@ -124,6 +126,9 @@ class program_config
 
 	bool parse_command_line(int argc, char ** argv);
 
+	std::vector<std::string> params() const
+	{ return nonoption_arguments; }
+
  protected:
 	program_config(const std::initializer_list<config_option> & list);
 
@@ -144,8 +149,15 @@ class program_config
                             int value,
 	                        transit_cb on_transit = nullptr);
 
+	void declare_option_states();
+
 	void build_parser();
 	std::map<std::string, std::shared_ptr<state>> m_states;
+
+	const char * begin_ptr1;
+	const char * end_ptr1;
+	const char * begin_ptr2;
+	const char * end_ptr2;
 
 	std::string scratch1;
 	std::string scratch2;

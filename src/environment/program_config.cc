@@ -47,6 +47,11 @@ program_config::program_config(
 )
   : m_program_name("program")
   , m_options(list)
+  , nonoption_arguments()
+  , begin_ptr1(nullptr)
+  , end_ptr1(nullptr)
+  , begin_ptr2(nullptr)
+  , end_ptr2(nullptr)
 {
 }
 
@@ -153,26 +158,90 @@ void program_config::declare_transition(const std::string & old_state,
 	m_states.at(old_state)->transition_cb[value] = on_transit;
 }
 
+//////////////////////////////////////////////////////////////////////
+void program_config::declare_option_states()
+{
+	for (const auto & opt : m_options)
+	{
+		if (opt.m_short_switch != -1)
+		{
+			std::string shortopt = "-";
+			shortopt += opt.m_short_switch;
+			declare_state(shortopt);
+		}
+ 
+		if (opt.m_long_switch.size())
+		{
+			std::string longopt = "--";
+
+			for (auto c : opt.m_long_switch)
+			{
+				longopt += c;
+
+				if (m_states.find(longopt) == m_states.end())
+					declare_state(longopt);
+			}
+		}
+	}
+}
 
 //////////////////////////////////////////////////////////////////////
 void program_config::build_parser()
 {
-	transit_cb non_option_start = [this] (const state & olds, const state & news, const char * c) {
-		printf("\n(%s + 0x%x) -> %s", olds.name.c_str(), *c, news.name.c_str());
-		scratch1 += *c;
+	transit_cb non_option_start =
+	[this] (const state &, const state &, const char * cp) {
+		if (begin_ptr2 == nullptr) begin_ptr2 = cp;
 		return true;
 	};
 
-	transit_cb non_option_mid = [this] (const state &, const state &, const char * c) {
-		scratch1 += *c;
+	transit_cb non_option_end =
+	[this] (const state &, const state &, const char * cp) {
+		end_ptr2 = cp;
+		if (begin_ptr2) {
+			nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
+			printf("Non-opt STRING = %s\n", nonoption_arguments.back().c_str());
+			begin_ptr2 = end_ptr2 = nullptr;
+		}
 		return true;
 	};
 
-	transit_cb non_option_end = [this] (const state & olds, const state & news, const char * c) {
-		printf("(%s + 0x%x) -> %s", olds.name.c_str(), *c, news.name.c_str());
-		printf("\n###==> Adding non-option %s\n", scratch1.c_str());
-		nonoption_arguments.push_back(scratch1);
-		scratch1.clear();
+	transit_cb option_start =
+	[this] (const state &, const state &, const char * cp) {
+		if (begin_ptr1 == nullptr) begin_ptr1 = cp;
+		return true;
+	};
+
+	transit_cb option_end =
+	[this] (const state &, const state &, const char * cp) {
+		end_ptr1 = cp;
+		if (begin_ptr1) {
+			std::string s(begin_ptr1, end_ptr1);
+			printf("option STRING = %s\n", s.c_str());
+			begin_ptr1 = end_ptr1 = nullptr;
+		}
+		return true;
+	};
+
+	transit_cb parameter_start =
+	[this] (const state &, const state &, const char * cp) {
+		if (begin_ptr2 == nullptr) begin_ptr2 = cp;
+		return true;
+	};
+
+	transit_cb parameter_end =
+	[this] (const state &, const state &, const char * cp) {
+		end_ptr2 = cp;
+		if (begin_ptr2) {
+			std::string s(begin_ptr2, end_ptr2);
+			printf("Param STRING = %s\n", s.c_str());
+			begin_ptr2 = end_ptr2 = nullptr;
+		}
+		return true;
+	};
+
+	transit_cb dash_argument =
+	[this] (const state &, const state &, const char * ) {
+		nonoption_arguments.emplace_back("-");
 		return true;
 	};
 
@@ -182,21 +251,24 @@ void program_config::build_parser()
 	declare_state("non_option_arg");
 	declare_state("non_option_arg2");
 	declare_state("parameter");
+	declare_state("shortopt_noparam");
+	declare_state("shortopt_optparam");
+	declare_state("shortopt_reqparam");
 
 	declare_transition("start", "dash", '-');
 	declare_transition("start", "non_option_arg", -1, non_option_start);
 	declare_transition("dash", "dash_dash", '-');
-	declare_transition("dash", "start", 0);
+	declare_transition("dash", "start", 0, dash_argument);
 
-	declare_transition("dash_dash", "non_option_arg2", 0, non_option_start);
+	declare_transition("dash_dash", "non_option_arg2", 0);
 
-	declare_transition("parameter", "parameter", -1);
-	declare_transition("parameter", "start", 0);
-	declare_transition("non_option_arg", "non_option_arg", -1, non_option_mid);
+	declare_transition("parameter", "parameter", -1, parameter_start);
+	declare_transition("parameter", "start", 0, parameter_end);
+	declare_transition("non_option_arg", "non_option_arg", -1);
 	declare_transition("non_option_arg", "start", 0, non_option_end);
 
-	declare_transition("non_option_arg2", "non_option_arg2", -1);
-	declare_transition("non_option_arg2", "non_option_arg2", 0);
+	declare_transition("non_option_arg2", "non_option_arg2", -1, non_option_start);
+	declare_transition("non_option_arg2", "non_option_arg2", 0, non_option_end);
 
 	for (const auto & opt : m_options)
 	{
@@ -205,22 +277,31 @@ void program_config::build_parser()
 			std::string shortopt = "-";
 			shortopt += opt.m_short_switch;
 
-			declare_state(shortopt);
-			declare_transition("dash", shortopt, opt.m_short_switch);
+//			declare_transition("dash", "shortopt",
+//			                   opt.m_short_switch, option_start);
 
 			if (is_set(opt.m_argument_type, argument_type::optional))
 			{
-				declare_transition(shortopt, "parameter", -1);
-				declare_transition(shortopt, "start", 0);
+				declare_transition("dash", "shortopt_optparam",
+				                   opt.m_short_switch, option_start);
+
+				declare_transition("shortopt_optparam", "parameter", -1, parameter_start);
+				declare_transition("shortopt_optparam", "start", 0, option_end);
 			} else if (is_set(opt.m_argument_type, argument_type::required))
 			{
-				declare_transition(shortopt, "parameter", -1);
-				declare_transition(shortopt, "parameter", 0);
+				declare_transition("dash", "shortopt_reqparam",
+				                   opt.m_short_switch, option_start);
+				declare_transition("shortopt_reqparam", "parameter", -1, parameter_start);
+				declare_transition("shortopt_reqparam", "parameter", 0, option_end);
 			} else if((opt.m_argument_type & argument_type::arg_mask)
 			             == argument_type::none)
 			{
-				declare_transition(shortopt, "dash", -1);
-				declare_transition(shortopt, "start", 0);
+				declare_transition("dash", "shortopt_noparam",
+				                   opt.m_short_switch, option_start);
+
+				declare_transition("shortopt_noparam", "dash", -1, option_end);
+
+				declare_transition("shortopt_noparam", "start", 0, option_end);
 			} else
 				throw std::logic_error(
 				        "option does not have paramters set correctly");
@@ -246,11 +327,11 @@ void program_config::build_parser()
 			if (is_set(opt.m_argument_type, argument_type::optional))
 			{
 				declare_transition(longopt, "start", 0);
-				declare_transition(longopt, "parameter", '=');
+				declare_transition(longopt, "parameter", '=', parameter_start);
 			} else if (is_set(opt.m_argument_type, argument_type::required))
 			{
 				declare_transition(longopt, "parameter", 0);
-				declare_transition(longopt, "parameter", '=');
+				declare_transition(longopt, "parameter", '=', parameter_start);
 			} else if ((opt.m_argument_type & argument_type::arg_mask)
 			              == argument_type::none)
 			{
@@ -307,7 +388,7 @@ bool program_config::parse_command_line(int argc, char ** argv)
 
 	auto state_cursor = m_states["start"];
 
-	printf("----------------------------------------------\n");
+	printf("------------------------------------------------------------\n");
 	printf("PARSING COMMAND LINE:\n");
 	for (int i = 1; i < argc; ++i)
 	{
@@ -349,15 +430,15 @@ bool program_config::parse_command_line(int argc, char ** argv)
 				if (state_cursor->enter) state_cursor->enter(*state_cursor);
 
 			} else
-				throw std::runtime_error("Bad option");
+				throw std::runtime_error(std::string("Bad option - ") + *arg);
 
 			new_state = state_cursor->name;
 
 			if (std::isprint(*arg))
-				printf("(%-20s + '%c') -> %s\n", old_state.c_str(), *arg,
+				printf("\t(%-20s + '%c') -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
 			else
-				printf("(%-20s + x%02x) -> %s\n", old_state.c_str(), *arg,
+				printf("\t(%-20s + x%02x) -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
 		} while (*arg++);
 	}

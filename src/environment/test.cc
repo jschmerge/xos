@@ -22,7 +22,15 @@ int main(int argc, char ** argv)
 	my_config conf;
 
 	conf.parse_command_line(argc, argv);
-	printf("------------------------------------\n"
+	printf("------------------------------------------------------------\n"
 	       "%s", conf.usage_message(80).c_str());
+
+	std::vector<std::string> params = conf.params();
+
+	for (auto p : params)
+	{
+		printf("NONOPTION: %s\n", p.c_str());
+	}
+
 	return 0;
 }
