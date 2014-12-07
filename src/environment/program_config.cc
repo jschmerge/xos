@@ -119,13 +119,6 @@ void program_config::set_program_name(const char * program_path)
 }
 
 //////////////////////////////////////////////////////////////////////
-#if 0
-void program_config::declare_state(const std::string & statename)
-{
-	m_states[statename] = std::make_shared<state>(statename);
-}
-#endif
-
 void program_config::declare_state(
 	const std::string & statename,
 	std::function<bool(const state &)> on_ingress,
@@ -199,25 +192,9 @@ void program_config::build_parser()
 		end_ptr2 = cp;
 		if (begin_ptr2) {
 			nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
-			printf("Non-opt STRING = %s\n", nonoption_arguments.back().c_str());
+			printf("####################> NON-OPTION = %s\n",
+			       nonoption_arguments.back().c_str());
 			begin_ptr2 = end_ptr2 = nullptr;
-		}
-		return true;
-	};
-
-	transit_cb option_start =
-	[this] (const state &, const state &, const char * cp) {
-		if (begin_ptr1 == nullptr) begin_ptr1 = cp;
-		return true;
-	};
-
-	transit_cb option_end =
-	[this] (const state &, const state &, const char * cp) {
-		end_ptr1 = cp;
-		if (begin_ptr1) {
-			std::string s(begin_ptr1, end_ptr1);
-			printf("option STRING = %s\n", s.c_str());
-			begin_ptr1 = end_ptr1 = nullptr;
 		}
 		return true;
 	};
@@ -233,7 +210,7 @@ void program_config::build_parser()
 		end_ptr2 = cp;
 		if (begin_ptr2) {
 			std::string s(begin_ptr2, end_ptr2);
-			printf("Param STRING = %s\n", s.c_str());
+			printf("####################> PARAM = %s\n", s.c_str());
 			begin_ptr2 = end_ptr2 = nullptr;
 		}
 		return true;
@@ -245,15 +222,23 @@ void program_config::build_parser()
 		return true;
 	};
 
+	transit_cb shortcb =
+	[this] (const state &, const state &, const char * cp) {
+		begin_ptr1 = cp;
+		end_ptr1 = cp + 1;
+		printf("####################> SHORTOPT '%c'", *cp);
+		return true;
+	};
+
 	declare_state("start");
 	declare_state("dash");
 	declare_state("dash_dash");
 	declare_state("non_option_arg");
 	declare_state("non_option_arg2");
 	declare_state("parameter");
-	declare_state("shortopt_noparam");
-	declare_state("shortopt_optparam");
-	declare_state("shortopt_reqparam");
+	declare_state("short_no_param");
+	declare_state("short_opt_param");
+	declare_state("short_req_param");
 
 	declare_transition("start", "dash", '-');
 	declare_transition("start", "non_option_arg", -1, non_option_start);
@@ -277,31 +262,41 @@ void program_config::build_parser()
 			std::string shortopt = "-";
 			shortopt += opt.m_short_switch;
 
-//			declare_transition("dash", "shortopt",
-//			                   opt.m_short_switch, option_start);
-
 			if (is_set(opt.m_argument_type, argument_type::optional))
 			{
-				declare_transition("dash", "shortopt_optparam",
-				                   opt.m_short_switch, option_start);
+				declare_transition("dash", "short_opt_param",
+				                   opt.m_short_switch, shortcb);
+				declare_transition("short_no_param", "short_opt_param",
+				                   opt.m_short_switch, shortcb);
 
-				declare_transition("shortopt_optparam", "parameter", -1, parameter_start);
-				declare_transition("shortopt_optparam", "start", 0, option_end);
+				declare_transition("short_opt_param", "parameter",
+				                   -1, parameter_start);
+
+				declare_transition("short_opt_param", "start", 0);
+
 			} else if (is_set(opt.m_argument_type, argument_type::required))
 			{
-				declare_transition("dash", "shortopt_reqparam",
-				                   opt.m_short_switch, option_start);
-				declare_transition("shortopt_reqparam", "parameter", -1, parameter_start);
-				declare_transition("shortopt_reqparam", "parameter", 0, option_end);
+				declare_transition("dash", "short_req_param",
+				                   opt.m_short_switch, shortcb);
+
+				declare_transition("short_no_param", "short_req_param",
+				                   opt.m_short_switch, shortcb);
+
+				declare_transition("short_req_param", "parameter",
+				                   -1, parameter_start);
+
+				declare_transition("short_req_param", "parameter", 0, shortcb);
+
 			} else if((opt.m_argument_type & argument_type::arg_mask)
 			             == argument_type::none)
 			{
-				declare_transition("dash", "shortopt_noparam",
-				                   opt.m_short_switch, option_start);
+				declare_transition("dash", "short_no_param",
+				                   opt.m_short_switch, shortcb);
 
-				declare_transition("shortopt_noparam", "dash", -1, option_end);
+				declare_transition("short_no_param", "short_no_param",
+				                   opt.m_short_switch, shortcb);
 
-				declare_transition("shortopt_noparam", "start", 0, option_end);
+				declare_transition("short_no_param", "start", 0);
 			} else
 				throw std::logic_error(
 				        "option does not have paramters set correctly");
