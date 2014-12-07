@@ -121,9 +121,10 @@ void program_config::declare_state(const std::string & statename)
 }
 #endif
 
-void program_config::declare_state(const std::string & statename,
-                                   std::function<bool(state &)> on_ingress,
-                                   std::function<bool(state &)> on_egress)
+void program_config::declare_state(
+	const std::string & statename,
+	std::function<bool(const state &)> on_ingress,
+	std::function<bool(const state &)> on_egress)
 {
 	m_states[statename] = std::make_shared<state>(statename,
 	                                              on_ingress, on_egress);
@@ -156,19 +157,19 @@ void program_config::declare_transition(const std::string & old_state,
 //////////////////////////////////////////////////////////////////////
 void program_config::build_parser()
 {
-	transit_cb non_option_start = [this] (state & olds, state & news, int c) {
-		printf("\n(%s + 0x%x) -> %s", olds.name.c_str(), c, news.name.c_str());
-		scratch1 += (char) c;
+	transit_cb non_option_start = [this] (const state & olds, const state & news, const char * c) {
+		printf("\n(%s + 0x%x) -> %s", olds.name.c_str(), *c, news.name.c_str());
+		scratch1 += *c;
 		return true;
 	};
 
-	transit_cb non_option_mid = [this] (state &, state &, int c) {
-		scratch1 += (char) c;
+	transit_cb non_option_mid = [this] (const state &, const state &, const char * c) {
+		scratch1 += *c;
 		return true;
 	};
 
-	transit_cb non_option_end = [this] (state & olds, state & news, int c) {
-		printf("(%s + 0x%x) -> %s", olds.name.c_str(), c, news.name.c_str());
+	transit_cb non_option_end = [this] (const state & olds, const state & news, const char * c) {
+		printf("(%s + 0x%x) -> %s", olds.name.c_str(), *c, news.name.c_str());
 		printf("\n###==> Adding non-option %s\n", scratch1.c_str());
 		nonoption_arguments.push_back(scratch1);
 		scratch1.clear();
@@ -186,13 +187,15 @@ void program_config::build_parser()
 	declare_transition("start", "non_option_arg", -1, non_option_start);
 	declare_transition("dash", "dash_dash", '-');
 	declare_transition("dash", "start", 0);
+
 	declare_transition("dash_dash", "non_option_arg2", 0, non_option_start);
+
 	declare_transition("parameter", "parameter", -1);
 	declare_transition("parameter", "start", 0);
 	declare_transition("non_option_arg", "non_option_arg", -1, non_option_mid);
 	declare_transition("non_option_arg", "start", 0, non_option_end);
+
 	declare_transition("non_option_arg2", "non_option_arg2", -1);
-//	declare_transition("non_option_arg2", "non_option_arg2", -1);
 	declare_transition("non_option_arg2", "non_option_arg2", 0);
 
 	for (const auto & opt : m_options)
@@ -321,8 +324,13 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			      != state_cursor->transitions.end())
 			{
 				if (state_cursor->exit) state_cursor->exit(*state_cursor);
+
 				if (state_cursor->transition_cb[*arg])
-					state_cursor->transition_cb[*arg](*state_cursor, *(state_cursor->transitions.at(-1)), *arg);
+					state_cursor->transition_cb[*arg](
+						*state_cursor,
+						*(state_cursor->transitions.at(*arg)),
+						arg);
+
 				state_cursor = state_cursor->transitions.at(*arg);
 				if (state_cursor->exit) state_cursor->enter(*state_cursor);
 
@@ -330,8 +338,13 @@ bool program_config::parse_command_line(int argc, char ** argv)
 			             != state_cursor->transitions.end())
 			{
 				if (state_cursor->exit) state_cursor->exit(*state_cursor);
+
 				if (state_cursor->transition_cb[-1])
-					state_cursor->transition_cb[-1](*state_cursor, *(state_cursor->transitions.at(-1)), *arg);
+					state_cursor->transition_cb[-1](
+						*state_cursor,
+						*(state_cursor->transitions.at(-1)),
+						arg);
+
 				state_cursor = state_cursor->transitions.at(-1);
 				if (state_cursor->enter) state_cursor->enter(*state_cursor);
 

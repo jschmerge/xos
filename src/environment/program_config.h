@@ -29,8 +29,11 @@ DEFINE_BITMASK_OPERATORS(argument_type, uint32_t);
 
 struct state;
 
-typedef std::function<bool(state&)> state_cb;
-typedef std::function<bool(state&, state&, int)> transit_cb;
+typedef std::function<bool(const state &)> state_cb;
+
+typedef std::function<bool(const state &,
+                           const state &,
+                           const char *)> transit_cb;
 
 //////////////////////////////////////////////////////////////////////
 struct config_option
