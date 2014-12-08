@@ -140,13 +140,13 @@ $(OBJDIR)/%.coverage.o: %.c | $(OBJDIR)
 
 #.PHONY: all release debug coverage subdirs libs
 
-all: release
-
 release: $(LIB_TARGETS) $(TARGETS) subdirs
 
 debug: $(DBG_LIB_TARGETS) $(DBG_TARGETS) subdirs 
 
 coverage: $(COV_LIB_TARGETS) $(COV_TARGETS) subdirs
+
+all: release debug coverage
 
 check: release
 
