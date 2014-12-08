@@ -101,19 +101,23 @@ std::string program_config::usage_message(const size_t termWidth) const
 }
 
 //////////////////////////////////////////////////////////////////////
-bool program_config::process_option(const config_option & ,
-                                    const std::string & )
+bool program_config::process_option(const config_option & opt,
+                                    const std::string & param)
 {
+	printf("processing option with param\n");
+	printf("Got option '%s' with param '%s'\n",
+	       opt.option_synopsis().c_str(), param.c_str());
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////
 bool program_config::process_option(const config_option & opt)
 {
+	printf("processing option without param\n");
 	if (opt.m_long_switch == "help")
 		printf("%s", usage_message().c_str());
 	else
-		printf("Got option %s\n", opt.option_synopsis().c_str());
+		printf("Got option '%s'\n", opt.option_synopsis().c_str());
 
 	return true;
 }
@@ -161,35 +165,6 @@ void program_config::declare_transition(const std::string & old_state,
 }
 
 //////////////////////////////////////////////////////////////////////
-#if 0
-void program_config::declare_option_states()
-{
-	for (const auto & opt : m_options)
-	{
-		if (opt.m_short_switch != -1)
-		{
-			std::string shortopt = "-";
-			shortopt += opt.m_short_switch;
-			declare_state(shortopt);
-		}
- 
-		if (opt.m_long_switch.size())
-		{
-			std::string longopt = "--";
-
-			for (auto c : opt.m_long_switch)
-			{
-				longopt += c;
-
-				if (m_states.find(longopt) == m_states.end())
-					declare_state(longopt);
-			}
-		}
-	}
-}
-#endif
-
-//////////////////////////////////////////////////////////////////////
 void program_config::build_parser()
 {
 	transit_cb non_option_start =
@@ -220,13 +195,15 @@ void program_config::build_parser()
 	[this] (const state &, const state &, const char * cp) {
 		bool rc = false;
 		end_ptr2 = cp;
-		if (begin_ptr2)
+		if (begin_ptr2 && current_option)
 		{
 			std::string s(begin_ptr2, end_ptr2);
 			printf("####################> PARAM = %s\n", s.c_str());
-			begin_ptr2 = end_ptr2 = nullptr;
-			rc = true;
+			rc = process_option(*current_option, s);
 		}
+		current_option = nullptr;
+		begin_ptr1 = end_ptr1 = nullptr;
+		begin_ptr2 = end_ptr2 = nullptr;
 		return rc;
 	};
 
@@ -253,7 +230,6 @@ void program_config::build_parser()
 
 		if (to.name == "short_no_param")
 		{
-			printf("processing option\n");
 			rc = process_option(*current_option);
 			current_option = nullptr;
 		}
@@ -267,7 +243,6 @@ void program_config::build_parser()
 
 		if (current_option != nullptr)
 		{
-				printf("processing option without optional param\n");
 				rc = process_option(*current_option);
 				current_option = nullptr;
 		}
@@ -339,7 +314,7 @@ void program_config::build_parser()
 				declare_transition("short_req_param", "parameter",
 				                   -1, parameter_start);
 
-				declare_transition("short_req_param", "parameter", 0, shortcb);
+				declare_transition("short_req_param", "parameter", 0);
 
 			} else if((opt.m_argument_type & argument_type::arg_mask)
 			             == argument_type::none)
@@ -437,12 +412,16 @@ bool program_config::parse_command_line(int argc, char ** argv)
 
 	auto state_cursor = m_states["start"];
 
+#ifndef NDEBUG
 	printf("------------------------------------------------------------\n");
 	printf("PARSING COMMAND LINE:\n");
+#endif
 	for (int i = 1; i < argc; ++i)
 	{
 		const char * arg = argv[i];
+#ifndef NDEBUG
 		printf("-----> ARGV[%d] = '%s'\n", i, arg);
+#endif
 
 		do {
 			std::string old_state;
@@ -483,7 +462,7 @@ bool program_config::parse_command_line(int argc, char ** argv)
 
 			new_state = state_cursor->name;
 
-#if 0
+#ifndef NDEBUG
 			if (std::isprint(*arg))
 				printf("\t(%-20s + '%c') -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
@@ -492,6 +471,14 @@ bool program_config::parse_command_line(int argc, char ** argv)
 				       new_state.c_str());
 #endif
 		} while (*arg++);
+	}
+
+	if ( ! ( (state_cursor == m_states["start"])
+	       || (state_cursor == m_states["non_option_arg2"]) ) )
+	{
+		throw std::runtime_error(std::string("Option '")
+		                        + current_option->option_synopsis()
+		                        + "' requires arument");
 	}
 
 	return true;
