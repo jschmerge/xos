@@ -14,12 +14,13 @@ unittest_OBJS     = cppunit-main.o \
                     unit_path.o \
                     unit_path_iterator.o \
                     unit_bithacks.o \
-                    unit-average.o \
-                    unit-bithacks.o \
-                    unit-crc.o \
+                    unit_average.o \
+                    unit_bithacks.o \
+                    unit_crc.o \
                     unit_codecvt_base.o \
                     unit_codecvt.o \
                     unit_unicode.o
+
 
 
 PROGRESS          ?= brief
