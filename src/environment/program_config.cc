@@ -52,6 +52,7 @@ program_config::program_config(
   , end_ptr1(nullptr)
   , begin_ptr2(nullptr)
   , end_ptr2(nullptr)
+  , current_option(nullptr)
 {
 }
 
@@ -100,8 +101,14 @@ std::string program_config::usage_message(const size_t termWidth) const
 }
 
 //////////////////////////////////////////////////////////////////////
-bool program_config::process_option(const config_option & opt,
-                                    const std::string)
+bool program_config::process_option(const config_option & ,
+                                    const std::string & )
+{
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+bool program_config::process_option(const config_option & opt)
 {
 	if (opt.m_long_switch == "help")
 		printf("%s", usage_message().c_str());
@@ -152,6 +159,7 @@ void program_config::declare_transition(const std::string & old_state,
 }
 
 //////////////////////////////////////////////////////////////////////
+#if 0
 void program_config::declare_option_states()
 {
 	for (const auto & opt : m_options)
@@ -177,6 +185,7 @@ void program_config::declare_option_states()
 		}
 	}
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////
 void program_config::build_parser()
@@ -207,13 +216,16 @@ void program_config::build_parser()
 
 	transit_cb parameter_end =
 	[this] (const state &, const state &, const char * cp) {
+		bool rc = false;
 		end_ptr2 = cp;
-		if (begin_ptr2) {
+		if (begin_ptr2)
+		{
 			std::string s(begin_ptr2, end_ptr2);
 			printf("####################> PARAM = %s\n", s.c_str());
 			begin_ptr2 = end_ptr2 = nullptr;
+			rc = true;
 		}
-		return true;
+		return rc;
 	};
 
 	transit_cb dash_argument =
@@ -223,10 +235,33 @@ void program_config::build_parser()
 	};
 
 	transit_cb shortcb =
-	[this] (const state &, const state &, const char * cp) {
+	[this] (const state &, const state & to, const char * cp) {
+		bool rc = false;
+		printf("####################> SHORTOPT '%c'\n", *cp);
+		current_option = nullptr;
+		for (const auto & opt : m_options)
+		{
+			if (opt.m_short_switch == *cp)
+			{
+				current_option = &opt;
+				rc = true;
+				break;
+			}
+		}
+
+		if (to.name == "short_no_param")
+		{
+			rc = process_option(*current_option);
+			current_option = nullptr;
+		}
+
+		return rc;
+	};
+
+	transit_cb long_start =
+	[this] (const state &, const state & , const char * cp) {
+		begin_ptr1 = begin_ptr2 = end_ptr1 = end_ptr2 = nullptr;
 		begin_ptr1 = cp;
-		end_ptr1 = cp + 1;
-		printf("####################> SHORTOPT '%c'", *cp);
 		return true;
 	};
 
@@ -242,17 +277,19 @@ void program_config::build_parser()
 
 	declare_transition("start", "dash", '-');
 	declare_transition("start", "non_option_arg", -1, non_option_start);
+
 	declare_transition("dash", "dash_dash", '-');
 	declare_transition("dash", "start", 0, dash_argument);
 
-	declare_transition("dash_dash", "non_option_arg2", 0);
-
 	declare_transition("parameter", "parameter", -1, parameter_start);
 	declare_transition("parameter", "start", 0, parameter_end);
+
 	declare_transition("non_option_arg", "non_option_arg", -1);
 	declare_transition("non_option_arg", "start", 0, non_option_end);
 
-	declare_transition("non_option_arg2", "non_option_arg2", -1, non_option_start);
+	declare_transition("dash_dash", "non_option_arg2", 0);
+	declare_transition("non_option_arg2", "non_option_arg2",
+	                   -1, non_option_start);
 	declare_transition("non_option_arg2", "non_option_arg2", 0, non_option_end);
 
 	for (const auto & opt : m_options)
@@ -429,12 +466,14 @@ bool program_config::parse_command_line(int argc, char ** argv)
 
 			new_state = state_cursor->name;
 
+#if 0
 			if (std::isprint(*arg))
 				printf("\t(%-20s + '%c') -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
 			else
 				printf("\t(%-20s + x%02x) -> %s\n", old_state.c_str(), *arg,
 				       new_state.c_str());
+#endif
 		} while (*arg++);
 	}
 

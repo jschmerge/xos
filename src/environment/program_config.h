@@ -120,7 +120,9 @@ class program_config
 	virtual std::string usage_message(const size_t width = 80) const;
 
 	virtual bool process_option(const config_option & opt,
-	                            const std::string value);
+	                            const std::string & param);
+
+	virtual bool process_option(const config_option & opt);
 
 	virtual void set_program_name(const char * program_path);
 
@@ -158,6 +160,7 @@ class program_config
 	const char * end_ptr1;
 	const char * begin_ptr2;
 	const char * end_ptr2;
+	const config_option * current_option;
 
 	std::string scratch1;
 	std::string scratch2;
