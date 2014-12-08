@@ -112,6 +112,8 @@ bool program_config::process_option(const config_option & opt)
 {
 	if (opt.m_long_switch == "help")
 		printf("%s", usage_message().c_str());
+	else
+		printf("Got option %s\n", opt.option_synopsis().c_str());
 
 	return true;
 }
@@ -251,8 +253,23 @@ void program_config::build_parser()
 
 		if (to.name == "short_no_param")
 		{
+			printf("processing option\n");
 			rc = process_option(*current_option);
 			current_option = nullptr;
+		}
+
+		return rc;
+	};
+
+	transit_cb no_param =
+	[this] (const state &, const state &, const char *) {
+		bool rc = false;
+
+		if (current_option != nullptr)
+		{
+				printf("processing option without optional param\n");
+				rc = process_option(*current_option);
+				current_option = nullptr;
 		}
 
 		return rc;
@@ -309,7 +326,7 @@ void program_config::build_parser()
 				declare_transition("short_opt_param", "parameter",
 				                   -1, parameter_start);
 
-				declare_transition("short_opt_param", "start", 0);
+				declare_transition("short_opt_param", "start", 0, no_param);
 
 			} else if (is_set(opt.m_argument_type, argument_type::required))
 			{
