@@ -27,6 +27,9 @@ enum class argument_type : uint32_t
 
 DEFINE_BITMASK_OPERATORS(argument_type, uint32_t);
 
+inline bool has_no_argument(argument_type e)
+	{ return ((e & argument_type::arg_mask) == argument_type::none); }
+
 struct state;
 
 typedef std::function<bool(const state &)> state_cb;
@@ -89,9 +92,12 @@ struct state
 {
 	state() : name() { }
 
-	state(const std::string & n, std::function<bool(state&)> on_ingress,
-	                             std::function<bool(state&)> on_egress)
+	state(const std::string & n,
+	      const config_option * opt,
+	      std::function<bool(state&)> on_ingress,
+	      std::function<bool(state&)> on_egress)
 	  : name(n)
+	  , option(opt)
 	  , enter(on_ingress)
 	  , exit(on_egress)
 		{ }
@@ -104,6 +110,7 @@ struct state
 	state & operator = (state && other) noexcept = delete;
 
 	std::string name;
+	const config_option * option;
 	std::function<bool(state&)> enter;
 	std::function<bool(state&)> exit;
 
@@ -140,9 +147,74 @@ class program_config
 	std::vector<config_option> m_options;
 	std::vector<std::string> nonoption_arguments;
 
+	bool non_option_start(const char * cp) {
+		bool rc = false;
+		if (begin_ptr2 == nullptr) {
+			begin_ptr2 = cp;
+			rc = true;
+		}
+		return rc;
+	}
+
+	bool non_option_end(const char * cp) {
+		bool rc = false;
+		end_ptr2 = cp;
+		if (begin_ptr2) {
+			nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
+			printf("####################> NON-OPTION = %s\n",
+			       nonoption_arguments.back().c_str());
+			begin_ptr2 = end_ptr2 = nullptr;
+			rc = true;
+		}
+		return rc;
+	};
+
+	bool parameter_start(const char * cp) {
+		bool rc = false;
+		if (begin_ptr2 == nullptr) {
+			begin_ptr2 = cp;
+			rc = true;
+		}
+		return rc;
+	}
+
+	bool parameter_end(const char * cp) {
+		bool rc = false;
+		end_ptr2 = cp;
+		if (begin_ptr2 && current_option) {
+			std::string s(begin_ptr2, end_ptr2);
+			printf("####################> PARAM = %s\n", s.c_str());
+			rc = process_option(*current_option, s);
+		}
+		current_option = nullptr;
+		begin_ptr1 = end_ptr1 = nullptr;
+		begin_ptr2 = end_ptr2 = nullptr;
+		return rc;
+	}
+
+	bool have_short_option(const char * cp) {
+		bool rc = false;
+		printf("####################> SHORTOPT '%c'\n", *cp);
+		begin_ptr1 = end_ptr1 = begin_ptr2 = end_ptr2 = nullptr;
+		current_option = nullptr;
+		for (const auto & opt : m_options) {
+			if (opt.m_short_switch == *cp) {
+				current_option = &opt;
+				rc = true;
+				break;
+			}
+		}
+		if (rc && has_no_argument(current_option->m_argument_type)) {
+			rc = process_option(*current_option);
+			current_option = nullptr;
+		}
+		return rc;
+	};
+
  private:
 
 	void declare_state(const std::string & statename,
+	                   const config_option * opt = nullptr,
                        state_cb on_ingress = nullptr,
                        state_cb on_egress = nullptr);
 
