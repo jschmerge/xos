@@ -30,9 +30,21 @@ class Test_Crc : public CppUnit::TestFixture
 	CPPUNIT_TEST(crcFile<uint64_t>);
 	CPPUNIT_TEST_SUITE_END();
 
+	static const std::string datum1;
+	static const std::string datum2;
+	static const T datum1crc;
+	static const T datum2crc;
+	static const T fileCrc;
+
+ protected:
+	int randomData;
+
  public:
+	Test_Crc() : randomData(-1) { }
+
 	~Test_Crc()
 	{
+		close(randomData);
 		unlink("data");
 	}
 
@@ -51,6 +63,7 @@ class Test_Crc : public CppUnit::TestFixture
 
 		if ( stat("data", &st) != 0 )
 		{
+			printf("Creating file\n");
 			if ((randomData = open("data", O_CREAT|O_RDWR| O_TRUNC, 0644)) < 0)
 				throw std::runtime_error("Fail");
 
@@ -66,16 +79,15 @@ class Test_Crc : public CppUnit::TestFixture
 			}
 
 			// printf("data created with size %d\n", size);
-		} else
-			if ((randomData = open("data", O_RDWR )) < 0)
-				throw std::runtime_error("Fail");
+		} else if ((randomData = open("data", O_RDWR )) < 0)
+			throw std::runtime_error("Fail");
 
 		lseek(randomData, 0, SEEK_SET);
 	}
 
 	void tearDown() {
 		close(randomData);
-		unlink("data");
+//		unlink("data");
 	}
 
 	void testThreadedCreation()
@@ -126,14 +138,6 @@ class Test_Crc : public CppUnit::TestFixture
 		
 		
 
-	static const std::string datum1;
-	static const std::string datum2;
-	static const T datum1crc;
-	static const T datum2crc;
-	static const T fileCrc;
-
- protected:
-	int randomData;
 };
 
 template<class T, T polynomial>
