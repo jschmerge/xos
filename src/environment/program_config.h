@@ -143,10 +143,6 @@ class program_config
 
 	void dump_state();
 
-	std::string m_program_name;
-	std::vector<config_option> m_options;
-	std::vector<std::string> nonoption_arguments;
-
 	bool non_option_start(const char * cp) {
 		bool rc = false;
 		if (begin_ptr2 == nullptr) {
@@ -211,8 +207,6 @@ class program_config
 		return rc;
 	};
 
- private:
-
 	void declare_state(const std::string & statename,
 	                   const config_option * opt = nullptr,
                        state_cb on_ingress = nullptr,
@@ -226,6 +220,11 @@ class program_config
 	void declare_option_states();
 
 	void build_parser();
+
+	std::string m_program_name;
+	std::vector<config_option> m_options;
+	std::vector<std::string> nonoption_arguments;
+
 	std::map<std::string, std::shared_ptr<state>> m_states;
 
 	const char * begin_ptr1;

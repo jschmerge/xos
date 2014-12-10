@@ -60,6 +60,10 @@ program_config::program_config(
 //////////////////////////////////////////////////////////////////////
 program_config::~program_config()
 {
+	for (auto s : m_states)
+	{
+		s.second->transitions.clear();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -454,8 +458,14 @@ bool program_config::parse_command_line(int argc, char ** argv)
 				if (state_cursor->enter) state_cursor->enter(*state_cursor);
 
 			} else
-				throw std::runtime_error(
-				        std::string("Bad option - ") + begin_ptr1);
+			{
+				if (state_cursor->name == "dash_dash")
+					throw std::runtime_error(
+					        std::string("Bad option - ") + arg);
+				else
+					throw std::runtime_error(
+					        std::string("Bad option - ") + *arg);
+			}
 
 			new_state = state_cursor->name;
 
