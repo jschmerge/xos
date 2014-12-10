@@ -13,6 +13,7 @@ unittest_OBJS     = cppunit-main.o \
                     unit_recursive_directory_iterator.o \
                     unit_path.o \
                     unit_path_iterator.o \
+                    unit_program_config.o \
                     unit_bithacks.o \
                     unit_average.o \
                     unit_bithacks.o \
@@ -28,13 +29,16 @@ TOPDIR            ?= ..
 include $(TOPDIR)/Makefile.include
 
 bin/unittest:          ../filesystem/lib/libfilesystem.a \
-                       ../codecvt/lib/libcodecvt.a
+                       ../codecvt/lib/libcodecvt.a \
+                       ../environment/lib/libenvironment.a
 
 bin/unittest.debug:    ../filesystem/lib/libfilesystem.debug.a \
-                       ../codecvt/lib/libcodecvt.debug.a
+                       ../codecvt/lib/libcodecvt.debug.a \
+                       ../environment/lib/libenvironment.debug.a
 
 bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a \
-                       ../codecvt/lib/libcodecvt.coverage.a
+                       ../codecvt/lib/libcodecvt.coverage.a \
+                       ../environment/lib/libenvironment.coverage.a
 
 check: $(TARGETS)
 	bin/unittest -p $(PROGRESS)

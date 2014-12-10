@@ -63,7 +63,6 @@ class Test_Crc : public CppUnit::TestFixture
 
 		if ( stat("data", &st) != 0 )
 		{
-			printf("Creating file\n");
 			if ((randomData = open("data", O_CREAT|O_RDWR| O_TRUNC, 0644)) < 0)
 				throw std::runtime_error("Fail");
 

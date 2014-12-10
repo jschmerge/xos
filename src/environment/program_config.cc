@@ -60,6 +60,12 @@ program_config::program_config(
 //////////////////////////////////////////////////////////////////////
 program_config::~program_config()
 {
+	destroy_parser();
+}
+
+//////////////////////////////////////////////////////////////////////
+void program_config::destroy_parser()
+{
 	for (auto s : m_states)
 	{
 		s.second->transitions.clear();
@@ -176,6 +182,8 @@ void program_config::build_parser()
 {
 	using namespace std::placeholders;
 
+	destroy_parser();
+
 	transit_cb n_o_start =
 	  std::bind(&program_config::non_option_start, this, _3);
 	transit_cb n_o_end =
@@ -211,7 +219,7 @@ void program_config::build_parser()
 	[this] (const state &, const state & to, const char * cp) {
 		begin_ptr1 = begin_ptr2 = end_ptr1 = end_ptr2 = nullptr;
 		begin_ptr1 = cp;
-		printf("LONG START (rest = %s)\n", cp);
+//		printf("LONG START (rest = %s)\n", cp);
 		if (to.option != nullptr) current_option = to.option;
 		return true;
 	};
@@ -309,10 +317,11 @@ void program_config::build_parser()
 				longopt += opt.m_long_switch[i];
 
 				
-				std::map<std::string, std::shared_ptr<state>>::iterator tmp;
-				if ((tmp = m_states.find(longopt)) != m_states.end())
+				auto tmp = m_states.find(longopt);
+				if (tmp != m_states.end())
+				{
 					tmp->second->option = nullptr;
-				else
+				} else
 					declare_state(longopt, &opt);
 
 				if (i == 0)
@@ -405,7 +414,8 @@ void program_config::build_parser()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool program_config::parse_command_line(int argc, char ** argv)
+bool program_config::parse_command_line(int argc,
+                                        const char * const * const argv)
 {
 	set_program_name(argv[0]);
 	build_parser();

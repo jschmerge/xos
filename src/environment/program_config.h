@@ -133,7 +133,7 @@ class program_config
 
 	virtual void set_program_name(const char * program_path);
 
-	bool parse_command_line(int argc, char ** argv);
+	bool parse_command_line(int argc, const char * const * const argv);
 
 	std::vector<std::string> params() const
 	{ return nonoption_arguments; }
@@ -141,6 +141,7 @@ class program_config
  protected:
 	program_config(const std::initializer_list<config_option> & list);
 
+	void destroy_parser();
 	void dump_state();
 
 	bool non_option_start(const char * cp) {
@@ -157,8 +158,8 @@ class program_config
 		end_ptr2 = cp;
 		if (begin_ptr2) {
 			nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
-			printf("####################> NON-OPTION = %s\n",
-			       nonoption_arguments.back().c_str());
+//			printf("####################> NON-OPTION = %s\n",
+//			       nonoption_arguments.back().c_str());
 			begin_ptr2 = end_ptr2 = nullptr;
 			rc = true;
 		}
@@ -179,7 +180,7 @@ class program_config
 		end_ptr2 = cp;
 		if (begin_ptr2 && current_option) {
 			std::string s(begin_ptr2, end_ptr2);
-			printf("####################> PARAM = %s\n", s.c_str());
+//			printf("####################> PARAM = %s\n", s.c_str());
 			rc = process_option(*current_option, s);
 		}
 		current_option = nullptr;
@@ -190,7 +191,7 @@ class program_config
 
 	bool have_short_option(const char * cp) {
 		bool rc = false;
-		printf("####################> SHORTOPT '%c'\n", *cp);
+//		printf("####################> SHORTOPT '%c'\n", *cp);
 		begin_ptr1 = end_ptr1 = begin_ptr2 = end_ptr2 = nullptr;
 		current_option = nullptr;
 		for (const auto & opt : m_options) {
