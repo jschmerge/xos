@@ -221,10 +221,8 @@ void program_config::build_parser()
 	transit_cb l_end =
 	[this] (const state &, const state &, const char * ) {
 		bool rc = false;
-		printf("======> l_end\n");
 		if (current_option)
 		{
-		printf("======> l_end2\n");
 			rc = process_option(*current_option);
 			current_option = nullptr;
 		}
@@ -368,18 +366,15 @@ void program_config::build_parser()
 			{
 				if (is_set(opt.m_argument_type, argument_type::optional))
 				{
-					printf("OPTIONAL\n");
 					declare_transition(prev_state->name,
 					                   terminus->transitions[0]->name,
 					                   0, l_end);
 				} else if (is_set(opt.m_argument_type, argument_type::required))
 				{
-					printf("REQUIRED\n");
 					declare_transition(prev_state->name,
 					                   terminus->transitions[0]->name, 0);
 				} else
 				{
-					printf("NONE\n");
 					declare_transition(prev_state->name,
 					                   terminus->transitions[0]->name,
 					                   0, l_end);
@@ -400,7 +395,9 @@ void program_config::build_parser()
 		}
 	}
 
+#ifndef NDEBUG
 	dump_state();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////
