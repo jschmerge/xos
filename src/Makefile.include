@@ -11,6 +11,7 @@ OBJCPY         ?= objcopy
 
 BINDIR          = bin
 DEPDIR          = .deps
+DOCDIR          = doc/html
 OBJDIR          = .objs
 LIBDIR          = $(shell pwd)/lib
 INCLUDEDIR      = $(shell pwd)/include
@@ -168,11 +169,12 @@ covreport: coverage.info
 tags: subdirs
 	ctags -R .
 
-# docs: doc/html
+docs: $(DOCDIR)
 
-# doc/html: doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
-#	rm -rf $@
-#	doxygen doc/Doxyfile
+$(DOCDIR): doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
+	rm -rf $@
+	$(Q)mkdir -p $@
+	doxygen doc/Doxyfile
 
 codecount:
 	@LC_ALL=en_GB.utf8 \
@@ -195,8 +197,8 @@ clean: subdirs
 	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) \
 	*.info core core.[0123456789]* a.out *.symbols
 
-docclean: subdirs
-	rm -rf doc/html
+docclean:
+	rm -rf $(DOCDIR)
 
 realclean: subdirs clean docclean
 	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags coverage-report
