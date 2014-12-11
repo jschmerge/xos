@@ -8,16 +8,33 @@
 
 #include "cppunit-header.h"
 
+class parent_config : public program_config
+{
+ public:
+	parent_config()
+	  : program_config({
+		{ argument_type::none,     "help",       'h', "Prints this message" },
+		{ argument_type::required, "required",   'r', "Required argument" },
+		{ argument_type::optional, "optional",   'o', "Optional argument" },
+		{ argument_type::none,     "longfakeout",'l', "Long opt w/o param" },
+		{ argument_type::none,      nullptr,     's', "short only opt" },
+		{ argument_type::optional, "long-only",   -1, "No short option" },
+	    })
+	{
+	}
+};
+
 class test_config : public program_config
 {
  public:
 	test_config()
 	  : program_config({
-		{ argument_type::none, "help", 'h', "Prints this message" },
-		{ argument_type::required, "required", 'r', "Required argument" },
-		{ argument_type::optional, "optional", 'o', "Optional argument" },
-		{ argument_type::none, "longfakeout",'l', "Long opt without param" },
-		{ argument_type::optional, "long-only", -1, "No short option" },
+		{ argument_type::none,     "help",       'h', "Prints this message" },
+		{ argument_type::required, "required",   'r', "Required argument" },
+		{ argument_type::optional, "optional",   'o', "Optional argument" },
+		{ argument_type::none,     "longfakeout",'l', "Long opt w/o param" },
+		{ argument_type::none,     nullptr,      's', "short only opt" },
+		{ argument_type::optional, "long-only",   -1, "No short option" },
 	    })
 	{
 	}
@@ -44,15 +61,27 @@ class Test_program_config : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_program_config);
 	CPPUNIT_TEST(construction);
+	CPPUNIT_TEST(overridable_functions);
 	CPPUNIT_TEST(short_options);
 	CPPUNIT_TEST(long_options);
+	CPPUNIT_TEST(non_options);
 	CPPUNIT_TEST(bad_options);
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
 	void construction()
 	{
+		parent_config pc;
 		test_config tc;
+	}
+
+	void overridable_functions()
+	{
+		parent_config pc;
+		const char * command_line[4] = { "prog_name", "-h", "-rxxx", "-l" };
+		CPPUNIT_ASSERT_NO_THROW(pc.parse_command_line(2, command_line));
+		CPPUNIT_ASSERT_NO_THROW(pc.parse_command_line(3, command_line));
+		CPPUNIT_ASSERT_NO_THROW(pc.parse_command_line(4, command_line));
 	}
 
 	void short_options()
@@ -75,7 +104,6 @@ class Test_program_config : public CppUnit::TestFixture
 		command_line[1] = "-l";
 		CPPUNIT_ASSERT_NO_THROW(tc.parse_command_line(2, command_line));
 		CPPUNIT_ASSERT_NO_THROW(tc.parse_command_line(3, command_line));
-
 	}
 
 	void long_options()
@@ -132,15 +160,25 @@ class Test_program_config : public CppUnit::TestFixture
 		bad_opts[1] = "--required";
 		CPPUNIT_ASSERT_THROW(tc.parse_command_line(2, bad_opts),
 		                     std::runtime_error);
-#if 0
-		const char * bad_opts2[3] = { "prog_name", "--foo", nullptr };
-		CPPUNIT_ASSERT_THROW(tc.parse_command_line(2, bad_opts2),
-		                     std::runtime_error);
+	}
 
-		const char * bad_opts3[3] = { "prog_name", "--long", nullptr };
-		CPPUNIT_ASSERT_THROW(tc.parse_command_line(2, bad_opts3),
-		                     std::runtime_error);
-#endif
+	void non_options()
+	{
+		test_config tc;
+
+		const char * command_line[3] = { "prog_name", "--", nullptr };
+		CPPUNIT_ASSERT_NO_THROW(tc.parse_command_line(2, command_line));
+		CPPUNIT_ASSERT(tc.params().size() == 0);
+
+		command_line[1] = "-";
+		CPPUNIT_ASSERT_NO_THROW(tc.parse_command_line(2, command_line));
+		CPPUNIT_ASSERT(tc.params().size() == 1);
+
+		tc.params().clear();
+		command_line[1] = "--";
+		command_line[2] = "--help";
+		CPPUNIT_ASSERT_NO_THROW(tc.parse_command_line(3, command_line));
+		CPPUNIT_ASSERT(tc.params().size() == 1);
 	}
 };
 
