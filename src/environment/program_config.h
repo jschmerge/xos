@@ -41,6 +41,12 @@ typedef std::function<bool(const state &,
 //////////////////////////////////////////////////////////////////////
 struct config_option
 {
+	config_option(argument_type t, const char * l_opt, char s_opt,
+	              const char * help)
+	  : config_option(t, std::string(l_opt != nullptr ? l_opt : ""), s_opt,
+	                  std::string(help != nullptr ? help : ""))
+	{ }
+
 	config_option(argument_type t, const std::string & l_opt, char s_opt,
 	              const std::string & help)
 	  : m_argument_type(t & argument_type::arg_mask)
@@ -135,8 +141,11 @@ class program_config
 
 	bool parse_command_line(int argc, const char * const * const argv);
 
-	std::vector<std::string> params() const
-	{ return nonoption_arguments; }
+	std::vector<std::string> & params()
+		{ return nonoption_arguments; }
+
+	const std::vector<std::string> & params() const
+		{ return nonoption_arguments; }
 
  protected:
 	program_config(const std::initializer_list<config_option> & list);
