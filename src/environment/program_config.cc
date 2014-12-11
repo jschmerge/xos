@@ -70,6 +70,8 @@ void program_config::destroy_parser()
 	{
 		s.second->transitions.clear();
 	}
+
+	m_states.clear();
 }
 
 //////////////////////////////////////////////////////////////////////
