@@ -12,6 +12,7 @@ class my_config : public program_config
 		{ argument_type::optional, "optional", 'o', "Optional argument" },
 		{ argument_type::none, "longfakeout",'l', "Long opt without param" },
 		{ argument_type::optional, "long-only", -1, "No short option" },
+		{ argument_type::optional, nullptr, 's', "short option" },
 	    })
 	{
 	}
