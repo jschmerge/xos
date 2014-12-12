@@ -10,6 +10,14 @@
 #include "utility/bitmask_operators.h"
 
 //////////////////////////////////////////////////////////////////////
+struct state;
+
+typedef std::function<bool(const state &)> state_cb;
+
+typedef std::function<bool(const state &,
+                           const state &,
+                           const char *)> transit_cb;
+
 enum class argument_type : uint32_t
 {
 	none                 = 0x00000000,
@@ -27,16 +35,9 @@ enum class argument_type : uint32_t
 
 DEFINE_BITMASK_OPERATORS(argument_type, uint32_t);
 
+//////////////////////////////////////////////////////////////////////
 inline bool has_no_argument(argument_type e)
 	{ return ((e & argument_type::arg_mask) == argument_type::none); }
-
-struct state;
-
-typedef std::function<bool(const state &)> state_cb;
-
-typedef std::function<bool(const state &,
-                           const state &,
-                           const char *)> transit_cb;
 
 //////////////////////////////////////////////////////////////////////
 struct config_option
@@ -99,13 +100,9 @@ struct state
 	state() : name() { }
 
 	state(const std::string & n,
-	      const config_option * opt,
-	      std::function<bool(state&)> on_ingress,
-	      std::function<bool(state&)> on_egress)
+	      const config_option * opt)
 	  : name(n)
 	  , option(opt)
-	  , enter(on_ingress)
-	  , exit(on_egress)
 		{ }
 
 	~state() { }
@@ -117,10 +114,9 @@ struct state
 
 	std::string name;
 	const config_option * option;
-	std::function<bool(state&)> enter;
-	std::function<bool(state&)> exit;
 
-	std::map<int, std::shared_ptr<state>> transitions;
+//	std::map<int, std::shared_ptr<state>> transitions;
+	std::map<int, state*> transitions;
 	std::map<int, transit_cb> transition_cb;
 };
 
@@ -150,86 +146,7 @@ class program_config
  protected:
 	program_config(const std::initializer_list<config_option> & list);
 
-	void destroy_parser();
 	void dump_state();
-
-	bool non_option_start(const char * cp) {
-		bool rc = false;
-		if (begin_ptr2 == nullptr) {
-			begin_ptr2 = cp;
-			rc = true;
-		}
-		return rc;
-	}
-
-	bool non_option_end(const char * cp) {
-		bool rc = false;
-		end_ptr2 = cp;
-		if (begin_ptr2) {
-			nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
-//			printf("####################> NON-OPTION = %s\n",
-//			       nonoption_arguments.back().c_str());
-			begin_ptr2 = end_ptr2 = nullptr;
-			rc = true;
-		}
-		return rc;
-	};
-
-	bool parameter_start(const char * cp) {
-		bool rc = false;
-		if (begin_ptr2 == nullptr) {
-			begin_ptr2 = cp;
-			rc = true;
-		}
-		return rc;
-	}
-
-	bool parameter_end(const char * cp) {
-		bool rc = false;
-		end_ptr2 = cp;
-		if (begin_ptr2 && current_option) {
-			std::string s(begin_ptr2, end_ptr2);
-//			printf("####################> PARAM = %s\n", s.c_str());
-			rc = process_option(*current_option, s);
-		}
-		current_option = nullptr;
-		begin_ptr1 = end_ptr1 = nullptr;
-		begin_ptr2 = end_ptr2 = nullptr;
-		return rc;
-	}
-
-	bool have_short_option(const char * cp) {
-		bool rc = false;
-//		printf("####################> SHORTOPT '%c'\n", *cp);
-		begin_ptr1 = end_ptr1 = begin_ptr2 = end_ptr2 = nullptr;
-		current_option = nullptr;
-		for (const auto & opt : m_options) {
-			if (opt.m_short_switch == *cp) {
-				current_option = &opt;
-				rc = true;
-				break;
-			}
-		}
-		if (rc && has_no_argument(current_option->m_argument_type)) {
-			rc = process_option(*current_option);
-			current_option = nullptr;
-		}
-		return rc;
-	};
-
-	void declare_state(const std::string & statename,
-	                   const config_option * opt = nullptr,
-                       state_cb on_ingress = nullptr,
-                       state_cb on_egress = nullptr);
-
-	void declare_transition(const std::string & old_state,
-                            const std::string & new_state,
-                            int value,
-	                        transit_cb on_transit = nullptr);
-
-	void declare_option_states();
-
-	void build_parser();
 
 	std::string m_program_name;
 	std::vector<config_option> m_options;
@@ -245,6 +162,26 @@ class program_config
 
 	std::string scratch1;
 	std::string scratch2;
+
+ private:
+	void destroy_parser();
+	bool non_option_start(const char * cp);
+	bool non_option_end(const char * cp);
+	bool parameter_start(const char * cp);
+	bool parameter_end(const char * cp);
+	bool have_short_option(const char * cp);
+
+	void declare_state(const std::string & statename,
+	                   const config_option * opt = nullptr);
+
+	void declare_transition(const std::string & old_state,
+                            const std::string & new_state,
+                            int value,
+	                        transit_cb on_transit = nullptr);
+
+	void declare_option_states();
+
+	void build_parser();
 
 };
 

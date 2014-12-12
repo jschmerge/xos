@@ -75,6 +75,82 @@ void program_config::destroy_parser()
 }
 
 //////////////////////////////////////////////////////////////////////
+bool program_config::non_option_start(const char * cp)
+{
+	bool rc = false;
+	if (begin_ptr2 == nullptr)
+	{
+		begin_ptr2 = cp;
+		rc = true;
+	}
+	return rc;
+}
+
+//////////////////////////////////////////////////////////////////////
+bool program_config::non_option_end(const char * cp)
+{
+	bool rc = false;
+	end_ptr2 = cp;
+	if (begin_ptr2)
+	{
+		nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
+		begin_ptr2 = end_ptr2 = nullptr;
+		rc = true;
+	}
+	return rc;
+}
+
+//////////////////////////////////////////////////////////////////////
+bool program_config::parameter_start(const char * cp)
+{
+	bool rc = false;
+	if (begin_ptr2 == nullptr)
+	{
+		begin_ptr2 = cp;
+		rc = true;
+	}
+	return rc;
+}
+
+//////////////////////////////////////////////////////////////////////
+bool program_config::parameter_end(const char * cp) {
+	bool rc = false;
+	end_ptr2 = cp;
+	if (begin_ptr2 && current_option)
+	{
+		std::string s(begin_ptr2, end_ptr2);
+		rc = process_option(*current_option, s);
+	}
+	current_option = nullptr;
+	begin_ptr1 = end_ptr1 = nullptr;
+	begin_ptr2 = end_ptr2 = nullptr;
+	return rc;
+}
+
+//////////////////////////////////////////////////////////////////////
+bool program_config::have_short_option(const char * cp)
+{
+	bool rc = false;
+	begin_ptr1 = end_ptr1 = begin_ptr2 = end_ptr2 = nullptr;
+	current_option = nullptr;
+	for (const auto & opt : m_options)
+	{
+		if (opt.m_short_switch == *cp)
+		{
+			current_option = &opt;
+			rc = true;
+			break;
+		}
+	}
+	if (rc && has_no_argument(current_option->m_argument_type))
+	{
+		rc = process_option(*current_option);
+		current_option = nullptr;
+	}
+	return rc;
+}
+
+//////////////////////////////////////////////////////////////////////
 std::string program_config::usage_message(const size_t termWidth) const
 {
 	std::string usage;
@@ -147,12 +223,10 @@ void program_config::set_program_name(const char * program_path)
 //////////////////////////////////////////////////////////////////////
 void
 program_config::declare_state(const std::string & statename,
-	                          const config_option * opt,
-	                          std::function<bool(const state &)> on_ingress,
-	                          std::function<bool(const state &)> on_egress)
+	                          const config_option * opt)
 {
 	m_states[statename] =
-	  std::make_shared<state>(statename, opt, on_ingress, on_egress);
+	  std::make_shared<state>(statename, opt);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -175,7 +249,7 @@ void program_config::declare_transition(const std::string & old_state,
 	}
 #endif
 
-	m_states.at(old_state)->transitions[value] = m_states.at(new_state);
+	m_states.at(old_state)->transitions[value] = m_states.at(new_state).get();
 	m_states.at(old_state)->transition_cb[value] = on_transit;
 }
 
@@ -207,13 +281,10 @@ void program_config::build_parser()
 	transit_cb no_param =
 	[this] (const state &, const state &, const char *) {
 		bool rc = false;
-
-		if (current_option != nullptr)
-		{
+		if (current_option != nullptr) {
 				rc = process_option(*current_option);
 				current_option = nullptr;
 		}
-
 		return rc;
 	};
 
@@ -221,7 +292,6 @@ void program_config::build_parser()
 	[this] (const state &, const state & to, const char * cp) {
 		begin_ptr1 = begin_ptr2 = end_ptr1 = end_ptr2 = nullptr;
 		begin_ptr1 = cp;
-//		printf("LONG START (rest = %s)\n", cp);
 		if (to.option != nullptr) current_option = to.option;
 		return true;
 	};
@@ -422,7 +492,7 @@ bool program_config::parse_command_line(int argc,
 	set_program_name(argv[0]);
 	build_parser();
 
-	auto state_cursor = m_states["start"];
+	auto state_cursor = m_states["start"].get();
 
 #ifndef NDEBUG
 	printf("------------------------------------------------------------\n");
@@ -444,8 +514,6 @@ bool program_config::parse_command_line(int argc,
 			if (state_cursor->transitions.find(*arg)
 			      != state_cursor->transitions.end())
 			{
-				if (state_cursor->exit) state_cursor->exit(*state_cursor);
-
 				if (state_cursor->transition_cb[*arg])
 					state_cursor->transition_cb[*arg](
 						*state_cursor,
@@ -453,13 +521,10 @@ bool program_config::parse_command_line(int argc,
 						arg);
 
 				state_cursor = state_cursor->transitions.at(*arg);
-				if (state_cursor->exit) state_cursor->enter(*state_cursor);
 
 			} else if (state_cursor->transitions.find(-1)
 			             != state_cursor->transitions.end())
 			{
-				if (state_cursor->exit) state_cursor->exit(*state_cursor);
-
 				if (state_cursor->transition_cb[-1])
 					state_cursor->transition_cb[-1](
 						*state_cursor,
@@ -467,7 +532,6 @@ bool program_config::parse_command_line(int argc,
 						arg);
 
 				state_cursor = state_cursor->transitions.at(-1);
-				if (state_cursor->enter) state_cursor->enter(*state_cursor);
 
 			} else
 			{
@@ -505,8 +569,8 @@ bool program_config::parse_command_line(int argc,
 		} while (*arg++);
 	}
 
-	if ( ! ( (state_cursor == m_states["start"])
-	       || (state_cursor == m_states["non_option_arg2"]) ) )
+	if ( ! ( (state_cursor == m_states["start"].get())
+	       || (state_cursor == m_states["non_option_arg2"].get()) ) )
 	{
 		throw std::runtime_error(std::string("Option '")
 		                        + current_option->option_synopsis()
