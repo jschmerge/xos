@@ -2,24 +2,16 @@
 #include <cstdio>
 #include <limits>
 #include <type_traits>
-
-#define USE_INLINE_ASM 1
-
-#include "utility/bithacks.h"
-
 #include <iostream>
 #include <stack>
 #include <random>
 
+
+#include "utility/bithacks.h"
+
 #include "cppunit-header.h"
 
-template <class T>
-constexpr size_t  bitsIn()
-{
-	return std::numeric_limits<T>::digits;
-}
-
-template <class T>
+template <typename T>
 void printBits(T x)
 {
 	for (int i = ((sizeof(x) * 8) - 1); i >= 0; --i)
@@ -38,13 +30,72 @@ void printBits(T x)
 	putchar('\n');
 }
 
+class Test_bit_width : public CppUnit::TestFixture
+{
+	CPPUNIT_TEST_SUITE(Test_bit_width);
+	CPPUNIT_TEST(test_width<char>);
+	CPPUNIT_TEST(test_width<signed char>);
+	CPPUNIT_TEST(test_width<unsigned char>);
+	CPPUNIT_TEST(test_width<short>);
+	CPPUNIT_TEST(test_width<unsigned short>);
+	CPPUNIT_TEST(test_width<int>);
+	CPPUNIT_TEST(test_width<unsigned int>);
+	CPPUNIT_TEST(test_width<long>);
+	CPPUNIT_TEST(test_width<unsigned long>);
+	CPPUNIT_TEST(test_width<long long>);
+	CPPUNIT_TEST(test_width<unsigned long long>);
+	CPPUNIT_TEST(test_width<float>);
+	CPPUNIT_TEST(test_width<double>);
+	CPPUNIT_TEST(test_width<long double>);
+	CPPUNIT_TEST_SUITE_END();
+ protected:
+	template <typename T>
+	void test_width()
+	{
+		T val = 0;
+		CPPUNIT_ASSERT(bit_width<T>() == (sizeof(T) * 8));
+		CPPUNIT_ASSERT(bit_width(val) == (sizeof(T) * 8));
+	}
+};
+
+class Test_pop_count : public CppUnit::TestFixture
+{
+	CPPUNIT_TEST_SUITE(Test_pop_count);
+	CPPUNIT_TEST(single_bit<char>);
+	CPPUNIT_TEST(single_bit<signed char>);
+	CPPUNIT_TEST(single_bit<unsigned char>);
+	CPPUNIT_TEST(single_bit<short>);
+	CPPUNIT_TEST(single_bit<unsigned short>);
+	CPPUNIT_TEST(single_bit<int>);
+	CPPUNIT_TEST(single_bit<unsigned int>);
+	CPPUNIT_TEST(single_bit<long>);
+	CPPUNIT_TEST(single_bit<unsigned long>);
+	CPPUNIT_TEST(single_bit<long long>);
+	CPPUNIT_TEST(single_bit<unsigned long long>);
+	CPPUNIT_TEST_SUITE_END();
+
+ protected:
+	template <typename T>
+	  void single_bit()
+	{
+		const T one = 1; // used to avoid unwanted implict conversion
+
+		for (size_t i = 0; i < bit_width<T>(); ++i)
+		{
+			T value = (one << i);
+			size_t res = pop_count<T>(value);
+			CPPUNIT_ASSERT(res == 1);
+		}
+	}
+};
+
 class Test_bitReverse : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_bitReverse);
-	CPPUNIT_TEST(singleBit<uint8_t>);
-	CPPUNIT_TEST(singleBit<uint16_t>);
-	CPPUNIT_TEST(singleBit<uint32_t>);
-	CPPUNIT_TEST(singleBit<uint64_t>);
+	CPPUNIT_TEST(single_bit<uint8_t>);
+	CPPUNIT_TEST(single_bit<uint16_t>);
+	CPPUNIT_TEST(single_bit<uint32_t>);
+	CPPUNIT_TEST(single_bit<uint64_t>);
 
 	CPPUNIT_TEST(randomPattern<uint8_t>);
 	CPPUNIT_TEST(randomPattern<uint16_t>);
@@ -53,12 +104,12 @@ class Test_bitReverse : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
-	template<class T> void singleBit()
+	template<typename T> void single_bit()
 	{
 		T x = 1, y = 1;
 		y <<= ((sizeof(x) * 8) - 1);
 
-		for (size_t i = 0; i < bitsIn<T>(); ++i)
+		for (size_t i = 0; i < bit_width<T>(); ++i)
 		{
 			CPPUNIT_ASSERT(bitReverse(x) == y);
 			CPPUNIT_ASSERT(bitReverse(bitReverse(x)) == x);
@@ -67,7 +118,7 @@ class Test_bitReverse : public CppUnit::TestFixture
 		}
 	}
 
-	template<class T> void randomPattern()
+	template<typename T> void randomPattern()
 	{
 		std::stack<bool> s;
 		std::default_random_engine engine;
@@ -79,7 +130,7 @@ class Test_bitReverse : public CppUnit::TestFixture
 			T x = dist(engine);
 			const T one = 1;
 
-			for (size_t i = 0; i < bitsIn<T>(); ++i)
+			for (size_t i = 0; i < bit_width<T>(); ++i)
 			{
 				if (x & (one << i))
 					s.push(true);
@@ -91,7 +142,7 @@ class Test_bitReverse : public CppUnit::TestFixture
 
 			CPPUNIT_ASSERT(x == bitReverse(rx));
 
-			for (size_t i = 0; i < bitsIn<T>(); ++i)
+			for (size_t i = 0; i < bit_width<T>(); ++i)
 			{
 				if (rx & (one << i))
 					CPPUNIT_ASSERT(s.top());
@@ -104,15 +155,13 @@ class Test_bitReverse : public CppUnit::TestFixture
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(Test_bitReverse);
-
 class Test_byteReverse : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_byteReverse);
-	CPPUNIT_TEST(singleBit<uint8_t>);
-	CPPUNIT_TEST(singleBit<uint16_t>);
-	CPPUNIT_TEST(singleBit<uint32_t>);
-	CPPUNIT_TEST(singleBit<uint64_t>);
+	CPPUNIT_TEST(single_bit<uint8_t>);
+	CPPUNIT_TEST(single_bit<uint16_t>);
+	CPPUNIT_TEST(single_bit<uint32_t>);
+	CPPUNIT_TEST(single_bit<uint64_t>);
 
 	CPPUNIT_TEST(randomPattern<uint8_t>);
 	CPPUNIT_TEST(randomPattern<uint16_t>);
@@ -121,21 +170,21 @@ class Test_byteReverse : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
-	template <class T>
+	template <typename T>
 	static T getByte (T v, size_t i)
 	{
 		const T mask = 0xFF;
 //		std::cout << "-> " << i << ": "<< std::hex << v << ' ';
-		T ret = (v & (mask << (bitsIn<uint8_t>() * i)));
+		T ret = (v & (mask << (bit_width<uint8_t>() * i)));
 //		std::cout << std::hex << ret << ' ';
-		ret >>= (bitsIn<uint8_t>() * i);
+		ret >>= (bit_width<uint8_t>() * i);
 //		std::cout << ret << std::endl;
 		return ret;
 	}
 
-	template<class T> void singleBit()
+	template<typename T> void single_bit()
 	{
-		for (size_t i = 0; i < (bitsIn<uint8_t>()); ++i)
+		for (size_t i = 0; i < (bit_width<uint8_t>()); ++i)
 		{
 			T x = 1;
 			x <<= i;
@@ -156,7 +205,7 @@ class Test_byteReverse : public CppUnit::TestFixture
 		}
 	}
 
-	template<class T> void randomPattern()
+	template<typename T> void randomPattern()
 	{
 		std::stack<uint8_t> s;
 		std::default_random_engine engine;
@@ -203,8 +252,6 @@ class Test_byteReverse : public CppUnit::TestFixture
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(Test_byteReverse);
-
 class Test_numLeadingZeros : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_numLeadingZeros);
@@ -225,33 +272,33 @@ class Test_numLeadingZeros : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE_END();
 
  protected:
-	template<class T>
+	template<typename T>
 	void nlzTest()
 	{
 		T value = 1;
 
-		for (size_t i = 0; i < bitsIn<T>(); ++i)
+		for (size_t i = 0; i < bit_width<T>(); ++i)
 		{
-			size_t correctValue = bitsIn<T>() - i - 1;
+			size_t correctValue = bit_width<T>() - i - 1;
 
 			CPPUNIT_ASSERT(nlz<T>(value << i) == correctValue);
 		}
 	}
 
-	template<class T>
+	template<typename T>
 	void numLeadingZerosTest()
 	{
 		T value = 1;
 
-		for (size_t i = 0; i < bitsIn<T>(); ++i)
+		for (size_t i = 0; i < bit_width<T>(); ++i)
 		{
-			size_t correctValue = bitsIn<T>() - i - 1;
+			size_t correctValue = bit_width<T>() - i - 1;
 
 			CPPUNIT_ASSERT(numLeadingZeros<T>(value << i) == correctValue);
 		}
 	}
 
-	template<class T>
+	template<typename T>
 	void testLog()
 	{
 		T value = 1;
@@ -278,5 +325,9 @@ class Test_numLeadingZeros : public CppUnit::TestFixture
 	}
 };
 
+CPPUNIT_TEST_SUITE_REGISTRATION(Test_bit_width);
+CPPUNIT_TEST_SUITE_REGISTRATION(Test_pop_count);
+CPPUNIT_TEST_SUITE_REGISTRATION(Test_bitReverse);
+CPPUNIT_TEST_SUITE_REGISTRATION(Test_byteReverse);
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_numLeadingZeros);
 

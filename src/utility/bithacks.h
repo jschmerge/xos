@@ -6,24 +6,76 @@
 #include <limits>
 #include <type_traits>
 
+///
+/// bit_width returns the number of bits in a given integral type - this
+/// unfortunately isn't defined in std::numeric_limits for some reason
+///
+template <typename T>         
+  constexpr size_t bit_width(const T & = 0)
+{    
+    return (sizeof(T) << 3);
+}
 
+///
 /// pop_count gives the number of one-bits in an integral value
-template<typename T> size_t pop_count(T value)
-	{ return __builtin_popcount(static_cast<unsigned int>(value)); }
+/// the integer is cast to an unsigned value, then possibly promoted to
+/// an integer
+///
+/// This function maps to one of three compiler intrinsic functions:
+///   int __builtin_popcount (unsigned int x)
+///   int __builtin_popcountl (unsigned long)
+///   int __builtin_popcountll (unsigned long long)
+///
+template <typename T>
+  inline typename std::enable_if<std::is_integral<T>::value, size_t>::type
+    pop_count(const T & value)
+{
+	// need to first cast to unsigned type with the same width
+	typedef typename std::make_unsigned<T>::type utype;
+	utype uval = static_cast<utype>(value);
+	// ... then do a possible extension
+	return pop_count(
+	  static_cast<typename std::common_type<utype, unsigned int>::type>(uval));
+}
 
-template <> inline size_t pop_count(uint32_t value)
+/// Specialization to call __builtin_popcount
+template <>
+  inline size_t pop_count(const unsigned int & value)
+	{ return __builtin_popcount(value); }
+
+/// Specialization to call __builtin_popcountl
+template <>
+  inline size_t pop_count(const unsigned long & value)
 	{ return __builtin_popcountl(value); }
 
-template <> inline size_t pop_count(uint64_t value)
-	{ return __builtin_popcountl(value); }
-
-template <> inline size_t pop_count(unsigned long long value)
+/// Specialization to call __builtin_popcountll
+template <>
+  inline size_t pop_count(const unsigned long long & value)
 	{ return __builtin_popcountll(value); }
 
-template<class T> size_t nlz(T value)
+#include <cassert>
+#include <iostream>
+
+template <class T>
+T fillTrailingZeros(const T & value, size_t iter_count = 1)
 {
-	for (unsigned i = 1; i < (sizeof(value) << 3); i <<= 1)
+	std::cout << sizeof(T) << "#########> " << iter_count << std::endl;
+	return (iter_count <= bit_width<T>() ? value | fillTrailingZeros(value >> iter_count, iter_count << 1) : value >> );
+}
+
+template<class T>
+  inline size_t nlz(T value)
+{
+	T tmp = fillTrailingZeros(value);
+
+	for (size_t i = 1; i < bit_width(value); i <<= 1)
 		value = value | (value >> i);
+
+	if (tmp != value)
+	{
+		std::cout << std::hex << (int)tmp << " " << (int)value << std::endl;
+		assert(tmp == value);
+	}
 
 	return pop_count(static_cast<T>(~value));
 }

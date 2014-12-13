@@ -41,7 +41,8 @@ bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a \
                        ../environment/lib/libenvironment.coverage.a
 
 check: $(TARGETS)
-	bin/unittest -p $(PROGRESS)
+	if [ -n "$(TEST)" ]; then bin/unittest -t $(TEST) -p $(PROGRESS); \
+	else bin/unittest -p $(PROGRESS); fi
 
 debug-check: $(DBG_TARGETS)
 	bin/unittest.debug -p $(PROGRESS)
