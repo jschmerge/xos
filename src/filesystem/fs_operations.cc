@@ -93,12 +93,20 @@ path canonical(const path & p, const path & base, std::error_code & ec)
 	char resolved[PATH_MAX];
 	char * rc = nullptr;
 
+	errno = 0;
+
 	// XXX - replace this with hand-rolled logic
-	if ((rc = realpath(ret.c_str(), resolved)) == nullptr)
+	if (  ( (rc = realpath(ret.c_str(), resolved)) == nullptr)
+	   || (errno != 0) )
 	{
 		ec = make_errno_ec();
 		ret.clear();
 	} else
+	{
+		ret = resolved;
+	}
+#if 0
+ else
 	{
 		ret = resolved;
 		if (!exists(ret))
@@ -107,6 +115,7 @@ path canonical(const path & p, const path & base, std::error_code & ec)
 			ret.clear();
 		}
 	}
+#endif
 
 	return ret;
 }

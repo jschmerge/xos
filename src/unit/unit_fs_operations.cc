@@ -192,25 +192,28 @@ class Test_fs_operations : public CppUnit::TestFixture
 
 	void canonical()
 	{
+		fs::create_directory_symlink("/root/.ssh", "/tmp/badlink");
+		fs::path bad_link{"/tmp/badlink"};
 		fs::path bad_path{"/badpath"};
 		fs::path full_path{"/usr/local"};
 		fs::path base_path{"/usr"};
-		fs::path a{"local/../local/bin/.."};
-		fs::path b{"/usr/local/../../../../usr/./local"};
+		fs::path a1{"local/../local/bin/.."};
+		fs::path a2{"/usr/local/../../../../usr/./local"};
 
+		CPPUNIT_ASSERT_THROW(fs::canonical(bad_link), fs::filesystem_error);
 		CPPUNIT_ASSERT_THROW(fs::canonical(bad_path), fs::filesystem_error);
 
-		CPPUNIT_ASSERT(fs::canonical(a, base_path) == full_path);
-		CPPUNIT_ASSERT(fs::canonical(b, base_path) == full_path);
+		CPPUNIT_ASSERT(fs::canonical(a1, base_path) == full_path);
+		CPPUNIT_ASSERT(fs::canonical(a2, base_path) == full_path);
 
 		std::error_code ec;
 		current_path(base_path, ec);
 		CPPUNIT_ASSERT(!ec);
-		CPPUNIT_ASSERT(fs::canonical(a, ec) == full_path);
+		CPPUNIT_ASSERT(fs::canonical(a1, ec) == full_path);
 		CPPUNIT_ASSERT(!ec);
-		CPPUNIT_ASSERT(fs::canonical(b, ec) == full_path);
+		CPPUNIT_ASSERT(fs::canonical(a2, ec) == full_path);
 		CPPUNIT_ASSERT(!ec);
-		
+		fs::remove(bad_link);
 	}
 
 	void copy_file()

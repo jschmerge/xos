@@ -56,28 +56,28 @@ template <>
 #include <cassert>
 #include <iostream>
 
-template <class T>
-T fillTrailingZeros(const T & value, size_t iter_count = 1)
+template<class T>
+constexpr T fill_trailing_bits(const T & value, size_t shift = 1)
 {
-	std::cout << sizeof(T) << "#########> " << iter_count << std::endl;
-	return (iter_count <= bit_width<T>() ? value | fillTrailingZeros(value >> iter_count, iter_count << 1) : value >> );
+	return ( (shift < bit_width(value)) ?
+	         fill_trailing_bits(static_cast<T>(value | (value >> shift)),
+	                            shift << 1) :
+	         value);
 }
 
 template<class T>
-  inline size_t nlz(T value)
+constexpr size_t nlz(T value)
 {
-	T tmp = fillTrailingZeros(value);
-
-	for (size_t i = 1; i < bit_width(value); i <<= 1)
+#if 0
+	T tmp = fill_trailing_bits(value);
+	for (unsigned i = 1; i < (sizeof(value) << 3); i <<= 1)
 		value = value | (value >> i);
 
-	if (tmp != value)
-	{
-		std::cout << std::hex << (int)tmp << " " << (int)value << std::endl;
-		assert(tmp == value);
-	}
+	assert(tmp == value);
+#endif
 
-	return pop_count(static_cast<T>(~value));
+	//return pop_count(static_cast<T>(~value));
+	return pop_count(static_cast<T>(~fill_trailing_bits(value)));
 }
 
 template <class T>
