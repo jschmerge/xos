@@ -14,6 +14,7 @@ unittest_OBJS     = cppunit-main.o \
                     unit_path.o \
                     unit_path_iterator.o \
                     unit_program_config.o \
+                    unit_timeutil.o \
                     unit_bithacks.o \
                     unit_average.o \
                     unit_bithacks.o \

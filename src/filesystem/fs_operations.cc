@@ -716,7 +716,7 @@ file_time_type last_write_time(const path & p, std::error_code & ec) noexcept
 	ec.clear();
 
 	if (stat(p.c_str(), &st) == 0)
-		ret = from_timespec<file_time_type::clock,
+		ret = to_timepoint<file_time_type::clock,
 		                    file_time_type::duration>(st.st_mtim);
 	else
 		ec = make_errno_ec();

@@ -8,23 +8,44 @@
 #include <cassert>
 #include <system_error>
 
+#include "utility/util.h"
+
 //////////////////////////////////////////////////////////////////////
-template<clockid_t SOURCE>
-struct PosixClock
+enum class clock_source : clockid_t
+{
+	realtime = CLOCK_REALTIME,
+	course_realtime = CLOCK_REALTIME_COARSE,
+	monotonic = CLOCK_MONOTONIC,
+	course_monotonic = CLOCK_MONOTONIC_COARSE,
+	raw_monotonic = CLOCK_MONOTONIC_RAW,
+	boot_time = CLOCK_BOOTTIME,
+	process_cpu_time = CLOCK_PROCESS_CPUTIME_ID,
+	thread_cpu_time = CLOCK_THREAD_CPUTIME_ID,
+};
+
+//////////////////////////////////////////////////////////////////////
+template<clock_source SOURCE>
+struct posix_clock
 {
 	typedef std::chrono::nanoseconds duration;
 	typedef duration::rep rep;
 	typedef duration::period period;
-	typedef std::chrono::time_point<PosixClock, duration> time_point;
+	typedef std::chrono::time_point<posix_clock, duration> time_point;
 
-	static_assert(PosixClock::duration::min() < PosixClock::duration::zero(),
+	static_assert(posix_clock::duration::min() <
+	                posix_clock::duration::zero(),
 	              "a clock's minimum duration cannot be less than its epoch");
 
-	static constexpr bool is_steady = (SOURCE == CLOCK_MONOTONIC_RAW);
+	static constexpr
+	bool is_steady = (  (SOURCE == clock_source::monotonic)
+	                 || (SOURCE == clock_source::course_monotonic)
+	                 || (SOURCE == clock_source::raw_monotonic));
 
 	static time_point now();
+	static duration resolution();
 
-	static const clockid_t clockSource = SOURCE;
+	static const clock_source source = SOURCE;
+
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -47,8 +68,7 @@ to_timespec(const std::chrono::time_point<CLK, DUR> & t) noexcept
 
 //////////////////////////////////////////////////////////////////////
 template <class DURATION>
-struct timespec
-to_timespec(const DURATION & d) noexcept
+struct timespec to_timespec(const DURATION & d) noexcept
 {
 	using std::chrono::seconds;
 	using std::chrono::nanoseconds;
@@ -65,7 +85,7 @@ to_timespec(const DURATION & d) noexcept
 //////////////////////////////////////////////////////////////////////
 template <class CLK, class DUR>
 std::chrono::time_point<CLK, DUR>
-from_timespec(const struct timespec & ts) noexcept
+to_timepoint(const struct timespec & ts) noexcept
 {
 	DUR d = ( std::chrono::seconds(ts.tv_sec)
 	        + std::chrono::nanoseconds(ts.tv_nsec));
@@ -74,21 +94,41 @@ from_timespec(const struct timespec & ts) noexcept
 }
 
 //////////////////////////////////////////////////////////////////////
-template<clockid_t SRC>
-typename PosixClock<SRC>::time_point PosixClock<SRC>::now()
+template <typename DURATION>
+DURATION to_duration(const struct timespec & ts) noexcept
+{
+	DURATION d = ( std::chrono::seconds(ts.tv_sec)
+	             + std::chrono::nanoseconds(ts.tv_nsec));
+
+	return d;
+}
+
+//////////////////////////////////////////////////////////////////////
+template<clock_source SRC>
+typename posix_clock<SRC>::time_point posix_clock<SRC>::now()
 {
 	struct timespec ts;
 	int rc = 0;
 
-	if ((rc = clock_gettime(clockSource, &ts)) != 0)
-		throw std::system_error(errno, std::system_category(), "clock_gettime");
+	if ((rc = clock_gettime(static_cast<clockid_t>(source), &ts)) != 0)
+		throw make_syserr("clock_gettime failed");
 
-	time_point ret = from_timespec<PosixClock<SRC>,
-	                                      PosixClock<SRC>::duration>(ts);
+	time_point ret = to_timepoint<posix_clock<SRC>,
+	                              posix_clock<SRC>::duration>(ts);
 
 	return ret;
 }
 
+//////////////////////////////////////////////////////////////////////
+template <clock_source SRC>
+typename posix_clock<SRC>::duration posix_clock<SRC>::resolution()
+{
+	struct timespec ts = { 0, 0 };
+	if (clock_getres(static_cast<clockid_t>(source), &ts) != 0)
+		throw make_syserr("clock_getres failed");
+
+	return to_duration<duration>(ts);
+}
 #if 0
 //////////////////////////////////////////////////////////////////////
 inline uint64_t getTSC()
