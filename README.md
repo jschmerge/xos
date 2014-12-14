@@ -43,18 +43,19 @@ That isn't a primary goal, however.
 
 ## What is actually here now?
 
-Not much, I'm afraid. Mostly what exists are utility classes that I've gathered
-from various projects I have worked on. A good example of such a class is
-PosixClock&lt;T&gt;, which implements a clocksource templated on the standard
-integral constants that clock\_gettime uses for identifying clock sources.
+As of December 2014, there's a number of useful library pieces here that can
+be used to simplify some common programming tasks. The development of
+components of this project is following a willy-nilly 'whatever I find useful
+to add' approach.
 
-There's also some useful error handling routines, including utility functions
-that make throwing a std::system\_error less of a nuisance, and for getting
-a stack trace when exceptions are thrown.
+There's a lot of code that is in varying states of completion and maturity;
+below is a list of the components that feel more mature to me:
 
-Additionally, some of the work to abstract file descriptors into objects has
-been started, and in the process of tackling that I've found it necessary
-to create an implementation of the n4100 std::filesystem library.
+* codecvt - This is an implementation of the missing std::codecvt\<char16_t\>
+and std::codecvt\<char32_t\> class specializations for the gcc standard
+library, along with the missing codecvt\_utf8, codecvt\_utf16 and
+codecvt\_utf8\_utf16 additions for C++11/14.
+
 
 ## Current Status and Roadmap
 
