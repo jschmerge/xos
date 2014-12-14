@@ -51,11 +51,43 @@ to add' approach.
 There's a lot of code that is in varying states of completion and maturity;
 below is a list of the components that feel more mature to me:
 
-* codecvt - This is an implementation of the missing std::codecvt\<char16_t\>
-and std::codecvt\<char32_t\> class specializations for the gcc standard
-library, along with the missing codecvt\_utf8, codecvt\_utf16 and
-codecvt\_utf8\_utf16 additions for C++11/14.
+* src/codecvt - This is an implementation of the missing
+std::codecvt\<char16_t\> and std::codecvt\<char32_t\> class specializations
+for the gcc standard library (libstdc++), along with the missing
+codecvt\_utf8, codecvt\_utf16 and codecvt\_utf8\_utf16 additions for C++11/14.
 
+* src/filesystem - This is a near complete implementation of the
+std::filesystem proposal, as detailed in N4100.
+
+* src/environment - This is an object-oriented replacement for GNU getopt
+and getopt\_long. It is still very new code, but is based on something I
+wrote and have been copying into many new programs.
+
+* src/time - A small collection of functions that map the low-level Posix
+clock\_gettime calls in an std::chrono::clock style interface, and functions
+to convert std::chrono::time\_point and std::chrono::duration to and from
+struct timespec's. This code was originally written by me to work around
+older versions of GCC not having a working
+std::chrono::high\_resolution\_clock, so it is less useful than it once was,
+but still nice to have an interface to std::chrono that allows the direct
+specification of which system clock you wish to refer to.
+
+* src/error - Contains some code that can be linked into an application to
+provide a stack trace of from where an exception was thrown. This is not meant
+to be used by a regular application, but to be linked in as an aid in debugging
+where an exception originated.
+
+* src/utility/average.h - A class to accummulate an average, standard
+deviation and variance from data, designed to provide O(1) sampling and
+average computation.
+
+* src/utility/bithacks.h - A collection of bit manipulation functions that
+leverage compiler intrinsics and inline-asm to provide a nice interface to use
+from C++ programs. Much of the code here has been adapted from the book
+'Hacker's Delight'.
+
+* src/utility/util.h - A lose federation of very useful functions for string
+manipulation, exception generation, and RAII wrapping of C library functions.
 
 ## Current Status and Roadmap
 
