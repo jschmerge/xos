@@ -800,9 +800,13 @@ path read_symlink(const path & p, std::error_code & ec)
 	sz = readlink(p.c_str(), buffer, PATH_MAX);
 
 	if (sz <= 0)
+	{
 		ec = make_errno_ec();
-	else
+	} else
+	{
+		buffer[sz] = 0;
 		ret = buffer;
+	}
 
 	return ret;
 }
