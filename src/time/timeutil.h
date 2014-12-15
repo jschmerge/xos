@@ -41,11 +41,36 @@ struct posix_clock
 	                 || (SOURCE == clock_source::course_monotonic)
 	                 || (SOURCE == clock_source::raw_monotonic));
 
+	static const clock_source source = SOURCE;
+
 	static time_point now();
 	static duration resolution();
 
-	static const clock_source source = SOURCE;
-
+	static std::string name()
+	{
+		std::string n;
+		switch (source) {
+		 case clock_source::realtime:
+			n = "realtime"; break;
+		 case clock_source::course_realtime:
+			n = "course_realtime"; break;
+		 case clock_source::monotonic:
+			n = "monotonic"; break;
+		 case clock_source::course_monotonic:
+			n = "course_monotonic"; break;
+		 case clock_source::raw_monotonic:
+			n = "raw_monotonic"; break;
+		 case clock_source::boot_time:
+			n = "boot_time"; break;
+		 case clock_source::process_cpu_time:
+			n = "process_cpu_time"; break;
+		 case clock_source::thread_cpu_time:
+			n = "thread_cpu_time"; break;
+		 default:
+			n = "unknown";
+		}
+		return n;
+	}
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -83,7 +108,7 @@ struct timespec to_timespec(const DURATION & d) noexcept
 }
 
 //////////////////////////////////////////////////////////////////////
-template <class CLK, class DUR>
+template <class CLK, class DUR = typename CLK::duration>
 std::chrono::time_point<CLK, DUR>
 to_timepoint(const struct timespec & ts) noexcept
 {
