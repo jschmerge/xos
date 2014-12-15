@@ -42,11 +42,23 @@ bin/unittest.coverage: ../filesystem/lib/libfilesystem.coverage.a \
                        ../environment/lib/libenvironment.coverage.a
 
 check: $(TARGETS)
-	if [ -n "$(TEST)" ]; then bin/unittest -t $(TEST) -p $(PROGRESS); \
-	else bin/unittest -p $(PROGRESS); fi
+	@if [ -n "$(TEST)" ]; then \
+	  echo bin/unittest -t $(TEST) -p $(PROGRESS); \
+	  bin/unittest -t $(TEST) -p $(PROGRESS); \
+	else \
+	  echo bin/unittest -p $(PROGRESS); \
+	  bin/unittest -p $(PROGRESS); \
+	fi
 
 debug-check: $(DBG_TARGETS)
-	bin/unittest.debug -p $(PROGRESS)
+	@if [ -n "$(TEST)" ]; then \
+	  echo bin/unittest.debug -t $(TEST) -p $(PROGRESS); \
+	  bin/unittest.debug -t $(TEST) -p $(PROGRESS); \
+	else \
+	  echo bin/unittest.debug -p $(PROGRESS); \
+	  bin/unittest.debug -p $(PROGRESS); \
+	fi
+
 
 coverage-check: $(COV_TARGETS)
 	@./bin/unittest.coverage -p foo > /dev/null 2>&1 || true
@@ -54,7 +66,13 @@ coverage-check: $(COV_TARGETS)
 	@./bin/unittest.coverage -t foo > /dev/null 2>&1 || true
 	@./bin/unittest.coverage -h > /dev/null 2>&1 || true
 	@./bin/unittest.coverage -r 1 -o none -l > /dev/null 2>&1
-	./bin/unittest.coverage -p verbose
+	@if [ -n "$(TEST)" ]; then \
+	  echo bin/unittest.coverage -t $(TEST) -p verbose; \
+	  bin/unittest.coverage -t $(TEST) -p verbose; \
+	else \
+	  echo bin/unittest.coverage -p verbose; \
+	  bin/unittest.coverage -p verbose; \
+	fi
 
 INCLUDES_base     ?= -I $(TOPDIR)
 INCLUDES_release  ?= $(INCLUDES_base)
