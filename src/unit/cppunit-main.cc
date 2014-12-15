@@ -1,6 +1,5 @@
 #include <unistd.h>
 #include <getopt.h>
-#include <libgen.h> // FIXME
 
 #include <iostream>
 #include <fstream>
@@ -14,15 +13,10 @@ namespace config {
 	bool verbose = false;
 };
 
-#if 0
-typedef std::map<std::string, CppUnit::Outputter *> OutputterMap;
-typedef std::map<std::string, CppUnit::TestListener *> ListenerMap;
-#else
 typedef std::map<std::string, std::shared_ptr<CppUnit::Outputter>>
           OutputterMap;
 typedef std::map<std::string, std::shared_ptr<CppUnit::TestListener>>
           ListenerMap;
-#endif
 
 //////////////////////////////////////////////////////////////////////
 void usage(const char * name)
@@ -110,7 +104,11 @@ int main(int argc, char ** argv)
 
 	char flag = 0;
 
-	std::string runTest = basename(argv[0]);
+	std::string runTest = argv[0];
+	std::string::size_type n = 0;
+
+	if ((n = runTest.find_last_of('/')) != std::string::npos)
+		runTest = runTest.substr(n + 1);
 
 	if (!find(CppUnit::TestFactoryRegistry::getRegistry().makeTest(), runTest))
 	{
@@ -197,7 +195,8 @@ int main(int argc, char ** argv)
 
 	runner.addTest(run);
 
-	for (int i = 0; i < repeat; i++) {
+	for (int i = 0; i < repeat; i++)
+	{
 		runner.run(result);
 	}
 
