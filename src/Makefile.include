@@ -18,7 +18,7 @@ INCLUDEDIR      = $(shell pwd)/include
 
 SUBMAKES = $(shell find $(SUBDIRS) -name Makefile)
 
-$(info SUBMAKES = $(SUBMAKES))
+#$(info SUBMAKES = $(SUBMAKES))
 
 # Put this as the first target encountered
 release:
@@ -29,20 +29,20 @@ release:
 define DIR_TARGETS
   D = $(1)
   $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
-	echo $$(Q) $$@
+#	echo $$(Q) $$@
 	$$(Q)mkdir -p $$@
 endef
 
-####
 #
-####
+#
+#
 define STANDARD_TARGETS
   D = $(1)
   T = $(2)
 
-  $$(info STANDARD_TARGETS - TARGET = $$(T), DIR = $$(D))
+#  $$(info STANDARD_TARGETS - TARGET = $$(T), DIR = $$(D))
 
-  TMP_DEPS = $$($$(T)_OBJS:%o=$$(D)/$(DEPDIR)/%d)
+  TMP_DEPS := $$($$(T)_OBJS:%o=$$(D)/$(DEPDIR)/%d)
 
   #
   # Create dependency '.d' file
@@ -102,21 +102,16 @@ define PROGRAM_TARGETS
   D = $(1)
   T = $(2)
 
-  $$(info PROGRAM_TARGETS - $$(D)/$$(T))
+#  $$(info PROGRAM_TARGETS - $$(D)/$$(T))
 
   $$(T)_EXE := $$(D)/$(BINDIR)/$$(T)
 
   #
   # Place compiled objects in $(OBJDIR)
   #
-  $$(T)_OBJS := $$($$(T)_OBJS:%.o=$$(D)/$$(OBJDIR)/%.o)
-  $$(info $$(T) OBJECTS: $$($$(T)_OBJS))
-
-  $$(T)_DBG_OBJS = $$($$(T)_OBJS:%.o=%.debug.o)
-  $$(info $$(T) DBG OBJECTS: $$($$(T)_DBG_OBJS))
-
-  $$(T)_COV_OBJS = $$($$(T)_OBJS:%.o=%.coverage.o)
-  $$(info $$(T) COV OBJECTS: $$($$(T)_COV_OBJS))
+  $$(T)_OBJS := $$($$(T)_OBJS:%.o=$$(D)/$(OBJDIR)/%.o)
+  $$(T)_DBG_OBJS := $$($$(T)_OBJS:%.o=%.debug.o)
+  $$(T)_COV_OBJS := $$($$(T)_OBJS:%.o=%.coverage.o)
 
   $$(T)_LIBSFIRST := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.a)
   $$(T)_LIBDEPFLAGS := $$($$(T)_LIBDEPS:%=-l%)
@@ -131,8 +126,9 @@ define PROGRAM_TARGETS
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
   #
-  $$($$(T)_EXE): $$($$(T)_OBJS) $$($$(T)_LIBSFIRST) | $$(D)/$$(BINDIR)
-	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$($$(T)_OBJS) \
+  $$($$(T)_EXE): $$($$(T)_OBJS) $$($$(T)_LIBSFIRST) | $$(D)/$(BINDIR)
+#	echo ">>>>>>>>>>> Linking $$@ from $$^"
+	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ \
 		$$(LDFLAGS_release) $$(LIBS_release) -L $(LIBDIR) $$(LIBDEPFLAGS)
 	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
 	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
@@ -149,20 +145,23 @@ define PROGRAM_TARGETS
 	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
 		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
 
-$$(info )
-$$(info $(BINDIR)/$$(T) $$($$(T)_EXE))
-$$(info )
+#$$(info )
+#$$(info $(BINDIR)/$$(T) $$($$(T)_EXE))
+#$$(info )
   $(BINDIR)/$$(T): $$($$(T)_EXE) | $(BINDIR)
-	echo "XXXXXXXX $$@"
+#	echo "XXXXXXXX $$@"
 	rm -f $$@
-	ln $$($$(T)_EXE) $$@
+	ln $$^ $$@
 endef
 
+#
+#
+#
 define LIBRARY_TARGETS
   D = $(1)
   T = $(2)
 
-  $$(info LIBRARY_TARGETS - $$(D)/$$(T))
+#  $$(info LIBRARY_TARGETS - $$(D)/$$(T))
 
   STATIC_NAME := $$(T)_STATIC_LIB
   #
@@ -172,7 +171,7 @@ define LIBRARY_TARGETS
   DBG_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).debug.a
   COV_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).coverage.a
 
-  $$(info ==>>==>> $$($$(T)_STATIC_LIB))
+#  $$(info ==>>==>> $$($$(T)_STATIC_LIB))
 
   #
   # Library objects to build
@@ -186,7 +185,7 @@ define LIBRARY_TARGETS
   $$(D)/$$(T).coverage: $$(COV_STATIC_LIB)
 
   $$($$(T)_STATIC_LIB): $$($$(T)_OBJS) | $$(D)/$$(LIBDIR)
-	$$(QAR)ar -cSurv $$@ $$^
+	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
 	@if [ -n "$$(DESTDIR)" ]; then \
 		mkdir -p $$(DESTDIR)/lib; \
@@ -195,7 +194,7 @@ define LIBRARY_TARGETS
 
   # Debug
   $$(DBG_STATIC_LIB): $$($$(T)_DBG_OBJS) | $$(D)/$$(LIBDIR)
-	$$(QAR)ar -cSurv $$@ $$^
+	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
 	@if [ -n "$$(DESTDIR)" ]; then \
 		mkdir -p $$(DESTDIR)/lib; \
@@ -204,20 +203,20 @@ define LIBRARY_TARGETS
 
   # Coverage
   $$(COV_STATIC_LIB): $$($$(T)_COV_OBJS) | $$(D)/$$(LIBDIR)
-	$$(QAR)ar -cSurv $$@ $$^
+	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
 	@if [ -n "$$(DESTDIR)" ]; then \
 		mkdir -p $$(DESTDIR)/lib; \
 	    cp -v $$@ $$(DESTDIR)/lib; \
 	fi
 
-$$(info >>>>>>>>>>>>>>>> $$(LIBDIR)/$$(T) $$($$(T)_STATIC_LIB))
-$$(info >>> $$(T))
-$$(info ln $$($$($$(T)_STATIC_LIB)) $$@)
+#$$(info >>>>>>>>>>>>>>>> $$(LIBDIR)/$$(T) $$($$(T)_STATIC_LIB))
+#$$(info >>> $$(T))
+#$$(info ln $$($$($$(T)_STATIC_LIB)) $$@)
   $$(LIBDIR)/$$(T).a: $$($$(T)_STATIC_LIB) | $$(LIBDIR)
-	echo STATIC_NAME = $$($$(STATIC_NAME))
+#	echo STATIC_NAME = $$($$(STATIC_NAME))
 	rm -f $$@
-	ln $$($$(STATIC_NAME)) $$@
+	ln $$^ $$@
 endef
 
 ####
@@ -328,7 +327,7 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 # Auto-rules
 ######################################################################
 
-$(info TARGETING $(TARGETS) $(LIB_TARGETS))
+#$(info TARGETING $(TARGETS) $(LIB_TARGETS))
 
 $(BINDIR) $(LIBDIR):
 	$(Q)mkdir -p $@
@@ -411,7 +410,6 @@ realclean: clean docclean
 	  rm -vrf $${dir}/$(DEPDIR) $${dir}/.ycm_extra_conf.pyc \
 	    $${dir}/config.cache tags $${dir}/coverage-report; \
 	done
-
 
 #$(info ---> $(DEPS))
 
