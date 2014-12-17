@@ -29,6 +29,7 @@ release:
 define DIR_TARGETS
   D = $(1)
   $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
+	echo $$(Q) $$@
 	$$(Q)mkdir -p $$@
 endef
 
@@ -103,7 +104,7 @@ define PROGRAM_TARGETS
 
   $$(info PROGRAM_TARGETS - $$(D)/$$(T))
 
-  EXE = $$(D)/$(BINDIR)/$$(T)
+  $$(T)_EXE := $$(D)/$(BINDIR)/$$(T)
 
   #
   # Place compiled objects in $(OBJDIR)
@@ -120,9 +121,9 @@ define PROGRAM_TARGETS
   $$(T)_LIBSFIRST := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.a)
   $$(T)_LIBDEPFLAGS := $$($$(T)_LIBDEPS:%=-l%)
 
-  $$(D)/$$(T): $$(EXE)
-  $$(D)/$$(T).debug: $$(EXE).debug
-  $$(D)/$$(T).coverage: $$(EXE).coverage
+  $$(D)/$$(T): $$($$(T)_EXE)
+  $$(D)/$$(T).debug: $$($$(T)_EXE).debug
+  $$(D)/$$(T).coverage: $$($$(T)_EXE).coverage
 
   .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
 
@@ -130,7 +131,7 @@ define PROGRAM_TARGETS
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
   #
-  $$(EXE): $$($$(T)_OBJS) $$($$(T)_LIBSFIRST) | $$(D)/$$(BINDIR)
+  $$($$(T)_EXE): $$($$(T)_OBJS) $$($$(T)_LIBSFIRST) | $$(D)/$$(BINDIR)
 	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$($$(T)_OBJS) \
 		$$(LDFLAGS_release) $$(LIBS_release) -L $(LIBDIR) $$(LIBDEPFLAGS)
 	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
@@ -139,29 +140,22 @@ define PROGRAM_TARGETS
 	$$(Q)chmod 644 $$@.symbols
 
   # Debug
-  $$(EXE).debug: $$($$(T)_DBG_OBJS) | $$(D)/$$(BINDIR)
+  $$($$(T)_EXE).debug: $$($$(T)_DBG_OBJS) | $$(D)/$$(BINDIR)
 	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
 		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
 
   # Coverage
-  $$(EXE).coverage: $$($$(T)_COV_OBJS) | $$(D)/$$(BINDIR)
+  $$($$(T)_EXE).coverage: $$($$(T)_COV_OBJS) | $$(D)/$$(BINDIR)
 	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
 		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
 
 $$(info )
-$$(info $(BINDIR)/$$(T) $$(EXE))
+$$(info $(BINDIR)/$$(T) $$($$(T)_EXE))
 $$(info )
-  $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
+  $(BINDIR)/$$(T): $$($$(T)_EXE) | $(BINDIR)
 	echo "XXXXXXXX $$@"
-#	rm -f $$@
-#	ln $$(EXE) $$@
-
-#  #
-#  # a normal equal here causes recursive expansion
-#  #
-#  OBJS := $$(OBJS) $$($$(T)_OBJS)
-#  OBJS := $$(OBJS) $$($$(T)_DBG_OBJS)
-#  OBJS := $$(OBJS) $$($$(T)_COV_OBJS)
+	rm -f $$@
+	ln $$($$(T)_EXE) $$@
 endef
 
 define LIBRARY_TARGETS
@@ -170,12 +164,15 @@ define LIBRARY_TARGETS
 
   $$(info LIBRARY_TARGETS - $$(D)/$$(T))
 
+  STATIC_NAME := $$(T)_STATIC_LIB
   #
   # We need this to eat the whitespace in the parameter expansion
   #
-  $$(T)_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).a
+  $$(STATIC_NAME) := $$(D)/$$(LIBDIR)/$$(T).a
   DBG_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).debug.a
   COV_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).coverage.a
+
+  $$(info ==>>==>> $$($$(T)_STATIC_LIB))
 
   #
   # Library objects to build
@@ -216,11 +213,11 @@ define LIBRARY_TARGETS
 
 $$(info >>>>>>>>>>>>>>>> $$(LIBDIR)/$$(T) $$($$(T)_STATIC_LIB))
 $$(info >>> $$(T))
-$$(info )
+$$(info ln $$($$($$(T)_STATIC_LIB)) $$@)
   $$(LIBDIR)/$$(T).a: $$($$(T)_STATIC_LIB) | $$(LIBDIR)
-	echo $$@ $$($$(T)_STATIC_LIB)
+	echo STATIC_NAME = $$($$(STATIC_NAME))
 	rm -f $$@
-	ln $$($$(T)_STATIC_LIB) $$@
+	ln $$($$(STATIC_NAME)) $$@
 endef
 
 ####
@@ -334,7 +331,7 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 $(info TARGETING $(TARGETS) $(LIB_TARGETS))
 
 $(BINDIR) $(LIBDIR):
-	$$(Q)mkdir -p $$@
+	$(Q)mkdir -p $@
 
 #
 # TARGETS
