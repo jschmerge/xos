@@ -11,9 +11,8 @@ libenvironment_OBJS    = program_config.o
 
 test_OBJS          = test.o $(libenvironment_OBJS)
 
-TOPDIR            ?= ..
-
-include $(TOPDIR)/Makefile.include
+#TOPDIR            ?= ..
+#include $(TOPDIR)/Makefile.include
 
 INCLUDES_base     ?= -I ..
 INCLUDES_release  ?= $(INCLUDES_base)

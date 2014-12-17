@@ -28,20 +28,11 @@ export LDFLAGS_release   = $(LDFLAGS_base)
 export LDFLAGS_debug     = $(LDFLAGS_base) -rdynamic -fsanitize=address
 export LDFLAGS_coverage  = $(LDFLAGS_base)
 
-export USERLIBS_base     = -lfilesystem -lcodecvt
-export USERLIBS_release  = $(USERLIBS_base)
-export USERLIBS_debug    = $(USERLIBS_base:%=%.debug)
-export USERLIBS_coverage = $(USERLIBS_base:%=%.coverage)
-
-export LIBS_base         = -L $(shell pwd)/lib -lrt -ldl
+export LIBS_base         = -lrt -ldl
 export LIBS_release      = $(LIBS_base) $(USERLIBS_release)
 export LIBS_debug        = $(LIBS_base) $(USERLIBS_debug)
 export LIBS_coverage     = $(LIBS_base) $(USERLIBS_coverage)
 
-SUBDIRS                  = codecvt filesystem environment unit
+SUBDIRS                  = codecvt environment filesystem unit
 
 include Makefile.include
-
-filesystem: codecvt
-environment: filesystem
-unit: codecvt filesystem environment

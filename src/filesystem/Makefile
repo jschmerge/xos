@@ -15,8 +15,8 @@ libfilesystem_OBJS = path.o \
                      filesystem_error.o
 
 
-TOPDIR            ?= ..
-include $(TOPDIR)/Makefile.include
+#TOPDIR            ?= ..
+#include $(TOPDIR)/Makefile.include
 
 
 INCLUDES_base     ?= -I ..

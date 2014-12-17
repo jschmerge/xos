@@ -13,14 +13,258 @@ BINDIR          = bin
 DEPDIR          = .deps
 DOCDIR          = doc/html
 OBJDIR          = .objs
-LIBDIR          = $(shell pwd)/lib
+LIBDIR          = lib
 INCLUDEDIR      = $(shell pwd)/include
 
-DBG_TARGETS     = $(TARGETS:%=%.debug)
-COV_TARGETS     = $(TARGETS:%=%.coverage)
+SUBMAKES = $(shell find $(SUBDIRS) -name Makefile)
 
+$(info SUBMAKES = $(SUBMAKES))
+
+# Put this as the first target encountered
+release:
+
+#
+#
+#
+define DIR_TARGETS
+  D = $(1)
+  $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
+	$$(Q)mkdir -p $$@
+endef
+
+####
+#
+####
+define STANDARD_TARGETS
+  D = $(1)
+  T = $(2)
+
+  $$(info STANDARD_TARGETS - TARGET = $$(T), DIR = $$(D))
+
+  TMP_DEPS = $$($$(T)_OBJS:%o=$$(D)/$(DEPDIR)/%d)
+
+  #
+  # Create dependency '.d' file
+  #
+  $$(D)/$(DEPDIR)/%.d: $$(D)/%.cc | $$(D)/$(DEPDIR)
+	$$(QDEP)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.o $$@' \
+	  $$(CXXFLAGS_release) $$< > $$@
+
+  $$(D)/$(DEPDIR)/%.debug.d: $$(D)/%.cc | $$(D)/$(DEPDIR)
+	$$(QDEPDBG)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.debug.o $$@' \
+	  $$(CXXFLAGS_debug) $$< > $$@
+
+  $$(D)/$(DEPDIR)/%.coverage.d: $$(D)/%.cc | $(D)/$(DEPDIR)
+	$$(QDEPCOV)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.coverage.o $$@' \
+	  $$(CXXFLAGS_coverage) $$< > $$@
+
+  $$(D)/$(DEPDIR)/%.d: $$(D)/%.c | $$(D)/$(DEPDIR)
+	$$(QDEP)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.o $$@' \
+	  $$(CFLAGS_release) $$< > $$@
+
+  $$(D)/$(DEPDIR)/%.debug.d: $$(D)/%.c | $$(D)/$(DEPDIR)
+	$$(QDEPDBG)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.debug.o $$@' \
+	   $$(CFLAGS_debug) $$< > $$@
+
+  $$(D)/$(DEPDIR)/%.coverage.d: $$(D)/%.c | $$(D)/$(DEPDIR)
+	$$(QDEPCOV)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.coverage.o $$@' \
+	  $$(CFLAGS_coverage) $$< > $$@
+
+  #
+  # Source unit compilation
+  #
+  $$(D)/$(OBJDIR)/%.o: $$(D)/%.cc | $$(D)/$(OBJDIR)
+	$$(QCXX)$$(CXX) $$(CXXFLAGS_release) -c $$< -o $$@
+
+  $$(D)/$(OBJDIR)/%.debug.o: $$(D)/%.cc | $$(D)/$(OBJDIR)
+	$$(QCXXDBG)$$(CXX) $$(CXXFLAGS_debug) -c $$< -o $$@
+
+  $$(D)/$(OBJDIR)/%.coverage.o: $$(D)/%.cc | $$(D)/$(OBJDIR)
+	$$(QCXXCOV)$(CXX) $$(CXXFLAGS_coverage) -c $$< -o $$@
+
+  $$(D)/$(OBJDIR)/%.o: $$(D)/%.c | $$(D)/$(OBJDIR)
+	$$(QCC)$$(CC) $$(CFLAGS_release) -c $$< -o $$@
+
+  $$(D)/$(OBJDIR)/%.debug.o: $$(D)/%.c | $$(D)/$(OBJDIR)
+	$$(QCC)$$(CC) $$(CFLAGS_debug) -c $$< -o $$@
+
+  $$(D)/$(OBJDIR)/%.coverage.o: $$(D)/%.c | $$(D)/$(OBJDIR)
+	$$(QCCCOV)$$(CC) $$(CFLAGS_coverage) -c $$< -o $$@
+
+  DEPS := $$(DEPS) $$(TMP_DEPS)
+endef
+
+####
+#
+####
+define PROGRAM_TARGETS
+  D = $(1)
+  T = $(2)
+
+  $$(info PROGRAM_TARGETS - $$(D)/$$(T))
+
+  EXE = $$(D)/$(BINDIR)/$$(T)
+
+  #
+  # Place compiled objects in $(OBJDIR)
+  #
+  $$(T)_OBJS := $$($$(T)_OBJS:%.o=$$(D)/$$(OBJDIR)/%.o)
+  $$(info $$(T) OBJECTS: $$($$(T)_OBJS))
+
+  $$(T)_DBG_OBJS = $$($$(T)_OBJS:%.o=%.debug.o)
+  $$(info $$(T) DBG OBJECTS: $$($$(T)_DBG_OBJS))
+
+  $$(T)_COV_OBJS = $$($$(T)_OBJS:%.o=%.coverage.o)
+  $$(info $$(T) COV OBJECTS: $$($$(T)_COV_OBJS))
+
+  $$(T)_LIBSFIRST := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.a)
+  $$(T)_LIBDEPFLAGS := $$($$(T)_LIBDEPS:%=-l%)
+
+  $$(D)/$$(T): $$(EXE)
+  $$(D)/$$(T).debug: $$(EXE).debug
+  $$(D)/$$(T).coverage: $$(EXE).coverage
+
+  .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
+
+  #
+  # Link the release build, then strip it, preserving debug symbols in
+  # $(target).symbols
+  #
+  $$(EXE): $$($$(T)_OBJS) $$($$(T)_LIBSFIRST) | $$(D)/$$(BINDIR)
+	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$($$(T)_OBJS) \
+		$$(LDFLAGS_release) $$(LIBS_release) -L $(LIBDIR) $$(LIBDEPFLAGS)
+	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
+	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
+	$$(QLNKSYM)$$(OBJCPY) --add-gnu-debuglink $$@.symbols $$@
+	$$(Q)chmod 644 $$@.symbols
+
+  # Debug
+  $$(EXE).debug: $$($$(T)_DBG_OBJS) | $$(D)/$$(BINDIR)
+	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
+		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
+
+  # Coverage
+  $$(EXE).coverage: $$($$(T)_COV_OBJS) | $$(D)/$$(BINDIR)
+	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
+		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
+
+$$(info )
+$$(info $(BINDIR)/$$(T) $$(EXE))
+$$(info )
+  $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
+	echo "XXXXXXXX $$@"
+#	rm -f $$@
+#	ln $$(EXE) $$@
+
+#  #
+#  # a normal equal here causes recursive expansion
+#  #
+#  OBJS := $$(OBJS) $$($$(T)_OBJS)
+#  OBJS := $$(OBJS) $$($$(T)_DBG_OBJS)
+#  OBJS := $$(OBJS) $$($$(T)_COV_OBJS)
+endef
+
+define LIBRARY_TARGETS
+  D = $(1)
+  T = $(2)
+
+  $$(info LIBRARY_TARGETS - $$(D)/$$(T))
+
+  #
+  # We need this to eat the whitespace in the parameter expansion
+  #
+  $$(T)_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).a
+  DBG_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).debug.a
+  COV_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).coverage.a
+
+  #
+  # Library objects to build
+  #
+  $$(T)_OBJS := $$($$(T)_OBJS:%.o=$$(D)/$$(OBJDIR)/%.o)
+  $$(T)_DBG_OBJS = $$($$(T)_OBJS:%.o=%.debug.o)
+  $$(T)_COV_OBJS = $$($$(T)_OBJS:%.o=%.coverage.o)
+
+  $$(D)/$$(T): $$($$(T)_STATIC_LIB)
+  $$(D)/$$(T).debug: $$(DBG_STATIC_LIB)
+  $$(D)/$$(T).coverage: $$(COV_STATIC_LIB)
+
+  $$($$(T)_STATIC_LIB): $$($$(T)_OBJS) | $$(D)/$$(LIBDIR)
+	$$(QAR)ar -cSurv $$@ $$^
+	$$(QRANLIB)ranlib $$@
+	@if [ -n "$$(DESTDIR)" ]; then \
+		mkdir -p $$(DESTDIR)/lib; \
+	    cp -v $$@ $$(DESTDIR)/lib; \
+	fi
+
+  # Debug
+  $$(DBG_STATIC_LIB): $$($$(T)_DBG_OBJS) | $$(D)/$$(LIBDIR)
+	$$(QAR)ar -cSurv $$@ $$^
+	$$(QRANLIB)ranlib $$@
+	@if [ -n "$$(DESTDIR)" ]; then \
+		mkdir -p $$(DESTDIR)/lib; \
+	    cp -v $$@ $$(DESTDIR)/lib; \
+	fi
+
+  # Coverage
+  $$(COV_STATIC_LIB): $$($$(T)_COV_OBJS) | $$(D)/$$(LIBDIR)
+	$$(QAR)ar -cSurv $$@ $$^
+	$$(QRANLIB)ranlib $$@
+	@if [ -n "$$(DESTDIR)" ]; then \
+		mkdir -p $$(DESTDIR)/lib; \
+	    cp -v $$@ $$(DESTDIR)/lib; \
+	fi
+
+$$(info >>>>>>>>>>>>>>>> $$(LIBDIR)/$$(T) $$($$(T)_STATIC_LIB))
+$$(info >>> $$(T))
+$$(info )
+  $$(LIBDIR)/$$(T).a: $$($$(T)_STATIC_LIB) | $$(LIBDIR)
+	echo $$@ $$($$(T)_STATIC_LIB)
+	rm -f $$@
+	ln $$($$(T)_STATIC_LIB) $$@
+endef
+
+####
+#
+####
+define INCLUDE_SUBMAKE
+  MF = $(1)
+
+  OLD_TARGETS := $$(TARGETS)
+  OLD_LIB_TARGETS := $$(LIB_TARGETS)
+
+  TARGETS =
+  LIB_TARGETS =
+
+  include $$(MF)
+
+  DIR = $$(shell dirname $$(MF))
+
+  $$(eval $$(call DIR_TARGETS, $$(DIR)))
+
+  $$(foreach T, $$(TARGETS) $$(LIB_TARGETS), \
+     $$(eval $$(call STANDARD_TARGETS, $$(DIR), $$(T))))
+
+  $$(foreach T, $$(TARGETS), \
+    $$(eval $$(call PROGRAM_TARGETS, $$(DIR), $$(T))))
+
+  $$(foreach T, $$(LIB_TARGETS), \
+    $$(eval $$(call LIBRARY_TARGETS, $$(DIR), $$(T))))
+
+  TARGETS := $$(TARGETS:%=$$(D)/%)
+  TARGETS := $$(TARGETS) $$(OLD_TARGETS)
+  LIB_TARGETS := $$(LIB_TARGETS:%=$$(D)/%)
+  LIB_TARGETS := $$(LIB_TARGETS) $$(OLD_LIB_TARGETS)
+endef
+
+$(foreach SM, $(SUBMAKES),$(eval $(call INCLUDE_SUBMAKE, $(SM))))
+
+DBG_TARGETS     = $(TARGETS:%=%.debug)
 DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
+
+COV_TARGETS     = $(TARGETS:%=%.coverage)
 COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
+
+#$(foreach T, $(TARGETS), $(eval $(call STANDARD_TARGETS, $(T))))
 
 #
 # Print out our settings
@@ -87,68 +331,28 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 # Auto-rules
 ######################################################################
 
-#
-# Create dependency '.d' file
-#
-$(DEPDIR)/%.d: %.cc | $(DEPDIR)
-	$(QDEP)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.o $@' \
-	  $(CXXFLAGS_release) $< > $@
+$(info TARGETING $(TARGETS) $(LIB_TARGETS))
 
-$(DEPDIR)/%.debug.d: %.cc | $(DEPDIR)
-	$(QDEPDBG)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
-	  $(CXXFLAGS_debug) $< > $@
-
-$(DEPDIR)/%.coverage.d: %.cc | $(DEPDIR)
-	$(QDEPCOV)$(CXX) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' \
-	  $(CXXFLAGS_coverage) $< > $@
-
-$(DEPDIR)/%.d: %.c | $(DEPDIR)
-	$(QDEP)$(CC) -MM -MP -MT '$(OBJDIR)/$*.o $@' $(CFLAGS_release) $< > $@
-
-$(DEPDIR)/%.debug.d: %.c | $(DEPDIR)
-	$(QDEPDBG)$(CC) -MM -MP -MT '$(OBJDIR)/$*.debug.o $@' \
-	   $(CFLAGS_debug) $< > $@
-
-$(DEPDIR)/%.coverage.d: %.c | $(DEPDIR)
-	$(QDEPCOV)$(CC) -MM -MP -MT '$(OBJDIR)/$*.coverage.o $@' \
-	  $(CFLAGS_coverage) $< > $@
-
-#
-# Source unit compilation
-#
-$(OBJDIR)/%.o: %.cc | $(OBJDIR)
-	$(QCXX)$(CXX) $(CXXFLAGS_release) -c $< -o $@
-
-$(OBJDIR)/%.debug.o: %.cc | $(OBJDIR)
-	$(QCXXDBG)$(CXX) $(CXXFLAGS_debug) -c $< -o $@
-
-$(OBJDIR)/%.coverage.o: %.cc | $(OBJDIR)
-	$(QCXXCOV)$(CXX) $(CXXFLAGS_coverage) -c $< -o $@
-
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	$(QCC)$(CC) $(CFLAGS_release) -c $< -o $@
-
-$(OBJDIR)/%.debug.o: %.c | $(OBJDIR)
-	$(QCC)$(CC) $(CFLAGS_debug) -c $< -o $@
-
-$(OBJDIR)/%.coverage.o: %.c | $(OBJDIR)
-	$(QCCCOV)$(CC) $(CFLAGS_coverage) -c $< -o $@
-
+$(BINDIR) $(LIBDIR):
+	$$(Q)mkdir -p $$@
 
 #
 # TARGETS
 #
+release: $(LIB_TARGETS) $(TARGETS)
 
-#.PHONY: all release debug coverage subdirs libs
+debug: $(DBG_LIB_TARGETS) $(DBG_TARGETS)
 
-release: $(LIB_TARGETS) $(TARGETS) subdirs
-
-debug: $(DBG_LIB_TARGETS) $(DBG_TARGETS) subdirs 
-
-coverage: $(COV_LIB_TARGETS) $(COV_TARGETS) subdirs
+coverage: $(COV_LIB_TARGETS) $(COV_TARGETS)
 
 all: release debug coverage
 
+
+#.PHONY: all release debug coverage subdirs libs
+
+################################################################################
+ifdef $(DEAD) #################################################################
+################################################################################
 check: release
 
 debug-check: debug
@@ -176,6 +380,8 @@ $(DOCDIR): doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
 	$(Q)mkdir -p $@
 	doxygen doc/Doxyfile
 
+endif #########################################################################
+
 codecount:
 	@LC_ALL=en_GB.utf8 \
 		/usr/bin/printf "     Headers: %' 7d\n" \
@@ -193,153 +399,24 @@ codecount:
 		/usr/bin/printf "       Build: %' 7d\n" \
 		$$(find . -name 'Makefile*' \
 		   | xargs wc -l | tail -1 | sed -e 's/total//g')
-clean: subdirs
-	rm -rf $(OBJDIR) $(LIBDIR) $(BINDIR) \
-	*.info core core.[0123456789]* a.out *.symbols
+clean:
+	@for dir in $(SUBDIRS); do \
+	  rm -vrf $${dir}/$(OBJDIR) $${dir}/$(LIBDIR) $${dir}/$(BINDIR) \
+	    $${dir}/*.info $${dir}/core $${dir}/core.[0123456789]* \
+	    $${dir}/a.out $${dir}/*.symbols; \
+	done
 
 docclean:
 	rm -rf $(DOCDIR)
 
-realclean: subdirs clean docclean
-	rm -rf $(DEPDIR) .ycm_extra_conf.pyc config.cache tags coverage-report
-
-.PHONY: $(SUBDIRS)
-
-subdirs: $(SUBDIRS)
-
-$(SUBDIRS):
-	@echo "Making '$(MAKECMDGOALS)' in $@"
-	$(MAKE) DESTDIR=$(shell pwd) -C $@ $(MAKECMDGOALS)
-
-$(DEPDIR) $(OBJDIR) $(BINDIR) $(LIBDIR):
-	$(Q)mkdir -p $@
-
-#
-# This is the main bit of logic in this file. MAKE_PROGRAM gets expanded
-# for each target in TARGETS. It creates both release and debug targets
-# based on the files listed in the user-supplied $(target_OBJS) variable.
-#
-# If editing, make sure you use double dollar signs to avoid expansion until
-# the macro is called below in the $(foreach)
-#
-define MAKE_PROGRAM
-  #
-  # We need this to eat the whitespace in the parameter expansion
-  #
-  PROG = $(1)
-  EXE = $$(BINDIR)/$$(PROG)
-
-  #
-  # Place compiled objects in $(OBJDIR)
-  #
-  $$(PROG)_OBJS := $$($$(PROG)_OBJS:%.o=$$(OBJDIR)/%.o)
-  $$(PROG)_DBG_OBJS = $$($$(PROG)_OBJS:%.o=%.debug.o)
-  $$(PROG)_COV_OBJS = $$($$(PROG)_OBJS:%.o=%.coverage.o)
-
-  $$(PROG): $$(EXE)
-  $$(PROG).debug: $$(EXE).debug
-  $$(PROG).coverage: $$(EXE).coverage
-
-  .PHONY: $$(PROG) $$(PROG).debug $$(PROG).coverage
-
-  #
-  # Link the release build, then strip it, preserving debug symbols in
-  # $(target).symbols
-  #
-  $$(EXE): $$($$(PROG)_OBJS) | $$(BINDIR)
-	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ \
-		$$(LDFLAGS_release) $$(LIBS_release)
-	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
-	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
-	$$(QLNKSYM)$$(OBJCPY) --add-gnu-debuglink $$@.symbols $$@
-	$$(Q)chmod 644 $$@.symbols
-
-  # Debug
-  $$(EXE).debug: $$($$(PROG)_DBG_OBJS) | $$(BINDIR)
-	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
-		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
-
-  # Coverage
-  $$(EXE).coverage: $$($$(PROG)_COV_OBJS) | $$(BINDIR)
-	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
-		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
-
-  #
-  # a normal equal here causes recursive expansion
-  #
-  OBJS := $$(OBJS) $$($$(PROG)_OBJS)
-  OBJS := $$(OBJS) $$($$(PROG)_DBG_OBJS)
-  OBJS := $$(OBJS) $$($$(PROG)_COV_OBJS)
-endef
-
-define MAKE_LIBRARY
-  #
-  # We need this to eat the whitespace in the parameter expansion
-  #
-  LIBNAME = $(1)
-
-  STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).a
-  DBG_STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).debug.a
-  COV_STATIC_LIB = $$(LIBDIR)/$$(LIBNAME).coverage.a
-
-  #
-  # Library objects to build
-  #
-  $$(LIBNAME)_OBJS := $$($$(LIBNAME)_OBJS:%.o=$$(OBJDIR)/%.o)
-  $$(LIBNAME)_DBG_OBJS = $$($$(LIBNAME)_OBJS:%.o=%.debug.o)
-  $$(LIBNAME)_COV_OBJS = $$($$(LIBNAME)_OBJS:%.o=%.coverage.o)
-
-  $$(LIBNAME): $$(STATIC_LIB)
-  $$(LIBNAME).debug: $$(DBG_STATIC_LIB)
-  $$(LIBNAME).coverage: $$(COV_STATIC_LIB)
-
-  $$(STATIC_LIB): $$($$(LIBNAME)_OBJS) | $$(LIBDIR)
-	$$(QAR)ar -cSurv $$@ $$^
-	$$(QRANLIB)ranlib $$@
-	@if [ -n "$$(DESTDIR)" ]; then \
-		mkdir -p $$(DESTDIR)/lib; \
-	    cp -v $$@ $$(DESTDIR)/lib; \
-	fi
-
-  # Debug
-  $$(DBG_STATIC_LIB): $$($$(LIBNAME)_DBG_OBJS) | $$(LIBDIR)
-	$$(QAR)ar -cSurv $$@ $$^
-	$$(QRANLIB)ranlib $$@
-	@if [ -n "$$(DESTDIR)" ]; then \
-		mkdir -p $$(DESTDIR)/lib; \
-	    cp -v $$@ $$(DESTDIR)/lib; \
-	fi
+realclean: clean docclean
+	@for dir in $(SUBDIRS); do \
+	  rm -vrf $${dir}/$(DEPDIR) $${dir}/.ycm_extra_conf.pyc \
+	    $${dir}/config.cache tags $${dir}/coverage-report; \
+	done
 
 
-  # Coverage
-  $$(COV_STATIC_LIB): $$($$(LIBNAME)_COV_OBJS) | $$(LIBDIR)
-	$$(QAR)ar -cSurv $$@ $$^
-	$$(QRANLIB)ranlib $$@
-	@if [ -n "$$(DESTDIR)" ]; then \
-		mkdir -p $$(DESTDIR)/lib; \
-	    cp -v $$@ $$(DESTDIR)/lib; \
-	fi
-
-  #
-  # a normal equal here causes recursive expansion
-  #
-  OBJS := $$(OBJS) $$($$(LIBNAME)_OBJS)
-  OBJS := $$(OBJS) $$($$(LIBNAME)_DBG_OBJS)
-  OBJS := $$(OBJS) $$($$(LIBNAME)_COV_OBJS)
-endef
-
-#
-# loop through the targets, generating our link rules
-#
-$(foreach T, $(TARGETS),$(eval $(call MAKE_PROGRAM, $(T))))
-
-$(foreach T, $(LIB_TARGETS),$(eval $(call MAKE_LIBRARY, $(T))))
-
-#
-# deps are auto-generated from the accumulated list of OBJS from the
-# expansion above
-#
-DEPS     = $(OBJS:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
+#$(info ---> $(DEPS))
 
 ifneq ($(MAKECMDGOALS), clean)
  ifneq ($(MAKECMDGOALS), docclean)
@@ -348,3 +425,4 @@ ifneq ($(MAKECMDGOALS), clean)
   endif
  endif
 endif
+
