@@ -115,7 +115,6 @@ struct state
 	std::string name;
 	const config_option * option;
 
-//	std::map<int, std::shared_ptr<state>> transitions;
 	std::map<int, state*> transitions;
 	std::map<int, transit_cb> transition_cb;
 };
@@ -155,13 +154,8 @@ class program_config
 	std::map<std::string, std::shared_ptr<state>> m_states;
 
 	const char * begin_ptr1;
-	const char * end_ptr1;
 	const char * begin_ptr2;
-	const char * end_ptr2;
 	const config_option * current_option;
-
-	std::string scratch1;
-	std::string scratch2;
 
  private:
 	void destroy_parser();

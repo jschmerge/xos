@@ -50,9 +50,7 @@ program_config::program_config(
   , m_options(list)
   , nonoption_arguments()
   , begin_ptr1(nullptr)
-  , end_ptr1(nullptr)
   , begin_ptr2(nullptr)
-  , end_ptr2(nullptr)
   , current_option(nullptr)
 {
 }
@@ -90,11 +88,10 @@ bool program_config::non_option_start(const char * cp)
 bool program_config::non_option_end(const char * cp)
 {
 	bool rc = false;
-	end_ptr2 = cp;
-	if (begin_ptr2)
+	if (cp)
 	{
-		nonoption_arguments.emplace_back(begin_ptr2, end_ptr2);
-		begin_ptr2 = end_ptr2 = nullptr;
+		nonoption_arguments.emplace_back(begin_ptr2, cp);
+		begin_ptr2 = nullptr;
 		rc = true;
 	}
 	return rc;
@@ -115,15 +112,14 @@ bool program_config::parameter_start(const char * cp)
 //////////////////////////////////////////////////////////////////////
 bool program_config::parameter_end(const char * cp) {
 	bool rc = false;
-	end_ptr2 = cp;
 	if (begin_ptr2 && current_option)
 	{
-		std::string s(begin_ptr2, end_ptr2);
+		std::string s(begin_ptr2, cp);
 		rc = process_option(*current_option, s);
 	}
 	current_option = nullptr;
-	begin_ptr1 = end_ptr1 = nullptr;
-	begin_ptr2 = end_ptr2 = nullptr;
+	begin_ptr1 = nullptr;
+	begin_ptr2 = nullptr;
 	return rc;
 }
 
@@ -131,7 +127,7 @@ bool program_config::parameter_end(const char * cp) {
 bool program_config::have_short_option(const char * cp)
 {
 	bool rc = false;
-	begin_ptr1 = end_ptr1 = begin_ptr2 = end_ptr2 = nullptr;
+	begin_ptr1 = begin_ptr2 = nullptr;
 	current_option = nullptr;
 	for (const auto & opt : m_options)
 	{
@@ -290,7 +286,7 @@ void program_config::build_parser()
 
 	transit_cb l_start =
 	[this] (const state &, const state & to, const char * cp) {
-		begin_ptr1 = begin_ptr2 = end_ptr1 = end_ptr2 = nullptr;
+		begin_ptr1 = begin_ptr2 = nullptr;
 		begin_ptr1 = cp;
 		if (to.option != nullptr) current_option = to.option;
 		return true;
@@ -535,12 +531,13 @@ bool program_config::parse_command_line(int argc,
 
 			} else
 			{
-				if (state_cursor->name == "dash_dash")
+//				if (state_cursor->name == "dash_dash")
+				if (begin_ptr1 != nullptr)
 					throw std::runtime_error(
-					        std::string("Bad option - ") + arg);
+					        std::string("Bad option - --") + begin_ptr1);
 				else
 					throw std::runtime_error(
-					        std::string("Bad option - ") + *arg);
+					        std::string("Bad option - -") + *arg);
 			}
 
 			new_state = state_cursor->name;

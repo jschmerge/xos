@@ -12,11 +12,9 @@ class state
  public:
 	typedef S_ID_T state_id_type;
 
-	state(const std::string & name)
-	  : m_id(name) { }
+	state(const std::string & name) : m_id(name) { }
 
-	state(const state & other)
-	  : m_id(other.m_id) { }
+	state(const state & other) : m_id(other.m_id) { }
 
 	state & operator = (const state & other)
 	{
@@ -25,9 +23,7 @@ class state
 		return *this;
 	}
 
-	state(state && other) noexcept
-	  : m_id(std::move(other.m_id))
-		{ }
+	state(state && other) noexcept : m_id(std::move(other.m_id)) { }
 
 	state & operator = (state && other) noexcept
 	{
@@ -78,22 +74,25 @@ class transition
 	}
 
  private:
-	state_id_type & m_old_state;
-	state_id_type & m_new_state;
-	input_type & m_value;
+	state_id_type m_old_state;
+	state_id_type m_new_state;
+	input_type m_value;
 };
 
 //////////////////////////////////////////////////////////////////////
 template <typename IN_T, typename S_ID_T>
-class automata
+class automaton
 {
  public:
 	typedef IN_T input_type;
 	typedef S_ID_T state_id_type;
 
-	automata() { }
-
-	~automata() { }
+	automaton() { }
+	automaton(const automaton & other) = default;
+	automaton(automaton && other) = default;
+	automaton & operator = (const automaton & other) = default;
+	automaton & operator = (automaton && other) = default;
+	~automaton() { }
 
 	void declare_start_state(const state_id_type & id)
 	{
@@ -103,16 +102,15 @@ class automata
 	}
 
 	void declare_state(const state_id_type & id)
-	{
-		m_states.emplace_back(id);
-	}
+	{ m_states.emplace_back(id); }
 
 	void declare_transition(const state_id_type & old_state,
 	                        const state_id_type & new_state,
 	                        const input_type & value)
-	{
-		m_transitions.emplace_back(old_state, new_state, value);
-	}
+	{ m_transitions.emplace_back(old_state, new_state, value); }
+
+ protected:
+	void compile() { }
 
  private:
 	std::vector<state<state_id_type>> m_states;
