@@ -10,37 +10,26 @@ LD             ?= ld
 OBJCPY         ?= objcopy
 
 BINDIR          = bin
-DEPDIR          = .deps
+DEPDIR          = deps
 DOCDIR          = doc/html
-OBJDIR          = .objs
+OBJDIR          = objs
 LIBDIR          = lib
 INCLUDEDIR      = $(shell pwd)/include
 
 SUBMAKES = $(shell find $(SUBDIRS) -name Makefile)
 
-#$(info SUBMAKES = $(SUBMAKES))
-
 # Put this as the first target encountered
 release:
 
-#
-#
-#
 define DIR_TARGETS
   D = $(1)
   $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
-#	echo $$(Q) $$@
 	$$(Q)mkdir -p $$@
 endef
 
-#
-#
-#
 define STANDARD_TARGETS
   D = $(1)
   T = $(2)
-
-#  $$(info STANDARD_TARGETS - TARGET = $$(T), DIR = $$(D))
 
   TMP_DEPS := $$($$(T)_OBJS:%o=$$(D)/$(DEPDIR)/%d)
 
@@ -95,16 +84,11 @@ define STANDARD_TARGETS
   DEPS := $$(DEPS) $$(TMP_DEPS)
 endef
 
-####
-#
-####
 define PROGRAM_TARGETS
   D = $(1)
   T = $(2)
 
-#  $$(info PROGRAM_TARGETS - $$(D)/$$(T))
-
-  $$(T)_EXE := $$(D)/$(BINDIR)/$$(T)
+  EXE := $$(D)/$(BINDIR)/$$(T)
 
   #
   # Place compiled objects in $(OBJDIR)
@@ -113,12 +97,13 @@ define PROGRAM_TARGETS
   $$(T)_DBG_OBJS := $$($$(T)_OBJS:%.o=%.debug.o)
   $$(T)_COV_OBJS := $$($$(T)_OBJS:%.o=%.coverage.o)
 
-  $$(T)_LIBSFIRST := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.a)
-  $$(T)_LIBDEPFLAGS := $$($$(T)_LIBDEPS:%=-l%)
+  LIBDEP_FLAGS     := $$($$(T)_LIBDEPS:%=-l%)
+  LIBDEP_DBG_FLAGS := $$($$(T)_LIBDEPS:%=-l%.debug)
+  LIBDEP_COV_FLAGS := $$($$(T)_LIBDEPS:%=-l%.coverage)
 
-  $$(D)/$$(T): $$($$(T)_EXE)
-  $$(D)/$$(T).debug: $$($$(T)_EXE).debug
-  $$(D)/$$(T).coverage: $$($$(T)_EXE).coverage
+  $$(D)/$$(T): $$(EXE)
+  $$(D)/$$(T).debug: $$(EXE).debug
+  $$(D)/$$(T).coverage: $$(EXE).coverage
 
   .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
 
@@ -126,52 +111,42 @@ define PROGRAM_TARGETS
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
   #
-  $$($$(T)_EXE): $$($$(T)_OBJS) $$($$(T)_LIBSFIRST) | $$(D)/$(BINDIR)
-#	echo ">>>>>>>>>>> Linking $$@ from $$^"
-	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ \
-		$$(LDFLAGS_release) $$(LIBS_release) -L $(LIBDIR) $$(LIBDEPFLAGS)
+  $$(EXE): $$($$(T)_OBJS) $$(LIBDEP_FLAGS) | $$(D)/$(BINDIR)
+	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ -L $(LIBDIR) \
+		$$(LDFLAGS_release) $$(LIBS_release)
 	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
 	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
 	$$(QLNKSYM)$$(OBJCPY) --add-gnu-debuglink $$@.symbols $$@
 	$$(Q)chmod 644 $$@.symbols
 
   # Debug
-  $$($$(T)_EXE).debug: $$($$(T)_DBG_OBJS) | $$(D)/$$(BINDIR)
-	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ \
-		$$^ $$(LDFLAGS_debug) $$(LIBS_debug)
+  $$(EXE).debug: $$($$(T)_DBG_OBJS) $$(LIBDEP_DBG_FLAGS) | $$(D)/$$(BINDIR)
+	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ $$^ -L $(LIBDIR) \
+		$$(LDFLAGS_debug) $$(LIBS_debug)
 
   # Coverage
-  $$($$(T)_EXE).coverage: $$($$(T)_COV_OBJS) | $$(D)/$$(BINDIR)
-	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ \
-		$$^ $$(LDFLAGS_coverage) $$(LIBS_coverage)
+  $$(EXE).coverage: $$($$(T)_COV_OBJS) $$(LIBDEP_COV_FLAGS) | $$(D)/$$(BINDIR)
+	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ $$^ -L $(LIBDIR) \
+		$$(LDFLAGS_coverage) $$(LIBS_coverage)
 
-#$$(info )
-#$$(info $(BINDIR)/$$(T) $$($$(T)_EXE))
-#$$(info )
-  $(BINDIR)/$$(T): $$($$(T)_EXE) | $(BINDIR)
-#	echo "XXXXXXXX $$@"
+  $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
 	rm -f $$@
 	ln $$^ $$@
 endef
 
-#
-#
-#
 define LIBRARY_TARGETS
   D = $(1)
   T = $(2)
 
-#  $$(info LIBRARY_TARGETS - $$(D)/$$(T))
-
-  STATIC_NAME := $$(T)_STATIC_LIB
-  #
-  # We need this to eat the whitespace in the parameter expansion
-  #
-  $$(STATIC_NAME) := $$(D)/$$(LIBDIR)/$$(T).a
+  STATIC_LIB     := $$(D)/$$(LIBDIR)/$$(T).a
   DBG_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).debug.a
   COV_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).coverage.a
 
-#  $$(info ==>>==>> $$($$(T)_STATIC_LIB))
+  LINK_NAME := $$(T:lib%=-l%)
+  DBG_LINK_NAME := $$(T:lib%=-l%.debug)
+  COV_LINK_NAME := $$(T:lib%=-l%.coverage)
+
+  .PHONY: $$(LINK_NAME) $$(DBG_LINK_NAME) $$(COV_LINK_NAME)
 
   #
   # Library objects to build
@@ -180,43 +155,39 @@ define LIBRARY_TARGETS
   $$(T)_DBG_OBJS = $$($$(T)_OBJS:%.o=%.debug.o)
   $$(T)_COV_OBJS = $$($$(T)_OBJS:%.o=%.coverage.o)
 
-  $$(D)/$$(T): $$($$(T)_STATIC_LIB)
+  $$(D)/$$(T): $$(STATIC_LIB)
   $$(D)/$$(T).debug: $$(DBG_STATIC_LIB)
   $$(D)/$$(T).coverage: $$(COV_STATIC_LIB)
 
-  $$($$(T)_STATIC_LIB): $$($$(T)_OBJS) | $$(D)/$$(LIBDIR)
+  $$(LINK_NAME): $$(LIBDIR)/$$(T).a
+  $$(DBG_LINK_NAME): $$(LIBDIR)/$$(T).debug.a
+  $$(COV_LINK_NAME): $$(LIBDIR)/$$(T).coverage.a
+
+  $$(STATIC_LIB): $$($$(T)_OBJS) | $$(D)/$$(LIBDIR)
 	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
-	@if [ -n "$$(DESTDIR)" ]; then \
-		mkdir -p $$(DESTDIR)/lib; \
-	    cp -v $$@ $$(DESTDIR)/lib; \
-	fi
 
   # Debug
   $$(DBG_STATIC_LIB): $$($$(T)_DBG_OBJS) | $$(D)/$$(LIBDIR)
 	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
-	@if [ -n "$$(DESTDIR)" ]; then \
-		mkdir -p $$(DESTDIR)/lib; \
-	    cp -v $$@ $$(DESTDIR)/lib; \
-	fi
 
   # Coverage
   $$(COV_STATIC_LIB): $$($$(T)_COV_OBJS) | $$(D)/$$(LIBDIR)
 	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
-	@if [ -n "$$(DESTDIR)" ]; then \
-		mkdir -p $$(DESTDIR)/lib; \
-	    cp -v $$@ $$(DESTDIR)/lib; \
-	fi
 
-#$$(info >>>>>>>>>>>>>>>> $$(LIBDIR)/$$(T) $$($$(T)_STATIC_LIB))
-#$$(info >>> $$(T))
-#$$(info ln $$($$($$(T)_STATIC_LIB)) $$@)
-  $$(LIBDIR)/$$(T).a: $$($$(T)_STATIC_LIB) | $$(LIBDIR)
-#	echo STATIC_NAME = $$($$(STATIC_NAME))
-	rm -f $$@
-	ln $$^ $$@
+  $$(LIBDIR)/$$(T).a: $$(STATIC_LIB) | $$(LIBDIR)
+	@rm -f $$@
+	@ln $$^ $$@
+
+  $$(LIBDIR)/$$(T).debug.a: $$(DBG_STATIC_LIB) | $$(LIBDIR)
+	@rm -f $$@
+	@ln $$^ $$@
+
+  $$(LIBDIR)/$$(T).coverage.a: $$(COV_STATIC_LIB) | $$(LIBDIR)
+	@rm -f $$@
+	@ln $$^ $$@
 endef
 
 ####
@@ -228,8 +199,8 @@ define INCLUDE_SUBMAKE
   OLD_TARGETS := $$(TARGETS)
   OLD_LIB_TARGETS := $$(LIB_TARGETS)
 
-  TARGETS =
-  LIB_TARGETS =
+  TARGETS :=
+  LIB_TARGETS :=
 
   include $$(MF)
 
@@ -246,9 +217,9 @@ define INCLUDE_SUBMAKE
   $$(foreach T, $$(LIB_TARGETS), \
     $$(eval $$(call LIBRARY_TARGETS, $$(DIR), $$(T))))
 
-  TARGETS := $$(TARGETS:%=$$(D)/%)
+  TARGETS := $$(TARGETS:%=$$(DIR)/%)
   TARGETS := $$(TARGETS) $$(OLD_TARGETS)
-  LIB_TARGETS := $$(LIB_TARGETS:%=$$(D)/%)
+  LIB_TARGETS := $$(LIB_TARGETS:%=$$(DIR)/%)
   LIB_TARGETS := $$(LIB_TARGETS) $$(OLD_LIB_TARGETS)
 endef
 
@@ -259,20 +230,6 @@ DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
 
 COV_TARGETS     = $(TARGETS:%=%.coverage)
 COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
-
-#$(foreach T, $(TARGETS), $(eval $(call STANDARD_TARGETS, $(T))))
-
-#
-# Print out our settings
-#
-WS = $(BLANK) $(BLANK)
-
-#$(info $(WS) INCLUDES_base = '$(INCLUDES_base)')
-#$(info $(WS)  DEFINES_base = '$(DEFINES_base)')
-#$(info $(WS)   CFLAGS_base = '$(CFLAGS_base)')
-#$(info $(WS) CXXFLAGS_base = '$(CXXFLAGS_base)')
-#$(info $(WS)  LDFLAGS_base = '$(LDFLAGS_base)')
-#$(info $(WS)     LIBS_base = '$(LIBS_base)')
 
 #
 # Cute stuff to beautify make output - use 'make V=1' to see command output
@@ -327,8 +284,6 @@ HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
 # Auto-rules
 ######################################################################
 
-#$(info TARGETING $(TARGETS) $(LIB_TARGETS))
-
 $(BINDIR) $(LIBDIR):
 	$(Q)mkdir -p $@
 
@@ -342,9 +297,6 @@ debug: $(DBG_LIB_TARGETS) $(DBG_TARGETS)
 coverage: $(COV_LIB_TARGETS) $(COV_TARGETS)
 
 all: release debug coverage
-
-
-#.PHONY: all release debug coverage subdirs libs
 
 ################################################################################
 ifdef $(DEAD) #################################################################
@@ -365,9 +317,7 @@ covreport: coverage.info
 	           --legend --output-directory coverage-report --num-spaces=4
 	chromium-browser coverage-report/index.html
 
-
-tags: subdirs
-	ctags -R .
+endif #########################################################################
 
 docs: $(DOCDIR)
 
@@ -376,7 +326,8 @@ $(DOCDIR): doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
 	$(Q)mkdir -p $@
 	doxygen doc/Doxyfile
 
-endif #########################################################################
+tags: subdirs
+	ctags -R .
 
 codecount:
 	@LC_ALL=en_GB.utf8 \
@@ -401,9 +352,10 @@ clean:
 	    $${dir}/*.info $${dir}/core $${dir}/core.[0123456789]* \
 	    $${dir}/a.out $${dir}/*.symbols; \
 	done
+	@rm -rf $(BINDIR) $(LIBDIR)
 
 docclean:
-	rm -rf $(DOCDIR)
+	@rm -rf $(DOCDIR)
 
 realclean: clean docclean
 	@for dir in $(SUBDIRS); do \
@@ -411,8 +363,9 @@ realclean: clean docclean
 	    $${dir}/config.cache tags $${dir}/coverage-report; \
 	done
 
-#$(info ---> $(DEPS))
-
+#
+# optimization to avoid generating deps if we're removing them
+#
 ifneq ($(MAKECMDGOALS), clean)
  ifneq ($(MAKECMDGOALS), docclean)
   ifneq ($(MAKECMDGOALS), realclean)
