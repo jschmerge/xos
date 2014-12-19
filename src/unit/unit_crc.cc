@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <iostream>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <stack>
 #include <random>
 
@@ -92,12 +94,25 @@ class Test_Crc : public CppUnit::TestFixture
 	void testThreadedCreation()
 	{
 		std::vector<std::thread> threads;
+		std::mutex m;
+		std::condition_variable c;
+		bool ready = false;
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 		for (int i = 0; i < 100; ++i)
 		{
-			threads.emplace_back([] {
+			threads.emplace_back([&] {
+				std::unique_lock<std::mutex> ul(m);
+				c.wait(ul, [&] { return ready; });
 				Crc<T, Polynomial> c;
 			});
 		}
+
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+
+		m.lock();
+		ready = true;
+		m.unlock();
+		c.notify_all();
 
 		for (auto & i : threads) i.join();
 	}
