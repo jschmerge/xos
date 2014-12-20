@@ -21,12 +21,14 @@ SUBMAKES = $(shell find $(SUBDIRS) -name Makefile)
 # Put this as the first target encountered
 release:
 
+######################################################################
 define DIR_TARGETS
   D = $(1)
   $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
 	$$(Q)mkdir -p $$@
 endef
 
+######################################################################
 define STANDARD_TARGETS
   D = $(1)
   T = $(2)
@@ -84,6 +86,7 @@ define STANDARD_TARGETS
   DEPS := $$(DEPS) $$(TMP_DEPS)
 endef
 
+######################################################################
 define PROGRAM_TARGETS
   D = $(1)
   T = $(2)
@@ -102,8 +105,11 @@ define PROGRAM_TARGETS
   LIBDEP_COV_FLAGS := $$($$(T)_LIBDEPS:%=-l%.coverage)
 
   $$(D)/$$(T): $$(EXE)
+	@echo $$(EXE) built
   $$(D)/$$(T).debug: $$(EXE).debug
+	@echo $$(EXE).debug built
   $$(D)/$$(T).coverage: $$(EXE).coverage
+	@echo $$(EXE).coverage built
 
   .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
 
@@ -134,6 +140,7 @@ define PROGRAM_TARGETS
 	ln $$^ $$@
 endef
 
+######################################################################
 define LIBRARY_TARGETS
   D = $(1)
   T = $(2)
@@ -189,6 +196,8 @@ define LIBRARY_TARGETS
 	@rm -f $$@
 	@ln $$^ $$@
 endef
+
+.LIBPATTERNS = lib/lib%.so lib/lib%.a
 
 ####
 #
