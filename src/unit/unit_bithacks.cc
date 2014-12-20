@@ -252,6 +252,78 @@ class Test_byteReverse : public CppUnit::TestFixture
 
 };
 
+class Test_nlz : public CppUnit::TestFixture
+{
+	CPPUNIT_TEST_SUITE(Test_nlz);
+	CPPUNIT_TEST(top_bit<char>);
+	CPPUNIT_TEST(top_bit<signed char>);
+	CPPUNIT_TEST(top_bit<unsigned char>);
+	CPPUNIT_TEST(top_bit<short>);
+	CPPUNIT_TEST(top_bit<unsigned short>);
+	CPPUNIT_TEST(top_bit<int>);
+	CPPUNIT_TEST(top_bit<unsigned int>);
+	CPPUNIT_TEST(top_bit<long>);
+	CPPUNIT_TEST(top_bit<unsigned long>);
+	CPPUNIT_TEST(top_bit<long long>);
+	CPPUNIT_TEST(top_bit<unsigned long long>);
+
+	CPPUNIT_TEST(pentultimate_bit<char>);
+	CPPUNIT_TEST(pentultimate_bit<signed char>);
+	CPPUNIT_TEST(pentultimate_bit<unsigned char>);
+	CPPUNIT_TEST(pentultimate_bit<short>);
+	CPPUNIT_TEST(pentultimate_bit<unsigned short>);
+	CPPUNIT_TEST(pentultimate_bit<int>);
+	CPPUNIT_TEST(pentultimate_bit<unsigned int>);
+	CPPUNIT_TEST(pentultimate_bit<long>);
+	CPPUNIT_TEST(pentultimate_bit<unsigned long>);
+	CPPUNIT_TEST(pentultimate_bit<long long>);
+	CPPUNIT_TEST(pentultimate_bit<unsigned long long>);
+
+	CPPUNIT_TEST(least_bit<char>);
+	CPPUNIT_TEST(least_bit<signed char>);
+	CPPUNIT_TEST(least_bit<unsigned char>);
+	CPPUNIT_TEST(least_bit<short>);
+	CPPUNIT_TEST(least_bit<unsigned short>);
+	CPPUNIT_TEST(least_bit<int>);
+	CPPUNIT_TEST(least_bit<unsigned int>);
+	CPPUNIT_TEST(least_bit<long>);
+	CPPUNIT_TEST(least_bit<unsigned long>);
+	CPPUNIT_TEST(least_bit<long long>);
+	CPPUNIT_TEST(least_bit<unsigned long long>);
+	CPPUNIT_TEST_SUITE_END();
+
+ protected:
+	template<typename T>
+	void top_bit()
+	{
+		size_t type_width = bit_width<T>();
+
+		T value = 1;
+		value <<= (type_width - 1);
+
+		CPPUNIT_ASSERT(nlz(value) == 0);
+	}
+
+	template<typename T>
+	void pentultimate_bit()
+	{
+		size_t type_width = bit_width<T>();
+
+		T value = 1;
+		value <<= (type_width - 2);
+
+		CPPUNIT_ASSERT(nlz(value) == 1);
+	}
+
+	template<typename T>
+	void least_bit()
+	{
+		size_t type_width = bit_width<T>();
+		T value = 1;
+		CPPUNIT_ASSERT(nlz(value) == (type_width - 1));
+	}
+};
+
 class Test_numLeadingZeros : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(Test_numLeadingZeros);
@@ -330,4 +402,5 @@ CPPUNIT_TEST_SUITE_REGISTRATION(Test_pop_count);
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_bitReverse);
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_byteReverse);
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_numLeadingZeros);
+CPPUNIT_TEST_SUITE_REGISTRATION(Test_nlz);
 
