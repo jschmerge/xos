@@ -1,12 +1,11 @@
-#include "codecvt/codecvt_specializations.h"
-#include "codecvt/utf_conversion_helpers.h"
+#include "codecvt/codecvt"
 
 #include <cstring>
 
 #include "cppunit-header.h"
 #include "multistring.h"
 
-// utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
+// utility wrapper to adapt locale facets for use outside of locale framework
 template<class Facet>
 class deletable_facet : public Facet
 {
@@ -74,3 +73,12 @@ class Test_codecvt_base<CVT<CHAR_T, OTHER...>> : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(cvt.max_length() == 6);
 	}
 };
+
+typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> a;
+//typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> b;
+//typedef Test_codecvt_base<std::codecvt_utf8<char16_t>> c;
+//typedef Test_codecvt_base<std::codecvt_utf8<char32_t>> d;
+CPPUNIT_TEST_SUITE_REGISTRATION(a);
+//CPPUNIT_TEST_SUITE_REGISTRATION(b);
+//CPPUNIT_TEST_SUITE_REGISTRATION(c);
+//CPPUNIT_TEST_SUITE_REGISTRATION(d);
