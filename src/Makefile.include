@@ -1,6 +1,5 @@
 ######################################################################
-# The rest of this is a work in progress, but should not
-# need modification
+# Main makefile logic
 ######################################################################
 BUILD ?= release
 
@@ -59,8 +58,6 @@ QCXXCOV_0    = @echo "       CXX $< [coverage]";
 QCXXCOV      = $(QCXXCOV_$(V))
 QLINKCOV_0   = @echo "      LINK $@ [coverage]";
 QLINKCOV     = $(QLINKCOV_$(V))
-
-SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
 
 # Put this as the first target encountered
 release:
@@ -179,9 +176,9 @@ define PROGRAM_TARGETS
 	    $$(patsubst lib/lib%.a, -l%, $$^) \
 		$$(LDFLAGS_coverage) $$(LIBS_coverage)
 
-  $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
-	rm -f $$@
-	ln $$^ $$@
+#  $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
+#	rm -f $$@
+#	ln $$^ $$@
 endef
 
 ######################################################################
@@ -241,12 +238,14 @@ define ACTION_TARGETS
   D = $(1)
   T = $(2)
 
-  $$(D)_$$(T)_action = $$($$(T)_ACTION)
+  $$(D)_$$(T)_action := $$($$(T)_ACTION)
 
   $$(D)_$$(T): $$(addprefix $$(D)/$(BINDIR)/, $$($$(T)_DEPS))
-	EXE=$$<; $$($$@_action)
+	EXE=$$<; $$($$(@)_action)
 
-  .PHONY: $$(D)_$$(T) $$(T)
+  $$(D)/$$(T): $$(D)_$$(T)
+
+  .PHONY: $$(D)_$$(T) $$(D)/$$(T) $$(T)
 
   $$(T): $$(D)_$$(T)
 
@@ -254,44 +253,53 @@ endef
 
 ######################################################################
 define INCLUDE_SUBMAKE
-  MF = $(1)
+  D = $(1)
 
+  OLD_SUBDIRS := $$(SUBDIRS) $$(OLD_SUBDIRS)
   OLD_TARGETS := $$(TARGETS)
   OLD_LIB_TARGETS := $$(LIB_TARGETS)
   OLD_ACTIONS := $$(ACTIONS)
 
+  SUBDIRS :=
   TARGETS :=
   LIB_TARGETS :=
 
-  include $$(MF)
+  include $$(D)/Makefile
 
-  DIR = $$(shell dirname $$(MF))
-
-  $$(eval $$(call DIR_TARGETS, $$(DIR)))
+  $$(eval $$(call DIR_TARGETS, $$(D)))
 
   $$(foreach T, $$(TARGETS) $$(LIB_TARGETS), \
-     $$(eval $$(call STANDARD_TARGETS, $$(DIR), $$(T))))
+     $$(eval $$(call STANDARD_TARGETS, $$(D), $$(T))))
 
   $$(foreach T, $$(TARGETS), \
-    $$(eval $$(call PROGRAM_TARGETS, $$(DIR), $$(T))))
+    $$(eval $$(call PROGRAM_TARGETS, $$(D), $$(T))))
 
   $$(foreach T, $$(LIB_TARGETS), \
-    $$(eval $$(call LIBRARY_TARGETS, $$(DIR), $$(T))))
+    $$(eval $$(call LIBRARY_TARGETS, $$(D), $$(T))))
 
   $$(foreach T, $$(ACTIONS), \
-    $$(eval $$(call ACTION_TARGETS, $$(DIR), $$(T))))
+    $$(eval $$(call ACTION_TARGETS, $$(D), $$(T))))
 
-  TARGETS := $$(TARGETS:%=$$(DIR)/%)
-  TARGETS := $$(OLD_TARGETS) $$(TARGETS)
-  LIB_TARGETS := $$(LIB_TARGETS:%=$$(DIR)/%)
+  TARGETS     := $$(TARGETS:%=$$(D)/%)
+  TARGETS     := $$(OLD_TARGETS) $$(TARGETS)
+  LIB_TARGETS := $$(LIB_TARGETS:%=$$(D)/%)
   LIB_TARGETS := $$(OLD_LIB_TARGETS) $$(LIB_TARGETS)
-  ACTIONS := $$(ACTIONS:%=$$(DIR)/%)
-  ACTIONS := $$(OLD_ACTIONS) $$(ACTIONS)
+  ACTIONS     := $$(ACTIONS:%=$$(D)/%)
+  ACTIONS     := $$(OLD_ACTIONS) $$(ACTIONS)
+
+  SUBDIRS := $$(addprefix $$(D)/, $$(SUBDIRS))
+  $$(foreach DIR, $$(SUBDIRS),$$(eval $$(call INCLUDE_SUBMAKE, $$(DIR))))
+  D = $(1)
+
+  SUBDIRS     := $$(OLD_SUBDIRS) $$(SUBDIRS)
+  OLD_SUBDIRS :=
+$$(info $$(SUBDIRS))
 endef
 
-.PHONY: $(ACTIONS)
 
-$(foreach SM, $(SUBMAKES),$(eval $(call INCLUDE_SUBMAKE, $(SM))))
+SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
+
+$(foreach DIR,$(SUBDIRS),$(eval $(call INCLUDE_SUBMAKE,$(strip $(DIR)))))
 
 DBG_TARGETS     = $(TARGETS:%=%.debug)
 DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
@@ -299,9 +307,8 @@ DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
 COV_TARGETS     = $(TARGETS:%=%.coverage)
 COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
 
-######################################################################
-# Auto-rules
-######################################################################
+.PHONY: $(ACTIONS)
+
 
 #
 # TARGETS
@@ -390,10 +397,13 @@ realclean: clean docclean
 	    $${dir}/config.cache tags $${dir}/coverage-report; \
 	done
 
+print-targets:
+	@echo -e $(subst $(WS) $(WS), \\n,$(strip $(TARGETS) $(LIB_TARGETS) $(ACTIONS)))
+
 #
 # optimization to avoid generating deps for targets that don't care
 #
-NO_DEP_TARGETS = %clean clean% codecount tags
+NO_DEP_TARGETS = %clean clean% codecount tags print-targets
 
 ifneq ($(strip $(filter-out $(NO_DEP_TARGETS), $(MAKECMDGOALS))), )
  -include $(DEPS)
