@@ -334,7 +334,7 @@ $(DOCDIR): doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
 	$(Q)mkdir -p $@
 	doxygen doc/Doxyfile
 
-tags: subdirs
+tags:
 	ctags -R .
 
 codecount:
@@ -391,13 +391,10 @@ realclean: clean docclean
 	done
 
 #
-# optimization to avoid generating deps if we're removing them
+# optimization to avoid generating deps for targets that don't care
 #
-ifneq ($(MAKECMDGOALS), clean)
- ifneq ($(MAKECMDGOALS), docclean)
-  ifneq ($(MAKECMDGOALS), realclean)
-   -include $(DEPS)
-  endif
- endif
-endif
+NO_DEP_TARGETS = %clean clean% codecount tags
 
+ifneq ($(strip $(filter-out $(NO_DEP_TARGETS), $(MAKECMDGOALS))), )
+ -include $(DEPS)
+endif
