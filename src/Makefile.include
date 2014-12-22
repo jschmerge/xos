@@ -241,14 +241,14 @@ define ACTION_TARGETS
   D = $(1)
   T = $(2)
 
-  $$(D)_$$(T)_action := $$($$(T)_ACTION)
+  $$(D)_$$(T)_action = $$($$(T)_ACTION)
 
-  $$(D)/$$(T): $$(addprefix $$(D)/$(BINDIR)/, $$($$(T)_DEPS))
-	EXE=$$<; $$(unit_check_action)
+  $$(D)_$$(T): $$(addprefix $$(D)/$(BINDIR)/, $$($$(T)_DEPS))
+	EXE=$$<; $$($$@_action)
 
-  .PHONY: $$(D)/$$(T) $$(T)
+  .PHONY: $$(D)_$$(T) $$(T)
 
-  $$(T): $$(D)/$$(T)
+  $$(T): $$(D)_$$(T)
 
 endef
 
@@ -364,6 +364,14 @@ codecount:
 	@/usr/bin/printf "%14s: %7s %7s %' 7d\n" "Makefiles" "" "" \
 		$$(find . -name 'Makefile*' \
 		   | xargs wc -l | tail -1 | sed -e 's/total//g')
+
+clean-cov:
+	@rm -v coverage.info
+	@for dir in $(SUBDIRS); do \
+	  for f in $${dir}/$(OBJDIR)/*.{gcda,gcno} ; do \
+		if [ -f $$f ]; then rm -v $$f ; fi ; \
+	  done ; \
+	done
 
 clean:
 	@for dir in $(SUBDIRS); do \
