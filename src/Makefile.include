@@ -366,18 +366,18 @@ codecount:
 		   | xargs wc -l | tail -1 | sed -e 's/total//g')
 
 clean-cov:
-	@rm -v coverage.info
+	@rm -rfv coverage.info coverage-report
 	@for dir in $(SUBDIRS); do \
 	  for f in $${dir}/$(OBJDIR)/*.{gcda,gcno} ; do \
 		if [ -f $$f ]; then rm -v $$f ; fi ; \
 	  done ; \
 	done
 
-clean:
+clean: clean-cov
 	@for dir in $(SUBDIRS); do \
 	  rm -vrf $${dir}/$(OBJDIR) $${dir}/$(LIBDIR) $${dir}/$(BINDIR) \
 	    $${dir}/*.info $${dir}/core $${dir}/core.[0123456789]* \
-	    $${dir}/a.out $${dir}/*.symbols; \
+	    $${dir}/a.out; \
 	done
 	@rm -rf $(BINDIR) $(LIBDIR)
 
