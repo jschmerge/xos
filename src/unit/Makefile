@@ -42,7 +42,6 @@ debug-check_DEPS = unittest.debug
 
 debug-check_ACTION = $(check_ACTION)
 
-
 coverage-check_DEPS = unittest.coverage
 
 coverage-check_ACTION = $$EXE -p foo > /dev/null 2>&1 || true ; \
