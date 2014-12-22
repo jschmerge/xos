@@ -17,15 +17,12 @@ class deletable_facet : public Facet
 };
 
 // Primary declaration
-template <typename> class Test_codecvt_base;
-
-template <template<class, class...> class CVT,
-          typename CHAR_T,
-          typename... OTHER> 
-class Test_codecvt_base<CVT<CHAR_T, OTHER...>> : public CppUnit::TestFixture
+template <typename CVT>
+class Test_codecvt_base : public CppUnit::TestFixture
 {
  public:
-	typedef CVT<CHAR_T, OTHER...> cvt_t;
+	typedef CVT cvt_t;
+	typedef typename CVT::intern_type char_type;
 
 	CPPUNIT_TEST_SUITE(Test_codecvt_base);
 	CPPUNIT_TEST(construction);
@@ -44,8 +41,6 @@ class Test_codecvt_base<CVT<CHAR_T, OTHER...>> : public CppUnit::TestFixture
 		deletable_facet<cvt_t> cvt2(1);
 		deletable_facet<cvt_t> cvt3(2);
 
-		static_assert(std::is_same<CHAR_T, typename cvt_t::intern_type>::value,
-		              "codecvt<> intern_type is invalid");
 		static_assert(std::is_same<char, typename cvt_t::extern_type>::value,
 		              "codecvt<> extern_type is invalid");
 		CPPUNIT_ASSERT(cvt.encoding() == 0);
@@ -67,18 +62,19 @@ class Test_codecvt_base<CVT<CHAR_T, OTHER...>> : public CppUnit::TestFixture
 	{
 		deletable_facet<cvt_t> cvt;
 
-		if (std::is_same<char16_t, CHAR_T>::value)
-			CPPUNIT_ASSERT(cvt.max_length() == 4);
-		else if (std::is_same<char32_t, CHAR_T>::value)
-			CPPUNIT_ASSERT(cvt.max_length() == 6);
+		if (std::is_same<char16_t, char_type>::value)
+			CPPUNIT_ASSERT(cvt.max_length() <= 4);
+		else if (std::is_same<char32_t, char_type>::value)
+			CPPUNIT_ASSERT(cvt.max_length() <= 6);
 	}
 };
 
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> a;
-//typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> b;
-//typedef Test_codecvt_base<std::codecvt_utf8<char16_t>> c;
-//typedef Test_codecvt_base<std::codecvt_utf8<char32_t>> d;
+typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> b;
+typedef Test_codecvt_base<std::codecvt_utf8<char16_t, 0xff, std::codecvt_mode(0)>> c;
+typedef Test_codecvt_base<std::codecvt_utf8<char32_t>> d;
+
 CPPUNIT_TEST_SUITE_REGISTRATION(a);
-//CPPUNIT_TEST_SUITE_REGISTRATION(b);
-//CPPUNIT_TEST_SUITE_REGISTRATION(c);
-//CPPUNIT_TEST_SUITE_REGISTRATION(d);
+CPPUNIT_TEST_SUITE_REGISTRATION(b);
+CPPUNIT_TEST_SUITE_REGISTRATION(c);
+CPPUNIT_TEST_SUITE_REGISTRATION(d);
