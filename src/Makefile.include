@@ -16,7 +16,51 @@ OBJDIR          = objs
 LIBDIR          = lib
 INCLUDEDIR      = $(shell pwd)/include
 
-SUBMAKES = $(shell find $(SUBDIRS) -name Makefile)
+#
+# Cute stuff to beautify make output - use 'make V=1' to see command output
+#
+V           ?= 0
+Q_0          = @
+Q            = $(Q_$(V))
+QDEP_0       = @echo "       DEP" $<;
+QDEP         = $(QDEP_$(V))
+
+QCC_0        = @echo "        CC" $<;
+QCC          = $(QCC_$(V))
+QCXX_0       = @echo "       CXX" $<;
+QCXX         = $(QCXX_$(V))
+QLINK_0      = @echo "      LINK" $@;
+QLINK        = $(QLINK_$(V))
+QSYM_0       = @echo "       SYM" $@;
+QSYM         = $(QSYM_$(V))
+QSTRIP_0     = @echo "     STRIP" $@;
+QSTRIP       = $(QSTRIP_$(V))
+QLNKSYM_0    = @echo "    LNKSYM" $@;
+QLNKSYM      = $(QLNKSYM_$(V))
+QAR_0        = @echo "        AR" $@;
+QAR          = $(QAR_$(V))
+QRANLIB_0    = @echo "    RANLIB" $@;
+QRANLIB      = $(QRANLIB_$(V))
+
+QDEPDBG_0    = @echo "       DEP $< [debug]";
+QDEPDBG      = $(QDEPDBG_$(V))
+QCCDBG_0     = @echo "        CC $< [debug]";
+QCCDBG       = $(QCCDBG_$(V))
+QCXXDBG_0    = @echo "       CXX $< [debug]";
+QCXXDBG      = $(QCXXDBG_$(V))
+QLINKDBG_0   = @echo "      LINK $@ [debug]";
+QLINKDBG     = $(QLINKDBG_$(V))
+
+QDEPCOV_0    = @echo "       DEP $< [coverage]";
+QDEPCOV      = $(QDEPCOV_$(V))
+QCCCOV_0     = @echo "        CC $< [coverage]";
+QCCCOV       = $(QCCCOV_$(V))
+QCXXCOV_0    = @echo "       CXX $< [coverage]";
+QCXXCOV      = $(QCXXCOV_$(V))
+QLINKCOV_0   = @echo "      LINK $@ [coverage]";
+QLINKCOV     = $(QLINKCOV_$(V))
+
+SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
 
 # Put this as the first target encountered
 release:
@@ -100,16 +144,13 @@ define PROGRAM_TARGETS
   $$(T)_DBG_OBJS := $$($$(T)_OBJS:%.o=%.debug.o)
   $$(T)_COV_OBJS := $$($$(T)_OBJS:%.o=%.coverage.o)
 
-  LIBDEP_FLAGS     := $$($$(T)_LIBDEPS:%=-l%)
-  LIBDEP_DBG_FLAGS := $$($$(T)_LIBDEPS:%=-l%.debug)
-  LIBDEP_COV_FLAGS := $$($$(T)_LIBDEPS:%=-l%.coverage)
+  LIBDEPS     := $$($$(T)_LIBDEPS:%=lib/lib%.a)
+  DBG_LIBDEPS := $$($$(T)_LIBDEPS:%=lib/lib%.debug.a)
+  COV_LIBDEPS := $$($$(T)_LIBDEPS:%=lib/lib%.coverage.a)
 
   $$(D)/$$(T): $$(EXE)
-	@echo $$(EXE) built
   $$(D)/$$(T).debug: $$(EXE).debug
-	@echo $$(EXE).debug built
   $$(D)/$$(T).coverage: $$(EXE).coverage
-	@echo $$(EXE).coverage built
 
   .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
 
@@ -117,8 +158,9 @@ define PROGRAM_TARGETS
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
   #
-  $$(EXE): $$($$(T)_OBJS) $$(LIBDEP_FLAGS) | $$(D)/$(BINDIR)
-	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ $$^ -L $(LIBDIR) \
+  $$(EXE): $$($$(T)_OBJS) $$(LIBDEPS) | $$(D)/$(BINDIR)
+	$$(QLINK)$$(CXX) $$(CXXFLAGS_release) -o $$@ -L $(LIBDIR) \
+	    $$(patsubst lib/lib%.a, -l%, $$^) \
 		$$(LDFLAGS_release) $$(LIBS_release)
 	$$(QSYM)$$(OBJCPY) --only-keep-debug $$@ $$@.symbols
 	$$(QSTRIP)$$(OBJCPY) --strip-all $$@
@@ -126,13 +168,15 @@ define PROGRAM_TARGETS
 	$$(Q)chmod 644 $$@.symbols
 
   # Debug
-  $$(EXE).debug: $$($$(T)_DBG_OBJS) $$(LIBDEP_DBG_FLAGS) | $$(D)/$$(BINDIR)
-	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ $$^ -L $(LIBDIR) \
+  $$(EXE).debug: $$($$(T)_DBG_OBJS) $$(DBG_LIBDEPS) | $$(D)/$$(BINDIR)
+	$$(QLINKDBG)$$(CXX) $$(CXXFLAGS_debug) -o $$@ -L $(LIBDIR) \
+	    $$(patsubst lib/lib%.a, -l%, $$^) \
 		$$(LDFLAGS_debug) $$(LIBS_debug)
 
   # Coverage
-  $$(EXE).coverage: $$($$(T)_COV_OBJS) $$(LIBDEP_COV_FLAGS) | $$(D)/$$(BINDIR)
-	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ $$^ -L $(LIBDIR) \
+  $$(EXE).coverage: $$($$(T)_COV_OBJS) $$(COV_LIBDEPS) | $$(D)/$$(BINDIR)
+	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ -L $(LIBDIR) \
+	    $$(patsubst lib/lib%.a, -l%, $$^) \
 		$$(LDFLAGS_coverage) $$(LIBS_coverage)
 
   $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
@@ -153,8 +197,6 @@ define LIBRARY_TARGETS
   DBG_LINK_NAME := $$(T:lib%=-l%.debug)
   COV_LINK_NAME := $$(T:lib%=-l%.coverage)
 
-  .PHONY: $$(LINK_NAME) $$(DBG_LINK_NAME) $$(COV_LINK_NAME)
-
   #
   # Library objects to build
   #
@@ -166,10 +208,7 @@ define LIBRARY_TARGETS
   $$(D)/$$(T).debug: $$(DBG_STATIC_LIB)
   $$(D)/$$(T).coverage: $$(COV_STATIC_LIB)
 
-  $$(LINK_NAME): $$(LIBDIR)/$$(T).a
-  $$(DBG_LINK_NAME): $$(LIBDIR)/$$(T).debug.a
-  $$(COV_LINK_NAME): $$(LIBDIR)/$$(T).coverage.a
-
+  # release
   $$(STATIC_LIB): $$($$(T)_OBJS) | $$(D)/$$(LIBDIR)
 	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
@@ -197,16 +236,29 @@ define LIBRARY_TARGETS
 	@ln $$^ $$@
 endef
 
-.LIBPATTERNS = lib/lib%.so lib/lib%.a
+######################################################################
+define ACTION_TARGETS
+  D = $(1)
+  T = $(2)
 
-####
-#
-####
+  $$(D)_$$(T)_action := $$($$(T)_ACTION)
+
+  $$(D)/$$(T): $$(addprefix $$(D)/$(BINDIR)/, $$($$(T)_DEPS))
+	EXE=$$<; $$(unit_check_action)
+
+  .PHONY: $$(D)/$$(T) $$(T)
+
+  $$(T): $$(D)/$$(T)
+
+endef
+
+######################################################################
 define INCLUDE_SUBMAKE
   MF = $(1)
 
   OLD_TARGETS := $$(TARGETS)
   OLD_LIB_TARGETS := $$(LIB_TARGETS)
+  OLD_ACTIONS := $$(ACTIONS)
 
   TARGETS :=
   LIB_TARGETS :=
@@ -226,11 +278,18 @@ define INCLUDE_SUBMAKE
   $$(foreach T, $$(LIB_TARGETS), \
     $$(eval $$(call LIBRARY_TARGETS, $$(DIR), $$(T))))
 
+  $$(foreach T, $$(ACTIONS), \
+    $$(eval $$(call ACTION_TARGETS, $$(DIR), $$(T))))
+
   TARGETS := $$(TARGETS:%=$$(DIR)/%)
-  TARGETS := $$(TARGETS) $$(OLD_TARGETS)
+  TARGETS := $$(OLD_TARGETS) $$(TARGETS)
   LIB_TARGETS := $$(LIB_TARGETS:%=$$(DIR)/%)
-  LIB_TARGETS := $$(LIB_TARGETS) $$(OLD_LIB_TARGETS)
+  LIB_TARGETS := $$(OLD_LIB_TARGETS) $$(LIB_TARGETS)
+  ACTIONS := $$(ACTIONS:%=$$(DIR)/%)
+  ACTIONS := $$(OLD_ACTIONS) $$(ACTIONS)
 endef
+
+.PHONY: $(ACTIONS)
 
 $(foreach SM, $(SUBMAKES),$(eval $(call INCLUDE_SUBMAKE, $(SM))))
 
@@ -240,61 +299,9 @@ DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
 COV_TARGETS     = $(TARGETS:%=%.coverage)
 COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
 
-#
-# Cute stuff to beautify make output - use 'make V=1' to see command output
-#
-V           ?= 0
-Q_0          = @
-Q            = $(Q_$(V))
-QDEP_0       = @echo "       DEP" $<;
-QDEP         = $(QDEP_$(V))
-
-QCC_0        = @echo "        CC" $<;
-QCC          = $(QCC_$(V))
-QCXX_0       = @echo "       CXX" $<;
-QCXX         = $(QCXX_$(V))
-QLINK_0      = @echo "      LINK" $@;
-QLINK        = $(QLINK_$(V))
-QSYM_0       = @echo "       SYM" $@;
-QSYM         = $(QSYM_$(V))
-QSTRIP_0     = @echo "     STRIP" $@;
-QSTRIP       = $(QSTRIP_$(V))
-QLNKSYM_0    = @echo "    LNKSYM" $@;
-QLNKSYM      = $(QLNKSYM_$(V))
-QAR_0        = @echo "        AR" $@;
-QAR          = $(QAR_$(V))
-QRANLIB_0    = @echo "    RANLIB" $@;
-QRANLIB      = $(QRANLIB_$(V))
-
-
-QDEPDBG_0    = @echo "       DEP $< [debug]";
-QDEPDBG      = $(QDEPDBG_$(V))
-QCCDBG_0     = @echo "        CC $< [debug]";
-QCCDBG       = $(QCCDBG_$(V))
-QCXXDBG_0    = @echo "       CXX $< [debug]";
-QCXXDBG      = $(QCXXDBG_$(V))
-QLINKDBG_0   = @echo "      LINK $@ [debug]";
-QLINKDBG     = $(QLINKDBG_$(V))
-
-QDEPCOV_0    = @echo "       DEP $< [coverage]";
-QDEPCOV      = $(QDEPCOV_$(V))
-QCCCOV_0     = @echo "        CC $< [coverage]";
-QCCCOV       = $(QCCCOV_$(V))
-QCXXCOV_0    = @echo "       CXX $< [coverage]";
-QCXXCOV      = $(QCXXCOV_$(V))
-QLINKCOV_0   = @echo "      LINK $@ [coverage]";
-QLINKCOV     = $(QLINKCOV_$(V))
-
-HIDEOUTPUT_0 = "/dev/null"
-HIDEOUTPUT_1 = "/dev/stdout"
-HIDEOUTPUT   = $(HIDEOUTPUT_$(V))
-
 ######################################################################
 # Auto-rules
 ######################################################################
-
-$(BINDIR) $(LIBDIR):
-	$(Q)mkdir -p $@
 
 #
 # TARGETS
@@ -307,14 +314,8 @@ coverage: $(COV_LIB_TARGETS) $(COV_TARGETS)
 
 all: release debug coverage
 
-################################################################################
-ifdef $(DEAD) #################################################################
-################################################################################
-check: release
-
-debug-check: debug
-
-coverage-check: coverage 
+$(BINDIR) $(LIBDIR):
+	$(Q)mkdir -p $@
 
 coverage.info:
 	$(MAKE) coverage-check
@@ -325,8 +326,6 @@ covreport: coverage.info
 	genhtml $< --quiet --frames --show-details --demangle-cpp \
 	           --legend --output-directory coverage-report --num-spaces=4
 	chromium-browser coverage-report/index.html
-
-endif #########################################################################
 
 docs: $(DOCDIR)
 
@@ -339,22 +338,33 @@ tags: subdirs
 	ctags -R .
 
 codecount:
-	@LC_ALL=en_GB.utf8 \
-		/usr/bin/printf "     Headers: %' 7d\n" \
-		$$(find . -name '*.h' | \
-		   xargs wc -l | tail -1 | sed -e 's/total//g')
-	@LC_ALL=en_GB.utf8 \
-		/usr/bin/printf "      Source: %' 7d\n" \
-		$$(find . -name '*.cc' -o -name '*.c' | \
-		   xargs wc -l | tail -1 | sed -e 's/total//g')
-	@LC_ALL=en_GB.utf8 \
-		/usr/bin/printf "Total Source: %' 7d\n" \
-		$$(find . -name '*.cc' -o -name '*.c' -o -name '*.h' | \
-		   xargs wc -l | tail -1 | sed -e 's/total//g')
-	@LC_ALL=en_GB.utf8 \
-		/usr/bin/printf "       Build: %' 7d\n" \
+	@echo "     directory  headers  source   total"
+	@echo "---------------------------------------"
+	@total=0; \
+	htotal=0; \
+	ctotal=0; \
+	for d in $(SUBDIRS); do \
+		hcount=$$(find $$d -name '*.h' | \
+			xargs wc -l | tail -1 | sed -e 's/total//g') ;\
+		ccount=$$(find $$d -name '*.cc' -o -name '*.c' | \
+			xargs wc -l | tail -1 | sed -e 's/total//g') ;\
+		/usr/bin/printf "%14s: %' 7d %' 7d %' 7d\n" \
+			$$d $$hcount $$ccount $$((hcount + ccount)); \
+		htotal=$$((htotal + hcount)) ; \
+		ctotal=$$((ctotal + ccount)) ; \
+		total=$$((total + hcount + ccount)) ; \
+	done; \
+	/usr/bin/printf "\n%14s: %' 7d %' 7d %' 7d\n" \
+		"Active Source" $$htotal $$ctotal $$total
+	@h=$$(find . -name '*.h' | \
+		   xargs wc -l | tail -1 | sed -e 's/total//g'); \
+	c=$$(find . -name '*.cc' -o -name '*.c' | \
+		   xargs wc -l | tail -1 | sed -e 's/total//g'); \
+	/usr/bin/printf "%14s: %' 7d %' 7d %' 7d\n" "All Source" $$h $$c $$((h + c))
+	@/usr/bin/printf "%14s: %7s %7s %' 7d\n" "Makefiles" "" "" \
 		$$(find . -name 'Makefile*' \
 		   | xargs wc -l | tail -1 | sed -e 's/total//g')
+
 clean:
 	@for dir in $(SUBDIRS); do \
 	  rm -vrf $${dir}/$(OBJDIR) $${dir}/$(LIBDIR) $${dir}/$(BINDIR) \

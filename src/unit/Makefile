@@ -28,41 +28,35 @@ unittest_LIBDEPS = filesystem codecvt environment
 
 
 PROGRESS          ?= brief
-#TOPDIR            ?= ..
-#include $(TOPDIR)/Makefile.include
 
-#check: $(TARGETS)
-#	@if [ -n "$(TEST)" ]; then \
-#	  echo bin/unittest -t $(TEST) -p $(PROGRESS); \
-#	  bin/unittest -t $(TEST) -p $(PROGRESS); \
-#	else \
-#	  echo bin/unittest -p $(PROGRESS); \
-#	  bin/unittest -p $(PROGRESS); \
-#	fi
+ACTIONS      = check debug-check coverage-check
 
-#debug-check: $(DBG_TARGETS)
-#	@if [ -n "$(TEST)" ]; then \
-#	  echo bin/unittest.debug -t $(TEST) -p $(PROGRESS); \
-#	  bin/unittest.debug -t $(TEST) -p $(PROGRESS); \
-#	else \
-#	  echo bin/unittest.debug -p $(PROGRESS); \
-#	  bin/unittest.debug -p $(PROGRESS); \
-#	fi
+check_DEPS   = unittest
+check_ACTION = if [ -n "$(TEST)" ]; then \
+	  $$EXE -t $(TEST) -p $(PROGRESS); \
+	else \
+	  $$EXE -p $(PROGRESS); \
+	fi
+
+debug-check_DEPS = unittest.debug
+
+debug-check_ACTION = $(check_ACTION)
 
 
-#coverage-check: $(COV_TARGETS)
-#	@./bin/unittest.coverage -p foo > /dev/null 2>&1 || true
-#	@./bin/unittest.coverage -o foo > /dev/null 2>&1 || true
-#	@./bin/unittest.coverage -t foo > /dev/null 2>&1 || true
-#	@./bin/unittest.coverage -h > /dev/null 2>&1 || true
-#	@./bin/unittest.coverage -r 1 -o none -l > /dev/null 2>&1
-#	@if [ -n "$(TEST)" ]; then \
-#	  echo bin/unittest.coverage -t $(TEST) -p verbose; \
-#	  bin/unittest.coverage -t $(TEST) -p verbose; \
-#	else \
-#	  echo bin/unittest.coverage -p verbose; \
-#	  bin/unittest.coverage -p verbose; \
-#	fi
+coverage-check_DEPS = unittest.coverage
+
+coverage-check_ACTION = $$EXE -p foo > /dev/null 2>&1 || true ; \
+	$$EXE -o foo > /dev/null 2>&1 || true ; \
+	$$EXE -t foo > /dev/null 2>&1 || true ; \
+	$$EXE -h > /dev/null 2>&1 || true ; \
+	$$EXE -r 1 -o none -l > /dev/null 2>&1 ; \
+	if [ -n "$(TEST)" ]; then \
+	  echo $$EXE -t $(TEST) -p verbose; \
+	  $$EXE -t $(TEST) -p verbose; \
+	else \
+	  echo $$EXE -p verbose; \
+	  $$EXE -p verbose; \
+	fi
 
 INCLUDES_base     ?= -I $(TOPDIR)
 INCLUDES_release  ?= $(INCLUDES_base)
