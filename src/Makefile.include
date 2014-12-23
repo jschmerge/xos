@@ -18,51 +18,54 @@ INCLUDEDIR      = $(shell pwd)/include
 #
 # Cute stuff to beautify make output - use 'make V=1' to see command output
 #
-V           ?= 0
-Q_0          = @
-Q            = $(Q_$(V))
-QDEP_0       = @echo "       DEP" $<;
-QDEP         = $(QDEP_$(V))
+V              ?= 0
+Q_0             = @
+Q               = $(Q_$(V))
+QDEP_0          = @echo "       DEP" $<;
+QDEP            = $(QDEP_$(V))
 
-QCC_0        = @echo "        CC" $<;
-QCC          = $(QCC_$(V))
-QCXX_0       = @echo "       CXX" $<;
-QCXX         = $(QCXX_$(V))
-QLINK_0      = @echo "      LINK" $@;
-QLINK        = $(QLINK_$(V))
-QSYM_0       = @echo "       SYM" $@;
-QSYM         = $(QSYM_$(V))
-QSTRIP_0     = @echo "     STRIP" $@;
-QSTRIP       = $(QSTRIP_$(V))
-QLNKSYM_0    = @echo "    LNKSYM" $@;
-QLNKSYM      = $(QLNKSYM_$(V))
-QAR_0        = @echo "        AR" $@;
-QAR          = $(QAR_$(V))
-QRANLIB_0    = @echo "    RANLIB" $@;
-QRANLIB      = $(QRANLIB_$(V))
+QCC_0           = @echo "        CC" $<;
+QCC             = $(QCC_$(V))
+QCXX_0          = @echo "       CXX" $<;
+QCXX            = $(QCXX_$(V))
+QLINK_0         = @echo "      LINK" $@;
+QLINK           = $(QLINK_$(V))
+QSYM_0          = @echo "       SYM" $@;
+QSYM            = $(QSYM_$(V))
+QSTRIP_0        = @echo "     STRIP" $@;
+QSTRIP          = $(QSTRIP_$(V))
+QLNKSYM_0       = @echo "    LNKSYM" $@;
+QLNKSYM         = $(QLNKSYM_$(V))
+QAR_0           = @echo "        AR" $@;
+QAR             = $(QAR_$(V))
+QRANLIB_0       = @echo "    RANLIB" $@;
+QRANLIB         = $(QRANLIB_$(V))
 
-QDEPDBG_0    = @echo "       DEP $< [debug]";
-QDEPDBG      = $(QDEPDBG_$(V))
-QCCDBG_0     = @echo "        CC $< [debug]";
-QCCDBG       = $(QCCDBG_$(V))
-QCXXDBG_0    = @echo "       CXX $< [debug]";
-QCXXDBG      = $(QCXXDBG_$(V))
-QLINKDBG_0   = @echo "      LINK $@ [debug]";
-QLINKDBG     = $(QLINKDBG_$(V))
+QDEPDBG_0       = @echo "       DEP $< [debug]";
+QDEPDBG         = $(QDEPDBG_$(V))
+QCCDBG_0        = @echo "        CC $< [debug]";
+QCCDBG          = $(QCCDBG_$(V))
+QCXXDBG_0       = @echo "       CXX $< [debug]";
+QCXXDBG         = $(QCXXDBG_$(V))
+QLINKDBG_0      = @echo "      LINK $@ [debug]";
+QLINKDBG        = $(QLINKDBG_$(V))
 
-QDEPCOV_0    = @echo "       DEP $< [coverage]";
-QDEPCOV      = $(QDEPCOV_$(V))
-QCCCOV_0     = @echo "        CC $< [coverage]";
-QCCCOV       = $(QCCCOV_$(V))
-QCXXCOV_0    = @echo "       CXX $< [coverage]";
-QCXXCOV      = $(QCXXCOV_$(V))
-QLINKCOV_0   = @echo "      LINK $@ [coverage]";
-QLINKCOV     = $(QLINKCOV_$(V))
+QDEPCOV_0       = @echo "       DEP $< [coverage]";
+QDEPCOV         = $(QDEPCOV_$(V))
+QCCCOV_0        = @echo "        CC $< [coverage]";
+QCCCOV          = $(QCCCOV_$(V))
+QCXXCOV_0       = @echo "       CXX $< [coverage]";
+QCXXCOV         = $(QCXXCOV_$(V))
+QLINKCOV_0      = @echo "      LINK $@ [coverage]";
+QLINKCOV        = $(QLINKCOV_$(V))
 
 # Put this as the first target encountered
 release:
 
 ######################################################################
+#
+# DIR_TARGETS - Macro to make directory creation rules
+#
 define DIR_TARGETS
   D = $(1)
   $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
@@ -70,6 +73,9 @@ define DIR_TARGETS
 endef
 
 ######################################################################
+#
+# STANDARD_TARGETS - 
+#
 define STANDARD_TARGETS
   D = $(1)
   T = $(2)
@@ -137,13 +143,13 @@ define PROGRAM_TARGETS
   #
   # Place compiled objects in $(OBJDIR)
   #
-  $$(T)_OBJS := $$($$(T)_OBJS:%.o=$$(D)/$(OBJDIR)/%.o)
+  $$(T)_OBJS     := $$($$(T)_OBJS:%.o=$$(D)/$(OBJDIR)/%.o)
   $$(T)_DBG_OBJS := $$($$(T)_OBJS:%.o=%.debug.o)
   $$(T)_COV_OBJS := $$($$(T)_OBJS:%.o=%.coverage.o)
 
-  LIBDEPS     := $$($$(T)_LIBDEPS:%=lib/lib%.a)
-  DBG_LIBDEPS := $$($$(T)_LIBDEPS:%=lib/lib%.debug.a)
-  COV_LIBDEPS := $$($$(T)_LIBDEPS:%=lib/lib%.coverage.a)
+  LIBDEPS        := $$($$(T)_LIBDEPS:%=lib/lib%.a)
+  DBG_LIBDEPS    := $$($$(T)_LIBDEPS:%=lib/lib%.debug.a)
+  COV_LIBDEPS    := $$($$(T)_LIBDEPS:%=lib/lib%.coverage.a)
 
   $$(D)/$$(T): $$(EXE)
   $$(D)/$$(T).debug: $$(EXE).debug
@@ -190,9 +196,9 @@ define LIBRARY_TARGETS
   DBG_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).debug.a
   COV_STATIC_LIB := $$(D)/$$(LIBDIR)/$$(T).coverage.a
 
-  LINK_NAME := $$(T:lib%=-l%)
-  DBG_LINK_NAME := $$(T:lib%=-l%.debug)
-  COV_LINK_NAME := $$(T:lib%=-l%.coverage)
+  LINK_NAME      := $$(T:lib%=-l%)
+  DBG_LINK_NAME  := $$(T:lib%=-l%.debug)
+  COV_LINK_NAME  := $$(T:lib%=-l%.coverage)
 
   #
   # Library objects to build
@@ -287,7 +293,7 @@ define INCLUDE_SUBMAKE
   ACTIONS     := $$(ACTIONS:%=$$(D)/%)
   ACTIONS     := $$(OLD_ACTIONS) $$(ACTIONS)
 
-  SUBDIRS := $$(addprefix $$(D)/, $$(SUBDIRS))
+  SUBDIRS     := $$(addprefix $$(D)/, $$(SUBDIRS))
   $$(foreach DIR, $$(SUBDIRS),$$(eval $$(call INCLUDE_SUBMAKE, $$(DIR))))
   D = $(1)
 
