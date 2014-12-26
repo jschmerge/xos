@@ -350,31 +350,68 @@ $(DOCDIR): doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
 tags:
 	ctags -R .
 
-codecount:
-	@echo "     directory  headers  source   total"
-	@echo "---------------------------------------"
+define SHOWACTIVE
+	cat $(1) | \
+	  sed -e '/:$$/d' \
+	      -e '/^$$/d' \
+	      -e '/\\$$/ { H; d }' \
+	      -e 'H; x' \
+	      -e 's!\\\n!!g' \
+	      -e 's!'$$(pwd -P)/'!!g' \
+	      -e 's!^[^:]*:!!g' \
+	      -e 's! \+! !g' \
+	      -e 's!^ !!g' \
+	      -e 's! $$!!g' \
+	      -e 's! !\n!g' \
+	      | sort -u
+endef
+
+.PHONY: showactive
+
+showactive: $(DEPS)
+	$(call SHOWACTIVE, $^)
+
+
+#	for d in $$(dirname $(call SHOWACTIVE, $(DEPS)) | sort -u); do \
+
+COLWIDTH=20
+codecount: $(DEPS)
+	@/usr/bin/printf "%$(COLWIDTH)s  % 7s % 7s % 7s\n" \
+		directory  headers  source   total
+	@echo "---------------------------------------------------------"
 	@total=0; \
 	htotal=0; \
 	ctotal=0; \
-	for d in $(SUBDIRS); do \
+	for d in $$(dirname $$($(call SHOWACTIVE, $(DEPS))) | sort -u); do \
 		hcount=$$(find $$d -name '*.h' | \
-			xargs wc -l | tail -1 | sed -e 's/total//g') ;\
+			xargs wc -l | tail -1 | sed -e 's/ *\([0-9]\+\) \+.*/\1/g') ;\
 		ccount=$$(find $$d -name '*.cc' -o -name '*.c' | \
-			xargs wc -l | tail -1 | sed -e 's/total//g') ;\
-		/usr/bin/printf "%14s: %' 7d %' 7d %' 7d\n" \
+			xargs wc -l | tail -1 | sed -e 's/ *\([0-9]\+\) \+.*/\1/g') ;\
+		/usr/bin/printf "%$(COLWIDTH)s: %' 7d %' 7d %' 7d\n" \
 			$$d $$hcount $$ccount $$((hcount + ccount)); \
 		htotal=$$((htotal + hcount)) ; \
 		ctotal=$$((ctotal + ccount)) ; \
 		total=$$((total + hcount + ccount)) ; \
 	done; \
-	/usr/bin/printf "\n%14s: %' 7d %' 7d %' 7d\n" \
-		"Active Source" $$htotal $$ctotal $$total
+	/usr/bin/printf "\n%$(COLWIDTH)s: %' 7d %' 7d %' 7d\n" \
+		"Dir Totals" $$htotal $$ctotal $$total
+	@for f in $$($(call SHOWACTIVE, $(DEPS))); do \
+		case $$f in \
+			(*.h) htotal=$$((htotal + $$(wc -l < $$f))) ;; \
+			(*.cc) ctotal=$$((ctotal + $$(wc -l < $$f))) ;; \
+			(*.c) ctotal=$$((ctotal + $$(wc -l < $$f))) ;; \
+			(*) htotal=$$((htotal + $$(wc -l < $$f))) ;; \
+		esac; \
+	done; \
+	/usr/bin/printf "\n%$(COLWIDTH)s: %' 7d %' 7d %' 7d\n" \
+		"Active Source" $$htotal $$ctotal $$((htotal + ctotal))
 	@h=$$(find . -name '*.h' | \
 		   xargs wc -l | tail -1 | sed -e 's/total//g'); \
 	c=$$(find . -name '*.cc' -o -name '*.c' | \
 		   xargs wc -l | tail -1 | sed -e 's/total//g'); \
-	/usr/bin/printf "%14s: %' 7d %' 7d %' 7d\n" "All Source" $$h $$c $$((h + c))
-	@/usr/bin/printf "%14s: %7s %7s %' 7d\n" "Makefiles" "" "" \
+	/usr/bin/printf "%$(COLWIDTH)s: %' 7d %' 7d %' 7d\n" \
+		"All Source" $$h $$c $$((h + c))
+	@/usr/bin/printf "%$(COLWIDTH)s: %7s %7s %' 7d\n" "Makefiles" "" "" \
 		$$(find . -name 'Makefile*' \
 		   | xargs wc -l | tail -1 | sed -e 's/total//g')
 
