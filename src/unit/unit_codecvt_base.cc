@@ -41,6 +41,7 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		deletable_facet<cvt_t> cvt2(1);
 		deletable_facet<cvt_t> cvt3(2);
 
+		printf("-------> Max encodable = %d\n", get_max_encodable());
 		static_assert(std::is_same<char, typename cvt_t::extern_type>::value,
 		              "codecvt<> extern_type is invalid");
 		CPPUNIT_ASSERT(cvt.encoding() == 0);
@@ -58,6 +59,8 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(cvt.always_noconv() == false);
 	}
 
+	char32_t get_max_encodable() { return 0xefffffff; }
+
 	virtual void max_length()
 	{
 		deletable_facet<cvt_t> cvt;
@@ -68,6 +71,14 @@ class Test_codecvt_base : public CppUnit::TestFixture
 			CPPUNIT_ASSERT(cvt.max_length() <= 6);
 	}
 };
+
+template<>
+char32_t
+Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>>
+  ::get_max_encodable()
+{
+	return 0x10ffff;
+}
 
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;
 typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> c32;
