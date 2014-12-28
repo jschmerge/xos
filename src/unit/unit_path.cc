@@ -87,6 +87,7 @@ class Test_Path : public CppUnit::TestFixture
 	CPPUNIT_TEST(root_directory);
 	CPPUNIT_TEST(has_root_path);
 	CPPUNIT_TEST(relative_path);
+	CPPUNIT_TEST(has_relative_path);
 	CPPUNIT_TEST(has_parent_path);
 	CPPUNIT_TEST(has_extension);
 	CPPUNIT_TEST_SUITE_END();
@@ -578,8 +579,28 @@ class Test_Path : public CppUnit::TestFixture
 	}
 
 
+	void has_relative_path()
+	{
+		path rel("foo/bar");
+		path abs("/foo/bar");
+
+		CPPUNIT_ASSERT(rel.has_relative_path());
+		CPPUNIT_ASSERT(!abs.has_relative_path());
+	}
+
 	void has_parent_path()
 	{
+		path rel("foo/bar");
+		path abs("/foo/bar");
+		path se("single_element");
+		path root("/");
+		path nil("");
+
+		CPPUNIT_ASSERT(rel.has_parent_path());
+		CPPUNIT_ASSERT(abs.has_parent_path());
+		CPPUNIT_ASSERT(!se.has_parent_path());
+		CPPUNIT_ASSERT(!root.has_parent_path());
+		CPPUNIT_ASSERT(!nil.has_parent_path());
 	}
 
 	void has_extension()
