@@ -157,12 +157,23 @@ coverage-check: coverage
 
 coverage.info:
 	$(MAKE) coverage-check
-	lcov --no-external --capture --directory . --output-file $@ > /dev/null
+	lcov --quiet \
+	     --no-external \
+	     --capture \
+	     --directory . \
+	     --output-file $@
 
 covreport: coverage.info
 	rm -rf coverage-report
-	genhtml $< --quiet --frames --show-details --demangle-cpp \
-	           --legend --output-directory coverage-report --num-spaces=4
+	genhtml $< --quiet \
+	           --title "$$(git rev-parse --abbrev-ref HEAD) branch" \
+	           --frames \
+	           --show-details \
+	           --demangle-cpp \
+	           --legend \
+	           --output-directory coverage-report \
+	           --num-spaces=4 \
+	           --rc=geninfo_gcov_all_blocks=1
 	chromium-browser coverage-report/index.html
 
 
