@@ -165,8 +165,10 @@ coverage.info:
 
 covreport: coverage.info
 	rm -rf coverage-report
+	BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	CID=$$(git rev-parse --short=8 HEAD); \
 	genhtml $< --quiet \
-	           --title "$$(git rev-parse --abbrev-ref HEAD) branch" \
+	           --title "$$BRANCH branch; commit-id $$CID" \
 	           --frames \
 	           --show-details \
 	           --demangle-cpp \
