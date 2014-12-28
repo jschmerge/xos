@@ -208,18 +208,21 @@ std::error_code recursive_directory_iterator::do_recursive_open(const path & p)
 bool recursive_directory_iterator::recursion_pending() const
 {
 	bool rc = false;
+	std::error_code ec;
 
 	if ( (!m_entry.path().empty()) && (!is_linking_directory(m_entry)) )
 	{
 		if ( (m_options & directory_options::follow_directory_symlink)
 		        == directory_options::none)
 		{
-			rc = (m_entry.symlink_status().type() == file_type::directory);
+			rc = (m_entry.symlink_status(ec).type() == file_type::directory);
 		} else
 		{
-			rc = (m_entry.symlink_status().type() == file_type::directory);
+			rc = (m_entry.status(ec).type() == file_type::directory);
 		}
 	}
+
+	if (ec) rc = false;
 
 	return rc;
 }
