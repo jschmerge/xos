@@ -171,7 +171,6 @@ covreport: coverage.info
 	           --legend --output-directory coverage-report --num-spaces=4
 	chromium-browser coverage-report/index.html
 
-
 tags: subdirs
 	ctags -R .
 
