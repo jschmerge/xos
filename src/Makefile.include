@@ -441,13 +441,34 @@ realclean: clean docclean
 	done
 
 print-targets:
-	@echo -e $(subst $(WS) $(WS), \\n,$(strip $(TARGETS) $(LIB_TARGETS) $(ACTIONS)))
+	@echo all release debug coverage \
+	  $(strip $(TARGETS) $(LIB_TARGETS) $(ACTIONS)) | \
+	  sed -e 's/ \+/\n\t/g' -e 's/^/\t/g' | sort
+
+DBGDEPS := $(DEPS:%.d=%.debug.d)
+COVDEPS := $(DEPS:%.d=%.coverage.d)
+
+ifneq ($(strip $(findstring release,$(MAKECMDGOALS))),)
+  TMPDEPS += $(DEPS)
+endif
+
+ifneq ($(strip $(findstring debug,$(MAKECMDGOALS))),)
+  TMPDEPS += $(DBGDEPS)
+endif
+
+ifneq ($(strip $(findstring coverage,$(MAKECMDGOALS))),)
+  TMPDEPS += $(COVDEPS)
+endif
+
+ifdef TMPDEPS
+  DEPS := $(TMPDEPS)
+endif
 
 #
-# optimization to avoid generating deps for targets that don't care
+# optimization to avoid generating deps for targets that don't require them
 #
 NO_DEP_TARGETS = %clean clean% codecount tags print-targets
 
-ifneq ($(strip $(filter-out $(NO_DEP_TARGETS), $(MAKECMDGOALS))), )
- -include $(DEPS)
+ifeq ($(strip $(filter $(NO_DEP_TARGETS), $(MAKECMDGOALS))),)
+  -include $(DEPS)
 endif
