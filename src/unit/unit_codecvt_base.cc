@@ -103,87 +103,38 @@ class Test_codecvt_base : public CppUnit::TestFixture
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;
 typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> c32;
 
-#define REGISTER_CVT_UTF_CLASS_TEST(CVT, C, MAX, MODE) \
-	static CppUnit::AutoRegisterSuite< Test_codecvt_base<std::CVT<C, MAX, static_cast<std::codecvt_mode>(MODE)>>>  \
+#define REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, MODE) \
+	static CppUnit::AutoRegisterSuite< \
+		Test_codecvt_base< \
+			std::CVT<C, MAX, static_cast<std::codecvt_mode>(MODE)>>>  \
 	autoRegisterRegistry__ ## CVT ## _ ## C ## _ ## MAX ## _ ## MODE;
 
+#define CVT_UTF_CLASS_MODES(CVT, C, MAX) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 0) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 1) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 2) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 3) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 4) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 5) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 6) \
+	REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(CVT, C, MAX, 7)
 
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 0);
-#if 0
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfful, 7);
+#define CVT_UTF_CLASS_TYPES(CVT, MAX) \
+	CVT_UTF_CLASS_MODES(CVT, wchar_t, MAX) \
+	CVT_UTF_CLASS_MODES(CVT, char16_t, MAX) \
+	CVT_UTF_CLASS_MODES(CVT, char32_t, MAX)
 
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 0);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0xfffful, 7);
+#define CVT_UTF_CLASS_MAXES(CVT) \
+	CVT_UTF_CLASS_TYPES(CVT, 0x7f) \
+	CVT_UTF_CLASS_TYPES(CVT, 0xff) \
+	CVT_UTF_CLASS_TYPES(CVT, 0xffff) \
+	CVT_UTF_CLASS_TYPES(CVT, 0x10ffff)
 
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 0);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char16_t, 0x10fffful, 7);
-
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 0);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfful, 7);
-
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 0);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0xfffful, 7);
-
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 0);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x10fffful, 7);
-
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 0);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 1);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 2);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 3);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 4);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 5);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 6);
-REGISTER_CVT_UTF_CLASS_TEST(codecvt_utf8, char32_t, 0x7ffffffful, 7);
-#endif
+//REGISTER_CVT_UTF_CLASS_TEST_INSTANCE(codecvt_utf8, char16_t, 0xfful, 0);
+CVT_UTF_CLASS_MAXES(codecvt_utf8);
+CVT_UTF_CLASS_MAXES(codecvt_utf16);
+CVT_UTF_CLASS_MAXES(codecvt_utf8_utf16);
 
 CPPUNIT_TEST_SUITE_REGISTRATION(c16);
 CPPUNIT_TEST_SUITE_REGISTRATION(c32);
 
-/*
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf8_16_ff_0);
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf8_16_10ffff_0);
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf8_32_10ffff_0);
-
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf16_16_10ffff_0);
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf16_32_10ffff_0);
-
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf8_utf16_16_10ffff_0);
-CPPUNIT_TEST_SUITE_REGISTRATION(c_utf8_utf16_32_10ffff_0);
-*/
