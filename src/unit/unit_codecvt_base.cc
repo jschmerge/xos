@@ -16,6 +16,21 @@ class deletable_facet : public Facet
 	~deletable_facet() {}
 };
 
+template <typename T>
+struct cvt_max_encodable { static const unsigned long value = 0x7ffffffful; };
+
+template <>
+struct cvt_max_encodable<std::codecvt<char16_t, char, std::mbstate_t>>
+{ static const unsigned long value = utf16_conversion::max_encodable_value(); };
+
+template <typename C,
+          unsigned long N,
+          std::codecvt_mode M,
+          template <class, unsigned long, std::codecvt_mode> class CVT>
+struct cvt_max_encodable<CVT<C, N, M>> {
+	static const unsigned long value = N;
+};
+
 // Primary declaration
 template <typename CVT>
 class Test_codecvt_base : public CppUnit::TestFixture
@@ -59,7 +74,6 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(cvt.always_noconv() == false);
 	}
 
-	char32_t get_max_encodable() { return 0xefffffff; }
 
 	virtual void max_length()
 	{
@@ -70,15 +84,10 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		else if (std::is_same<char32_t, char_type>::value)
 			CPPUNIT_ASSERT(cvt.max_length() <= 6);
 	}
-};
 
-template<>
-char32_t
-Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>>
-  ::get_max_encodable()
-{
-	return 0x10ffff;
-}
+ protected:
+	char32_t get_max_encodable() { return 0xefffffff; }
+};
 
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;
 typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> c32;
