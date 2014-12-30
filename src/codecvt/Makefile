@@ -1,6 +1,3 @@
-####
-# Project-specific details & settings
-####
 TARGETS             = 
 
 LIB_TARGETS         = libcodecvt
@@ -18,3 +15,8 @@ libcodecvt_OBJS     = codecvt_specializations.o \
                       codecvt_utf8_utf16.o
 
 test_OBJS           = test.o $(libcodecvt_OBJS)
+
+ifndef TOPDIR
+  TOPDIR            = ..
+  include $(TOPDIR)/Makefile.include
+endif

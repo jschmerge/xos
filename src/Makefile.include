@@ -62,13 +62,15 @@ QLINKCOV        = $(QLINKCOV_$(V))
 # Put this as the first target encountered
 release:
 
+include $(TOPDIR)/Makefile.flags
+
 ######################################################################
 #
 # DIR_TARGETS - Macro to make directory creation rules
 #
 define DIR_TARGETS
   D = $(1)
-  $$(D)/$(DEPDIR) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
+  $(DEPDIR)/$$(D) $$(D)/$(OBJDIR) $$(D)/$(BINDIR) $$(D)/$(LIBDIR):
 	$$(Q)mkdir -p $$@
 endef
 
@@ -80,32 +82,32 @@ define STANDARD_TARGETS
   D = $(1)
   T = $(2)
 
-  TMP_DEPS := $$($$(T)_OBJS:%o=$$(D)/$(DEPDIR)/%d)
+  TMP_DEPS := $$($$(T)_OBJS:%o=$(DEPDIR)/$$(D)/%d)
 
   #
   # Create dependency '.d' file
   #
-  $$(D)/$(DEPDIR)/%.d: $$(D)/%.cc | $$(D)/$(DEPDIR)
+  $(DEPDIR)/$$(D)/%.d: $$(D)/%.cc | $(DEPDIR)/$$(D)
 	$$(QDEP)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.o $$@' \
 	  $$(CXXFLAGS_release) $$< > $$@
 
-  $$(D)/$(DEPDIR)/%.debug.d: $$(D)/%.cc | $$(D)/$(DEPDIR)
+  $(DEPDIR)/$$(D)/%.debug.d: $$(D)/%.cc | $(DEPDIR)/$$(D)
 	$$(QDEPDBG)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.debug.o $$@' \
 	  $$(CXXFLAGS_debug) $$< > $$@
 
-  $$(D)/$(DEPDIR)/%.coverage.d: $$(D)/%.cc | $(D)/$(DEPDIR)
+  $(DEPDIR)/$$(D)/%.coverage.d: $$(D)/%.cc | $(DEPDIR)/$$(D)
 	$$(QDEPCOV)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.coverage.o $$@' \
 	  $$(CXXFLAGS_coverage) $$< > $$@
 
-  $$(D)/$(DEPDIR)/%.d: $$(D)/%.c | $$(D)/$(DEPDIR)
+  $(DEPDIR)/$$(D)/%.d: $$(D)/%.c | $(DEPDIR)/$$(D)
 	$$(QDEP)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.o $$@' \
 	  $$(CFLAGS_release) $$< > $$@
 
-  $$(D)/$(DEPDIR)/%.debug.d: $$(D)/%.c | $$(D)/$(DEPDIR)
+  $(DEPDIR)/$$(D)/%.debug.d: $$(D)/%.c | $(DEPDIR)/$$(D)
 	$$(QDEPDBG)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.debug.o $$@' \
 	   $$(CFLAGS_debug) $$< > $$@
 
-  $$(D)/$(DEPDIR)/%.coverage.d: $$(D)/%.c | $$(D)/$(DEPDIR)
+  $(DEPDIR)/$$(D)/%.coverage.d: $$(D)/%.c | $(DEPDIR)/$$(D)
 	$$(QDEPCOV)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.coverage.o $$@' \
 	  $$(CFLAGS_coverage) $$< > $$@
 
@@ -113,22 +115,22 @@ define STANDARD_TARGETS
   # Source unit compilation
   #
   $$(D)/$(OBJDIR)/%.o: $$(D)/%.cc | $$(D)/$(OBJDIR)
-	$$(QCXX)$$(CXX) $$(CXXFLAGS_release) -c $$< -o $$@
+	$$(QCXX)$$(CXX) $$(CXXFLAGS_release) -c $$(abspath $$<) -o $$@
 
   $$(D)/$(OBJDIR)/%.debug.o: $$(D)/%.cc | $$(D)/$(OBJDIR)
-	$$(QCXXDBG)$$(CXX) $$(CXXFLAGS_debug) -c $$< -o $$@
+	$$(QCXXDBG)$$(CXX) $$(CXXFLAGS_debug) -c $$(abspath $$<) -o $$@
 
   $$(D)/$(OBJDIR)/%.coverage.o: $$(D)/%.cc | $$(D)/$(OBJDIR)
-	$$(QCXXCOV)$(CXX) $$(CXXFLAGS_coverage) -c $$< -o $$@
+	$$(QCXXCOV)$(CXX) $$(CXXFLAGS_coverage) -c $$(abspath $$<) -o $$@
 
   $$(D)/$(OBJDIR)/%.o: $$(D)/%.c | $$(D)/$(OBJDIR)
-	$$(QCC)$$(CC) $$(CFLAGS_release) -c $$< -o $$@
+	$$(QCC)$$(CC) $$(CFLAGS_release) -c $$(abspath $$<) -o $$@
 
   $$(D)/$(OBJDIR)/%.debug.o: $$(D)/%.c | $$(D)/$(OBJDIR)
-	$$(QCC)$$(CC) $$(CFLAGS_debug) -c $$< -o $$@
+	$$(QCC)$$(CC) $$(CFLAGS_debug) -c $$(abspath $$<) -o $$@
 
   $$(D)/$(OBJDIR)/%.coverage.o: $$(D)/%.c | $$(D)/$(OBJDIR)
-	$$(QCCCOV)$$(CC) $$(CFLAGS_coverage) -c $$< -o $$@
+	$$(QCCCOV)$$(CC) $$(CFLAGS_coverage) -c $$(abspath $$<) -o $$@
 
   DEPS := $$(DEPS) $$(TMP_DEPS)
 endef
@@ -147,9 +149,9 @@ define PROGRAM_TARGETS
   $$(T)_DBG_OBJS := $$($$(T)_OBJS:%.o=%.debug.o)
   $$(T)_COV_OBJS := $$($$(T)_OBJS:%.o=%.coverage.o)
 
-  LIBDEPS        := $$($$(T)_LIBDEPS:%=lib/lib%.a)
-  DBG_LIBDEPS    := $$($$(T)_LIBDEPS:%=lib/lib%.debug.a)
-  COV_LIBDEPS    := $$($$(T)_LIBDEPS:%=lib/lib%.coverage.a)
+  LIBDEPS        := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.a)
+  DBG_LIBDEPS    := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.debug.a)
+  COV_LIBDEPS    := $$($$(T)_LIBDEPS:%=$(LIBDIR)/lib%.coverage.a)
 
   $$(D)/$$(T): $$(EXE)
   $$(D)/$$(T).debug: $$(EXE).debug
@@ -157,6 +159,11 @@ define PROGRAM_TARGETS
 
   .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
 
+  ifeq ($$(D),.)
+    $$(LIBDEPS) $$(DBG_LIBDEPS) $$(COV_LIBDEPS): | $(LIBDIR)
+		$$(MAKE) -C $$(TOPDIR) $$@
+		ln $$(TOPDIR)/$$@ $$@
+  endif
   #
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
@@ -181,10 +188,6 @@ define PROGRAM_TARGETS
 	$$(QLINKCOV)$$(CXX) $$(CXXFLAGS_coverage) -o $$@ -L $(LIBDIR) \
 	    $$(patsubst lib/lib%.a, -l%, $$^) \
 		$$(LDFLAGS_coverage) $$(LIBS_coverage)
-
-#  $(BINDIR)/$$(T): $$(EXE) | $(BINDIR)
-#	rm -f $$@
-#	ln $$^ $$@
 endef
 
 ######################################################################
@@ -226,17 +229,19 @@ define LIBRARY_TARGETS
 	$$(QAR)ar -cSur $$@ $$^
 	$$(QRANLIB)ranlib $$@
 
-  $$(LIBDIR)/$$(T).a: $$(STATIC_LIB) | $$(LIBDIR)
+  ifneq ($$(D),.)
+   $$(LIBDIR)/$$(T).a: $$(STATIC_LIB) | $$(LIBDIR)
 	@rm -f $$@
 	@ln $$^ $$@
 
-  $$(LIBDIR)/$$(T).debug.a: $$(DBG_STATIC_LIB) | $$(LIBDIR)
+   $$(LIBDIR)/$$(T).debug.a: $$(DBG_STATIC_LIB) | $$(LIBDIR)
 	@rm -f $$@
 	@ln $$^ $$@
 
-  $$(LIBDIR)/$$(T).coverage.a: $$(COV_STATIC_LIB) | $$(LIBDIR)
+   $$(LIBDIR)/$$(T).coverage.a: $$(COV_STATIC_LIB) | $$(LIBDIR)
 	@rm -f $$@
 	@ln $$^ $$@
+  endif
 endef
 
 ######################################################################
@@ -302,10 +307,27 @@ define INCLUDE_SUBMAKE
 $$(info $$(SUBDIRS))
 endef
 
-
 SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
 
+# First, build rules for the top-level directory
+$(eval $(call DIR_TARGETS,.))
+
+$(foreach T, $(TARGETS) $(LIB_TARGETS), \
+     $(eval $(call STANDARD_TARGETS,., $(T))))
+
+$(foreach T, $(TARGETS), $(eval $(call PROGRAM_TARGETS,.,$(T))))
+
+$(foreach T, $(LIB_TARGETS), $(eval $(call LIBRARY_TARGETS,.,$(T))))
+
+$(foreach T, $(ACTIONS), $(eval $(call ACTION_TARGETS,.,$(T))))
+
+TARGETS     := $(TARGETS:%=./%)
+LIB_TARGETS := $(LIB_TARGETS:%=./%)
+ACTIONS     := $(ACTIONS:%=./%)
+
+
 $(foreach DIR,$(SUBDIRS),$(eval $(call INCLUDE_SUBMAKE,$(strip $(DIR)))))
+
 
 DBG_TARGETS     = $(TARGETS:%=%.debug)
 DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
@@ -314,7 +336,6 @@ COV_TARGETS     = $(TARGETS:%=%.coverage)
 COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
 
 .PHONY: $(ACTIONS)
-
 
 #
 # TARGETS
@@ -327,8 +348,8 @@ coverage: $(COV_LIB_TARGETS) $(COV_TARGETS)
 
 all: release debug coverage
 
-$(BINDIR) $(LIBDIR):
-	$(Q)mkdir -p $@
+#$(BINDIR) $(LIBDIR):
+#	$(Q)mkdir -p $@
 
 coverage.info:
 	$(MAKE) coverage-check
@@ -340,7 +361,7 @@ covreport: coverage.info
 	           --legend --output-directory coverage-report --num-spaces=4
 	chromium-browser coverage-report/index.html
 
-docs: $(DOCDIR)
+docs: | $(DOCDIR)
 
 $(DOCDIR): doc/Doxyfile $(shell find . -name '*.cc' -o -name '*.h')
 	rm -rf $@
@@ -417,14 +438,14 @@ codecount: $(DEPS)
 
 clean-cov:
 	@rm -rfv coverage.info coverage-report
-	@for dir in $(SUBDIRS); do \
+	@for dir in . $(SUBDIRS); do \
 	  for f in $${dir}/$(OBJDIR)/*.{gcda,gcno} ; do \
 		if [ -f $$f ]; then rm -v $$f ; fi ; \
 	  done ; \
 	done
 
 clean: clean-cov
-	@for dir in $(SUBDIRS); do \
+	@for dir in . $(SUBDIRS); do \
 	  rm -vrf $${dir}/$(OBJDIR) $${dir}/$(LIBDIR) $${dir}/$(BINDIR) \
 	    $${dir}/*.info $${dir}/core $${dir}/core.[0123456789]* \
 	    $${dir}/a.out; \
@@ -435,7 +456,7 @@ docclean:
 	@rm -rf $(DOCDIR)
 
 realclean: clean docclean
-	@for dir in $(SUBDIRS); do \
+	@for dir in . $(SUBDIRS); do \
 	  rm -vrf $${dir}/$(DEPDIR) $${dir}/.ycm_extra_conf.pyc \
 	    $${dir}/config.cache tags $${dir}/coverage-report; \
 	done
