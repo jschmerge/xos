@@ -186,24 +186,15 @@ std::string program_config::usage_message(const size_t termWidth) const
 }
 
 //////////////////////////////////////////////////////////////////////
-bool program_config::process_option(const config_option & opt,
-                                    const std::string & param)
+bool program_config::process_option(const config_option &,
+                                    const std::string &)
 {
-	printf("processing option with param\n");
-	printf("Got option '%s' with param '%s'\n",
-	       opt.option_synopsis().c_str(), param.c_str());
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////
-bool program_config::process_option(const config_option & opt)
+bool program_config::process_option(const config_option &)
 {
-	printf("processing option without param\n");
-	if (opt.m_long_switch == "help")
-		printf("%s", usage_message().c_str());
-	else
-		printf("Got option '%s'\n", opt.option_synopsis().c_str());
-
 	return true;
 }
 
