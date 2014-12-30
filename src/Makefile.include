@@ -469,6 +469,12 @@ print-targets:
 DBGDEPS := $(DEPS:%.d=%.debug.d)
 COVDEPS := $(DEPS:%.d=%.coverage.d)
 
+ifneq ($(strip $(findstring all,$(MAKECMDGOALS))),)
+  TMPDEPS += $(DEPS)
+  TMPDEPS += $(DBGDEPS)
+  TMPDEPS += $(COVDEPS)
+endif
+
 ifneq ($(strip $(findstring release,$(MAKECMDGOALS))),)
   TMPDEPS += $(DEPS)
 endif
