@@ -76,9 +76,9 @@ endef
 
 ######################################################################
 #
-# STANDARD_TARGETS - 
+# STD_TARGETS - Dependency and compile targets for source files
 #
-define STANDARD_TARGETS
+define STD_TARGETS
   D = $(1)
   T = $(2)
 
@@ -280,7 +280,7 @@ define INCLUDE_SUBMAKE
   $$(eval $$(call DIR_TARGETS, $$(D)))
 
   $$(foreach T, $$(TARGETS) $$(LIB_TARGETS), \
-     $$(eval $$(call STANDARD_TARGETS, $$(D), $$(T))))
+     $$(eval $$(call STD_TARGETS, $$(D), $$(T))))
 
   $$(foreach T, $$(TARGETS), \
     $$(eval $$(call PROGRAM_TARGETS, $$(D), $$(T))))
@@ -304,7 +304,6 @@ define INCLUDE_SUBMAKE
 
   SUBDIRS     := $$(OLD_SUBDIRS) $$(SUBDIRS)
   OLD_SUBDIRS :=
-$$(info $$(SUBDIRS))
 endef
 
 SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
@@ -312,8 +311,7 @@ SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
 # First, build rules for the top-level directory
 $(eval $(call DIR_TARGETS,.))
 
-$(foreach T, $(TARGETS) $(LIB_TARGETS), \
-     $(eval $(call STANDARD_TARGETS,., $(T))))
+$(foreach T, $(TARGETS) $(LIB_TARGETS), $(eval $(call STD_TARGETS,.,$(T))))
 
 $(foreach T, $(TARGETS), $(eval $(call PROGRAM_TARGETS,.,$(T))))
 
