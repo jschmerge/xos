@@ -3,8 +3,8 @@
 *.lo
 *.o
 *.obj
-.deps
-.objs
+deps
+objs
 bin
 
 # Compiled Dynamic libraries
