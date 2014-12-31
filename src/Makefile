@@ -1,6 +1,6 @@
 SUBDIRS  = codecvt environment filesystem unit
 
 ifndef TOPDIR
-  TOPDIR = $(shell pwd)
-  include Makefile.include
+  TOPDIR = .
+  include $(TOPDIR)/Makefile.include
 endif

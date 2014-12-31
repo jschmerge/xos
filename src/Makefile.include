@@ -62,6 +62,9 @@ QLINKCOV        = $(QLINKCOV_$(V))
 # Put this as the first target encountered
 release:
 
+# force target used further on
+FORCE:
+
 include $(TOPDIR)/Makefile.flags
 
 ######################################################################
@@ -76,7 +79,8 @@ endef
 
 ######################################################################
 #
-# STD_TARGETS - Dependency and compile targets for source files
+# STD_TARGETS - Dependency and compile targets for individual
+#               source files
 #
 define STD_TARGETS
   D = $(1)
@@ -87,29 +91,31 @@ define STD_TARGETS
   #
   # Create dependency '.d' file
   #
+  $(DEPDIR)/$$(D)/%.d: SRCDIR := $$(D)
+
   $(DEPDIR)/$$(D)/%.d: $$(D)/%.cc | $(DEPDIR)/$$(D)
-	$$(QDEP)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.o $$@' \
-	  $$(CXXFLAGS_release) $$< > $$@
+	$$(QDEP)$$(CXX) -MM -MP -MT '$$(SRCDIR)/$(OBJDIR)/$$*.o $$@' \
+	  $$(CXXFLAGS_release) $$< -MF $$@
 
   $(DEPDIR)/$$(D)/%.debug.d: $$(D)/%.cc | $(DEPDIR)/$$(D)
-	$$(QDEPDBG)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.debug.o $$@' \
-	  $$(CXXFLAGS_debug) $$< > $$@
+	$$(QDEPDBG)$$(CXX) -MM -MP -MT '$$(SRCDIR)/$(OBJDIR)/$$*.debug.o $$@' \
+	  $$(CXXFLAGS_debug) $$< -MF $$@
 
   $(DEPDIR)/$$(D)/%.coverage.d: $$(D)/%.cc | $(DEPDIR)/$$(D)
-	$$(QDEPCOV)$$(CXX) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.coverage.o $$@' \
-	  $$(CXXFLAGS_coverage) $$< > $$@
+	$$(QDEPCOV)$$(CXX) -MM -MP -MT '$$(SRCDIR)/$(OBJDIR)/$$*.coverage.o $$@' \
+	  $$(CXXFLAGS_coverage) $$< -MF $$@
 
   $(DEPDIR)/$$(D)/%.d: $$(D)/%.c | $(DEPDIR)/$$(D)
-	$$(QDEP)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.o $$@' \
-	  $$(CFLAGS_release) $$< > $$@
+	$$(QDEP)$$(CC) -MM -MP -MT '$$(SRCDIR)/$(OBJDIR)/$$*.o $$@' \
+	  $$(CFLAGS_release) $$< -MF $$@
 
   $(DEPDIR)/$$(D)/%.debug.d: $$(D)/%.c | $(DEPDIR)/$$(D)
-	$$(QDEPDBG)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.debug.o $$@' \
-	   $$(CFLAGS_debug) $$< > $$@
+	$$(QDEPDBG)$$(CC) -MM -MP -MT '$$(SRCDIR)/$(OBJDIR)/$$*.debug.o $$@' \
+	   $$(CFLAGS_debug) $$< -MF $$@
 
   $(DEPDIR)/$$(D)/%.coverage.d: $$(D)/%.c | $(DEPDIR)/$$(D)
-	$$(QDEPCOV)$$(CC) -MM -MP -MT '$$(D)/$(OBJDIR)/$$*.coverage.o $$@' \
-	  $$(CFLAGS_coverage) $$< > $$@
+	$$(QDEPCOV)$$(CC) -MM -MP -MT '$$(SRCDIR)/$(OBJDIR)/$$*.coverage.o $$@' \
+	  $$(CFLAGS_coverage) $$< -MF $$@
 
   #
   # Source unit compilation
@@ -159,11 +165,19 @@ define PROGRAM_TARGETS
 
   .PHONY: $$(D)/$$(T) $$(D)/$$(T).debug $$(D)/$$(T).coverage
 
+  #
+  # This is a gross hack to allow make invocations from subdirectories to
+  # 'just work' - any dependent libs are built by issuing a
+  # 'make -C $(TOPDIR) lib/libfoo.a' ... this needs to unconditionally occur
+  # however, hence the 'FORCE' hack here
+  #
   ifeq ($$(D),.)
-    $$(LIBDEPS) $$(DBG_LIBDEPS) $$(COV_LIBDEPS): | $(LIBDIR)
+    $$(LIBDEPS) $$(DBG_LIBDEPS) $$(COV_LIBDEPS): FORCE | $(LIBDIR)
 		$$(MAKE) -C $$(TOPDIR) $$@
+		rm -f $$@
 		ln $$(TOPDIR)/$$@ $$@
   endif
+
   #
   # Link the release build, then strip it, preserving debug symbols in
   # $(target).symbols
