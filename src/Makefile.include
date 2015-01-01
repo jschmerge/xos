@@ -1,8 +1,6 @@
 ######################################################################
 # Main makefile logic
 ######################################################################
-BUILD ?= release
-
 CC             ?= gcc
 CXX            ?= g++
 LD             ?= ld
@@ -360,8 +358,7 @@ coverage: $(COV_LIB_TARGETS) $(COV_TARGETS)
 
 all: release debug coverage
 
-coverage.info:
-	$(MAKE) coverage-check
+coverage.info: coverage-check
 	lcov --quiet \
 	     --no-external \
 	     --capture \
@@ -491,6 +488,10 @@ print-targets:
 DBGDEPS := $(DEPS:%.d=%.debug.d)
 COVDEPS := $(DEPS:%.d=%.coverage.d)
 
+#
+# There's no sense in making dependencies for targets if we aren't building
+# them - this bit of stuff fixes all of that up
+#
 ifneq ($(strip $(findstring all,$(MAKECMDGOALS))),)
   TMPDEPS += $(DEPS)
   TMPDEPS += $(DBGDEPS)
