@@ -24,15 +24,7 @@ struct cvt_info
 	static const bool creates_bom = false;
 };
 
-template <>
-struct cvt_info<std::codecvt<char16_t, char, std::mbstate_t>>
-{
-	static const unsigned long max_intern =
-		utf16_conversion::max_encodable_value();
-	static const bool consumes_bom = false;
-	static const bool creates_bom = false;
-};
-
+#if 0
 template <typename C,
           unsigned long N,
           std::codecvt_mode M,
@@ -43,6 +35,7 @@ struct cvt_info<CVT<C, N, M>>
 	static const bool consumes_bom = (M & std::consume_header);
 	static const bool creates_bom = (M & std::generate_header);
 };
+#endif
 
 // Primary declaration
 template <typename CVT>
@@ -90,13 +83,6 @@ class Test_codecvt_base : public CppUnit::TestFixture
 	virtual void max_length()
 	{
 		deletable_facet<cvt_t> cvt;
-
-#if 0
-		if (std::is_same<char16_t, char_type>::value)
-			CPPUNIT_ASSERT(cvt.max_length() <= 4);
-		else if (std::is_same<char32_t, char_type>::value)
-			CPPUNIT_ASSERT(cvt.max_length() <= 6);
-#endif
 	}
 };
 
@@ -129,10 +115,3 @@ typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> c32;
 	CVT_UTF_CLASS_TYPES(CVT, 0xff) \
 	CVT_UTF_CLASS_TYPES(CVT, 0xffff) \
 	CVT_UTF_CLASS_TYPES(CVT, 0x10ffff)
-
-CVT_UTF_CLASS_MAXES(codecvt_utf8);
-CVT_UTF_CLASS_MAXES(codecvt_utf16);
-CVT_UTF_CLASS_MAXES(codecvt_utf8_utf16);
-
-CPPUNIT_TEST_SUITE_REGISTRATION(c16);
-CPPUNIT_TEST_SUITE_REGISTRATION(c32);
