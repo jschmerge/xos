@@ -65,7 +65,6 @@ FORCE:
 
 include $(TOPDIR)/Makefile.flags
 
-######################################################################
 #
 # DIR_TARGETS - Macro to make directory creation rules
 #
@@ -75,7 +74,6 @@ define DIR_TARGETS
 	$$(Q)mkdir -p $$@
 endef
 
-######################################################################
 #
 # STD_TARGETS - Dependency and compile targets for individual
 #               source files
@@ -139,7 +137,9 @@ define STD_TARGETS
   DEPS := $$(DEPS) $$(TMP_DEPS)
 endef
 
-######################################################################
+#
+# PROGRAM_TARGETS - These are the targets used to link together executables
+#
 define PROGRAM_TARGETS
   D = $(1)
   T = $(2)
@@ -202,7 +202,10 @@ define PROGRAM_TARGETS
 		$$(LDFLAGS_coverage) $$(LIBS_coverage)
 endef
 
-######################################################################
+#
+# LIBRARY_TARGETS - Targets for building libraries; currently only static
+#                   libs are supported.
+#
 define LIBRARY_TARGETS
   D = $(1)
   T = $(2)
@@ -256,7 +259,11 @@ define LIBRARY_TARGETS
   endif
 endef
 
-######################################################################
+#
+# ACTION_TARGETS - These are user-defined actions that someone may wish
+#                  to make... The implementation of this is still a little
+#                  half-baked XXX
+#
 define ACTION_TARGETS
   D = $(1)
   T = $(2)
@@ -274,7 +281,10 @@ define ACTION_TARGETS
 
 endef
 
-######################################################################
+#
+# INCLUDE_SUBMAKE - Include a sub-makefile that contains basic definitions
+#                   for building stuff in a directory
+#
 define INCLUDE_SUBMAKE
   D = $(1)
 
@@ -322,23 +332,23 @@ SUBMAKES     = $(addsuffix /Makefile, $(SUBDIRS))
 
 # First, build rules for the top-level directory
 $(eval $(call DIR_TARGETS,.))
-
 $(foreach T, $(TARGETS) $(LIB_TARGETS), $(eval $(call STD_TARGETS,.,$(T))))
-
 $(foreach T, $(TARGETS), $(eval $(call PROGRAM_TARGETS,.,$(T))))
-
 $(foreach T, $(LIB_TARGETS), $(eval $(call LIBRARY_TARGETS,.,$(T))))
-
 $(foreach T, $(ACTIONS), $(eval $(call ACTION_TARGETS,.,$(T))))
 
+# Make sure our Target Variables are set correctly (i.e. are preprended
+# with a './'
 TARGETS     := $(TARGETS:%=./%)
 LIB_TARGETS := $(LIB_TARGETS:%=./%)
 ACTIONS     := $(ACTIONS:%=./%)
 
-
+# Now we walk each subdirectory's Makefile and do the same using a slightly
+# more complicated macro
 $(foreach DIR,$(SUBDIRS),$(eval $(call INCLUDE_SUBMAKE,$(strip $(DIR)))))
 
-
+# Generate debug & coverage build target names from what we've already
+# read/computed from the per-directory makefiles
 DBG_TARGETS     = $(TARGETS:%=%.debug)
 DBG_LIB_TARGETS = $(LIB_TARGETS:%=%.debug)
 
@@ -348,7 +358,7 @@ COV_LIB_TARGETS = $(LIB_TARGETS:%=%.coverage)
 .PHONY: $(ACTIONS)
 
 #
-# TARGETS
+# TARGETS - These are the main targets for the entire project
 #
 release: $(LIB_TARGETS) $(TARGETS)
 
@@ -410,9 +420,6 @@ endef
 
 showactive: $(DEPS)
 	$(call SHOWACTIVE, $^)
-
-
-#	for d in $$(dirname $(call SHOWACTIVE, $(DEPS)) | sort -u); do \
 
 COLWIDTH=20
 codecount: $(DEPS)
@@ -514,9 +521,10 @@ ifdef TMPDEPS
   DEPS := $(TMPDEPS)
 endif
 
-#
-# optimization to avoid generating deps for targets that don't require them
-#
+# optimization to avoid generating deps for targets that don't require them -
+# there's no sense in building the dep files if we're execting a target
+# without dependencies - XXX What can be added or should be removed from this
+# list of targets?
 NO_DEP_TARGETS = %clean clean% codecount tags print-targets
 
 ifeq ($(strip $(filter $(NO_DEP_TARGETS), $(MAKECMDGOALS))),)

@@ -52,7 +52,7 @@ class Average
 	
 	///
 	/// @brief Performs the magic of calculating averages and variance
-	/// in a stepwise manner.
+	///   in a stepwise manner.
 	///
 	/// @param value A value to add to the running average. The type of value
 	///   must have a means of being cast to the type @ref accumulator_type

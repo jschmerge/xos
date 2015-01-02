@@ -34,6 +34,7 @@ PROGRESS        ?= brief
 ACTIONS      = check debug-check coverage-check
 
 check_DEPS   = unittest
+
 check_ACTION = if [ -n "$(TEST)" ]; then \
 	  $$EXE -t $(TEST) -p $(PROGRESS); \
 	else \
@@ -41,7 +42,6 @@ check_ACTION = if [ -n "$(TEST)" ]; then \
 	fi
 
 debug-check_DEPS = unittest.debug
-
 debug-check_ACTION = $(check_ACTION)
 
 coverage-check_DEPS = unittest.coverage

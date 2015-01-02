@@ -1,6 +1,9 @@
 #include "codecvt/codecvt"
 #include "unit_codecvt_base.h"
 
+//
+// Seperate impl of this calculation here for the sake of testing
+//
 static int utf8_chars_needed(unsigned long char_value)
 {
 	int ret = -1;
@@ -39,7 +42,6 @@ class Test_codecvt_utf8
  public:
 	virtual ~Test_codecvt_utf8() { }
 
-
 	void max_length() override
 	{
 		typename base::cvt_t cvt;
@@ -71,15 +73,6 @@ class Test_codecvt_utf8
 		char outbuffer[obufsz];
 		
 		std::codecvt_base::result rc = std::codecvt_base::ok;
-
-#if 0
-		if (  (N < static_cast<unsigned long>(bom_value()))
-		   && (static_cast<std::codecvt_mode>(M) & std::generate_header))
-		{
-			out_gives_error();
-			return;
-		}
-#endif
 
 		unsigned long cval = 0;
 		for (; cval <= std::min(0xd7fful, max_value); ++cval)
