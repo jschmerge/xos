@@ -6,6 +6,10 @@
 
 #include "unit_codecvt_base.h"
 
+#include "cppunit-header.h"
+#include "multistring.h"
+
+#if 0
 template <>
 struct cvt_info<std::codecvt<char16_t, char, std::mbstate_t>>
 {
@@ -14,9 +18,7 @@ struct cvt_info<std::codecvt<char16_t, char, std::mbstate_t>>
 	static const bool consumes_bom = false;
 	static const bool creates_bom = false;
 };
-
-#include "cppunit-header.h"
-#include "multistring.h"
+#endif
 
 static const DEF_MULTISTRING(nul_char, "\x0");
 static const DEF_MULTISTRING(ascii_max, "\x7f");
@@ -373,6 +375,3 @@ void Test_codecvt::out_type_specific<char32_t>()
 }
 
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_codecvt);
-
-CPPUNIT_TEST_SUITE_REGISTRATION(c16);
-CPPUNIT_TEST_SUITE_REGISTRATION(c32);

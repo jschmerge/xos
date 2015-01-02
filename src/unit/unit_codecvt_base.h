@@ -16,51 +16,31 @@ class deletable_facet : public Facet
 	~deletable_facet() {}
 };
 
-template <typename T>
-struct cvt_info
-{
-	static const unsigned long max_intern = 0x7ffffffful;
-	static const bool consumes_bom = false;
-	static const bool creates_bom = false;
-};
-
-#if 0
-template <typename C,
-          unsigned long N,
-          std::codecvt_mode M,
-          template <class, unsigned long, std::codecvt_mode> class CVT>
-struct cvt_info<CVT<C, N, M>>
-{
-	static const unsigned long max_intern = N;
-	static const bool consumes_bom = (M & std::consume_header);
-	static const bool creates_bom = (M & std::generate_header);
-};
-#endif
-
 // Primary declaration
 template <typename CVT>
 class Test_codecvt_base : public CppUnit::TestFixture
 {
  public:
 	typedef CVT cvt_t;
-	typedef typename CVT::intern_type char_type;
-
-	CPPUNIT_TEST_SUITE(Test_codecvt_base);
-	CPPUNIT_TEST(construction);
-	CPPUNIT_TEST(encoding);
-	CPPUNIT_TEST(always_noconv);
-	CPPUNIT_TEST(max_length);
-	CPPUNIT_TEST_SUITE_END();
+	typedef typename CVT::intern_type intern_char_type;
+	typedef typename CVT::extern_type extern_char_type;
+	typedef std::codecvt<intern_char_type,
+	                     extern_char_type,
+	                     std::mbstate_t> basecvt_t;
 
  public:
 	virtual ~Test_codecvt_base()
 	{ }
 
-	virtual void construction()
+	void construction()
 	{
 		deletable_facet<cvt_t> cvt;
 		deletable_facet<cvt_t> cvt2(1);
 		deletable_facet<cvt_t> cvt3(2);
+
+		std::unique_ptr<cvt_t> cvt_p(new deletable_facet<cvt_t>);
+		std::unique_ptr<cvt_t> cvt_p2(new deletable_facet<cvt_t>(1));
+		std::unique_ptr<cvt_t> cvt_p3(new deletable_facet<cvt_t>(2));
 
 		static_assert(std::is_same<char, typename cvt_t::extern_type>::value,
 		              "codecvt<> extern_type is invalid");
@@ -80,10 +60,9 @@ class Test_codecvt_base : public CppUnit::TestFixture
 	}
 
 
-	virtual void max_length()
-	{
-		deletable_facet<cvt_t> cvt;
-	}
+	virtual void max_length() = 0;
+
+	virtual void encode_decode_char_range() = 0;
 };
 
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;

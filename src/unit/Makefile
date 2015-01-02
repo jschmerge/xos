@@ -4,6 +4,8 @@
 TARGETS           = unittest
 
 unittest_OBJS     = cppunit-main.o \
+                    unit_codecvt.o \
+                    unit_codecvt_utf8.o \
                     unit_file_status.o \
                     unit_directory_entry.o \
                     unit_fs_operations.o \
@@ -19,13 +21,10 @@ unittest_OBJS     = cppunit-main.o \
                     unit_average.o \
                     unit_bithacks.o \
                     unit_crc.o \
-                    unit_codecvt.o \
-                    unit_codecvt_utf8.o \
-                    unit_codecvt_utf16.o \
-                    unit_codecvt_utf8_utf16.o \
                     unit_unicode.o
 
-#                    unit_codecvt_base.o \
+#                    unit_codecvt_utf16.o \
+#                    unit_codecvt_utf8_utf16.o \
 
 unittest_LIBDEPS = filesystem codecvt environment
 
