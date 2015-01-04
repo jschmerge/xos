@@ -7,6 +7,7 @@
 #include "cppunit-header.h"
 #include "multistring.h"
 
+#if 0
 //
 // Stub for testing specialization
 //
@@ -28,7 +29,6 @@ class u32cvt : public std::codecvt<char32_t, char, std::mbstate_t>
 };
 
 
-#if 0
 const char * code2str(std::codecvt_base::result r)
 {
 	switch (r)

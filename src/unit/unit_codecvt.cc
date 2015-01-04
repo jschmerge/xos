@@ -76,13 +76,15 @@ class Test_codecvt : public CppUnit::TestFixture
 		deletable_facet<cvt_t> cvt;
 		deletable_facet<cvt_t> cvt2(1);
 		deletable_facet<cvt_t> cvt3(2);
+		deletable_facet<cvt_t> cvt4(nullptr);
+		deletable_facet<cvt_t> cvt5(nullptr, 1);
+		deletable_facet<cvt_t> cvt6(nullptr, 2);
 
 		static_assert(std::is_same<T, typename cvt_t::intern_type>::value,
 		              "codecvt<> intern_type is invalid");
 		static_assert(std::is_same<char, typename cvt_t::extern_type>::value,
 		              "codecvt<> extern_type is invalid");
 		CPPUNIT_ASSERT(cvt.encoding() == 0);
-
 	}
 #endif
 

@@ -20,8 +20,8 @@ unittest_OBJS     = cppunit-main.o \
                     unit_bithacks.o \
                     unit_average.o \
                     unit_bithacks.o \
-                    unit_crc.o \
-                    unit_unicode.o
+                    unit_crc.o 
+#                    unit_unicode.o
 
 #                    unit_codecvt_utf16.o \
 #                    unit_codecvt_utf8_utf16.o \

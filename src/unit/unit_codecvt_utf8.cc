@@ -69,6 +69,8 @@ class Test_codecvt_utf8
 		  std::min(N,
 		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
 
+
+		printf("\n---> max = %lu\n", max_value);
 		const int obufsz = 10;
 		char outbuffer[obufsz];
 		
@@ -131,6 +133,12 @@ class Test_codecvt_utf8
 		CPPUNIT_ASSERT(  (rc == std::codecvt_base::error)
 		              || (from_next == internarray + 1));
 
+		int len = cvt.length(state, buffer, to_next, 4);
+
+		CPPUNIT_ASSERT(rc == std::codecvt_base::error
+		              || len == (to_next - buffer)
+		              || (M & std::consume_header));
+
 		return rc;
 	}
 };
@@ -153,10 +161,11 @@ class Test_codecvt_utf8
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x7f);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xff);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xffff);
+REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x10ffff);
 
 REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0x7f);
 REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0xff);
-REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0xffff);
+REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0x10ffff);
 
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x7f);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0xff);
