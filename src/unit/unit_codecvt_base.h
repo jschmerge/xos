@@ -1,6 +1,7 @@
 #include "codecvt/codecvt"
 
 #include <cstring>
+#include <locale>
 
 #include "cppunit-header.h"
 #include "multistring.h"
@@ -41,6 +42,8 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		std::unique_ptr<cvt_t> cvt_p(new deletable_facet<cvt_t>);
 		std::unique_ptr<cvt_t> cvt_p2(new deletable_facet<cvt_t>(1));
 		std::unique_ptr<cvt_t> cvt_p3(new deletable_facet<cvt_t>(2));
+
+		std::locale(std::locale(), static_cast<basecvt_t *>(new cvt_t));
 
 		static_assert(std::is_same<char, typename cvt_t::extern_type>::value,
 		              "codecvt<> extern_type is invalid");
