@@ -79,8 +79,10 @@ class codecvt_utf8
 
 		if (this->generate_bom() && (from_last < from_end))
 		{
+#if 0
 			if (bom_value() > this->max_encodable())
 				return codecvt_base::error;
+#endif
 
 			state.__value.__wch = bom_value();
 			char val = utf8::extract_leader_byte(state);
@@ -222,12 +224,12 @@ class codecvt_utf8
 		      && (count < max)
 		      && utf8::update_mbstate(state, *from_last))
 		{
+			++from_last;
 			if (state.__count == 0)
 			{
 				if (state.__value.__wch > Maxcode)
 					break;
 			}
-			++from_last;
 		}
 
 		return (from_last - from_begin);
