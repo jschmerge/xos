@@ -39,6 +39,11 @@ class Test_codecvt_utf8
 	CPPUNIT_TEST(encode_decode_char_range);
 	CPPUNIT_TEST_SUITE_END();
 
+	static const bool has_bom  = ( static_cast<std::codecvt_mode>(M)
+	                             & std::generate_header);
+	static const bool eats_bom = ( static_cast<std::codecvt_mode>(M)
+	                             & std::consume_header);
+
  public:
 	virtual ~Test_codecvt_utf8() { }
 
@@ -69,7 +74,6 @@ class Test_codecvt_utf8
 		  std::min(N,
 		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
 
-//		printf("\n---> max = %lu\n", max_value);
 		const int obufsz = 10;
 		char outbuffer[obufsz];
 		
@@ -150,6 +154,8 @@ class Test_codecvt_utf8
 		CPPUNIT_ASSERT(  (rc == std::codecvt_base::error)
 		              || (from_next == internarray + 1));
 
+		CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
+
 		state = std::mbstate_t();
 		int len = cvt.length(state, buffer, to_next, 4);
 
@@ -162,9 +168,19 @@ class Test_codecvt_utf8
 				printf("%02hhx ", *p);
 			printf("\n");
 		}
-		CPPUNIT_ASSERT(rc == std::codecvt_base::error
-		              || len == (to_next - buffer)
-		              || (M & std::consume_header));
+//		CPPUNIT_ASSERT(rc == std::codecvt_base::error
+//		              || len == (to_next - buffer)
+//		              || (M & std::consume_header));
+
+		printf("\nhas %d eats %d\n", has_bom, eats_bom);
+		printf("num eaten = %zd\n", to_next - buffer);
+
+		if(  (has_bom  &&  eats_bom && ((to_next - buffer) == 4))
+		  || (!has_bom &&  eats_bom && ((to_next - buffer) == 1))
+		  || (has_bom  && !eats_bom && ((to_next - buffer) == 3))
+		  || (!has_bom && !eats_bom && ((to_next - buffer) == 1))
+		  )
+		{ } else { CPPUNIT_ASSERT(false); }
 
 		buffer_end = to_next;
 
@@ -189,25 +205,13 @@ class Test_codecvt_utf8
 		rc = cvt.in(state, buffer, end, end,
 		            conv_buffer, conv_buffer + 10, last);
 
-		bool has_bom  = ( static_cast<std::codecvt_mode>(M)
-		                & std::generate_header);
-
-		bool eats_bom = ( static_cast<std::codecvt_mode>(M)
-		                & std::consume_header);
-
-#if 0
-//		printf("RC = %d\n", rc);
-//		for (auto p = buffer; p < end; ++p)
-//			printf("%02hhX ", *p);
-#endif
 		CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
 		if( (has_bom  &&  eats_bom && ((last - conv_buffer) == 1))
-		             || (!has_bom &&  eats_bom && ((last - conv_buffer) == 1))
-			         || (has_bom  && !eats_bom && ((last - conv_buffer) == 2))
-		             || (!has_bom && !eats_bom && ((last - conv_buffer) == 1))
-		              )
-		{ } else
-		{
+		  || (!has_bom &&  eats_bom && ((last - conv_buffer) == 1))
+		  || (has_bom  && !eats_bom && ((last - conv_buffer) == 2))
+		  || (!has_bom && !eats_bom && ((last - conv_buffer) == 1))
+		  )
+		{ } else {
 			printf("\n");
 			for (auto p = buffer; p < saved_end; ++p)
 				printf("%02hhX ", *p);
