@@ -94,13 +94,8 @@ class Test_codecvt_utf8
 
 		for (cval = 0xe000ul;
 		     cval <= std::min(0x10fffful, max_value);
-		     cval += 0xfful)
+		     cval += 0x100ul)
 		{
-			// N - 1
-			end = outbuffer + obufsz;
-			rc = out_for_ictype(cval - 1, outbuffer, end);
-			CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
-
 			// N
 			end = outbuffer + obufsz;
 			rc = out_for_ictype(cval, outbuffer, end);
@@ -110,6 +105,12 @@ class Test_codecvt_utf8
 			end = outbuffer + obufsz;
 			rc = out_for_ictype(cval + 1, outbuffer, end);
 			CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
+
+			// N - 1
+			end = outbuffer + obufsz;
+			rc = out_for_ictype(cval + 0x100ul - 1, outbuffer, end);
+			CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
+
 		}
 
 		for (cval = 0x110000ul; cval <= max_value; cval += 0x10000ul)
@@ -149,8 +150,18 @@ class Test_codecvt_utf8
 		CPPUNIT_ASSERT(  (rc == std::codecvt_base::error)
 		              || (from_next == internarray + 1));
 
+		state = std::mbstate_t();
 		int len = cvt.length(state, buffer, to_next, 4);
 
+		if(rc == std::codecvt_base::error
+		              || len == (to_next - buffer)
+		              || (M & std::consume_header))
+		{ } else {
+			printf("\nLENGTH = %d, %zd, rc = %d\n", len, to_next - buffer, rc);
+			for (auto p = buffer; p < to_next; ++p)
+				printf("%02hhx ", *p);
+			printf("\n");
+		}
 		CPPUNIT_ASSERT(rc == std::codecvt_base::error
 		              || len == (to_next - buffer)
 		              || (M & std::consume_header));
@@ -169,6 +180,7 @@ class Test_codecvt_utf8
 
 		ictype conv_buffer[10];
 		ictype * last = nullptr;
+		const char * saved_end = end;
 
 //		for (auto p = buffer; p < end; ++p)
 //			printf("%02hhX ", *p);
@@ -177,23 +189,32 @@ class Test_codecvt_utf8
 		rc = cvt.in(state, buffer, end, end,
 		            conv_buffer, conv_buffer + 10, last);
 
-#if 0
 		bool has_bom  = ( static_cast<std::codecvt_mode>(M)
 		                & std::generate_header);
 
 		bool eats_bom = ( static_cast<std::codecvt_mode>(M)
 		                & std::consume_header);
 
+#if 0
 //		printf("RC = %d\n", rc);
 //		for (auto p = buffer; p < end; ++p)
 //			printf("%02hhX ", *p);
+#endif
 		CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
-		CPPUNIT_ASSERT( (has_bom  &&  eats_bom && ((last - conv_buffer) == 1))
+		if( (has_bom  &&  eats_bom && ((last - conv_buffer) == 1))
 		             || (!has_bom &&  eats_bom && ((last - conv_buffer) == 1))
 			         || (has_bom  && !eats_bom && ((last - conv_buffer) == 2))
 		             || (!has_bom && !eats_bom && ((last - conv_buffer) == 1))
-		              );
-#endif
+		              )
+		{ } else
+		{
+			printf("\n");
+			for (auto p = buffer; p < saved_end; ++p)
+				printf("%02hhX ", *p);
+			printf("\nhas %d eats %d\n", has_bom, eats_bom);
+			printf("num eaten = %zd\n", last - conv_buffer);
+			CPPUNIT_ASSERT(false);
+		}
 		              
 		return rc;
 	}
@@ -214,8 +235,11 @@ class Test_codecvt_utf8
 	REGISTER_CVT_UTF8(C, MAX, 6) \
 	REGISTER_CVT_UTF8(C, MAX, 7)
 
+#if 0
+#endif
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x7f);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xff);
+#if 0
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xffff);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x10ffff);
 
@@ -229,3 +253,4 @@ REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0xffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x10ffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x3ffffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x7fffffff);
+#endif
