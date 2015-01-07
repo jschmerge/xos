@@ -29,6 +29,8 @@ class Test_codecvt_utf8
 	typedef Test_codecvt_base<
 	          std::codecvt_utf8<C, N, (std::codecvt_mode)M>> base;
 
+	using typename base::cvt_t;
+
 	typedef C ictype;
 
 	CPPUNIT_TEST_SUITE(Test_codecvt_utf8);
@@ -37,6 +39,8 @@ class Test_codecvt_utf8
 	CPPUNIT_TEST(always_noconv);
 	CPPUNIT_TEST(max_length);
 	CPPUNIT_TEST(encode_decode_char_range);
+	CPPUNIT_TEST(unshift);
+	CPPUNIT_TEST(unshift_errors);
 	CPPUNIT_TEST_SUITE_END();
 
 	static const bool has_bom  = ( static_cast<std::codecvt_mode>(M)
@@ -49,7 +53,7 @@ class Test_codecvt_utf8
 
 	void max_length() override
 	{
-		typename base::cvt_t cvt;
+		cvt_t cvt;
 		unsigned long max_value =
 		  std::min(N,
 		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
@@ -69,7 +73,7 @@ class Test_codecvt_utf8
 
 	void encode_decode_char_range() override
 	{
-		typename base::cvt_t cvt;
+		cvt_t cvt;
 		unsigned long max_value =
 		  std::min(N,
 		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
@@ -136,11 +140,30 @@ class Test_codecvt_utf8
 		}
 	}
 
+	void unshift()
+	{
+//		std::mbstate_t state = std::mbstate_t();
+	}
+
+	void unshift_errors()
+	{
+		cvt_t cvt;
+		const int bufsz = 10;
+		char buffer[bufsz];
+		char * nextptr = nullptr;
+		std::mbstate_t state = std::mbstate_t();
+		state.__value.__wch = 0;
+		state.__count = -1;
+		std::codecvt_base::result rc;
+		rc = cvt.unshift(state, buffer, buffer + bufsz, nextptr);
+		CPPUNIT_ASSERT(rc = std::codecvt_base::error);
+	}
+
  private:
 	std::codecvt_base::result
 	out_for_ictype(ictype c, char * buffer, char *& buffer_end)
 	{
-		typename base::cvt_t cvt;
+		cvt_t cvt;
 		std::codecvt_base::result rc = std::codecvt_base::ok;
 		std::mbstate_t state = {0, {0}};
 		ictype internarray[2] = { c , 0 };
@@ -163,8 +186,32 @@ class Test_codecvt_utf8
 		CPPUNIT_ASSERT((to_next - buffer) == encoded_length);
 
 		state = std::mbstate_t();
-//		int len = cvt.length(state, buffer, to_next, 4);
+		int len = cvt.length(state, buffer, to_next, 4);
 
+#if 0
+		if(rc == std::codecvt_base::error
+		              || len == (to_next - buffer)
+		              || (M & std::consume_header))
+		{ } else {
+			printf("\nLENGTH = %d, %zd, rc = %d\n", len, to_next - buffer, rc);
+			for (auto p = buffer; p < to_next; ++p)
+				printf("%02hhx ", *p);
+			printf("\n");
+		}
+//		CPPUNIT_ASSERT(rc == std::codecvt_base::error
+//		              || len == (to_next - buffer)
+//		              || (M & std::consume_header));
+
+		printf("\nhas %d eats %d\n", has_bom, eats_bom);
+		printf("num eaten = %zd\n", to_next - buffer);
+
+		if(  (has_bom  &&  eats_bom && ((to_next - buffer) == 4))
+		  || (!has_bom &&  eats_bom && ((to_next - buffer) == 1))
+		  || (has_bom  && !eats_bom && ((to_next - buffer) == 3))
+		  || (!has_bom && !eats_bom && ((to_next - buffer) == 1))
+		  )
+		{ } else { CPPUNIT_ASSERT(false); }
+#endif
 
 		buffer_end = to_next;
 
@@ -174,7 +221,7 @@ class Test_codecvt_utf8
 	std::codecvt_base::result
 	in_for_ictype(ictype & c, const char * buffer, const char *& end)
 	{
-		typename base::cvt_t cvt;
+		cvt_t cvt;
 		std::mbstate_t state = std::mbstate_t();
 		std::codecvt_base::result rc = std::codecvt_base::ok;
 
@@ -230,6 +277,7 @@ class Test_codecvt_utf8
 #endif
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x7f);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xff);
+#if 0
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xffff);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x10ffff);
 
@@ -243,3 +291,4 @@ REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0xffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x10ffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x3ffffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x7fffffff);
+#endif
