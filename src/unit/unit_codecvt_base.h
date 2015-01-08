@@ -62,10 +62,13 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(cvt.always_noconv() == false);
 	}
 
-
 	virtual void max_length() = 0;
 
 	virtual void encode_decode_char_range() = 0;
+
+	virtual void unshift() = 0;
+
+	virtual void unshift_errors() = 0;
 };
 
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;
