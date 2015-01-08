@@ -75,10 +75,6 @@ class Test_codecvt_utf8
 	void encode_decode_char_range() override
 	{
 		cvt_t cvt;
-		unsigned long max_value =
-		  std::min(N,
-		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
-
 		const int obufsz = 10;
 		char outbuffer[obufsz];
 		
