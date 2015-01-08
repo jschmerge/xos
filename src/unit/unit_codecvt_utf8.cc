@@ -22,6 +22,12 @@ static int utf8_chars_needed(unsigned long char_value)
 	return ret;
 }
 
+namespace {
+  // std::min isn't constexpr until c++14
+  template<class T> constexpr const T& min(const T & a, const T & b )
+    { return ( (a < b) ? a : b ); }
+}
+
 template <typename C, unsigned long N, int M>
 class Test_codecvt_utf8
   : public Test_codecvt_base<std::codecvt_utf8<C, N, (std::codecvt_mode)M>>
@@ -39,10 +45,11 @@ class Test_codecvt_utf8
 	CPPUNIT_TEST(encode_decode_char_range);
 	CPPUNIT_TEST_SUITE_END();
 
-	static const bool has_bom  = ( static_cast<std::codecvt_mode>(M)
-	                             & std::generate_header);
-	static const bool eats_bom = ( static_cast<std::codecvt_mode>(M)
-	                             & std::consume_header);
+	static const std::codecvt_mode cvtMode = static_cast<std::codecvt_mode>(M);
+	static const bool has_bom  = (cvtMode & std::generate_header);
+	static const bool eats_bom = (cvtMode & std::consume_header);
+	static constexpr unsigned long max_value =
+	  min(N, static_cast<unsigned long>(std::numeric_limits<C>::max()));
 
  public:
 	virtual ~Test_codecvt_utf8() { }
@@ -50,13 +57,7 @@ class Test_codecvt_utf8
 	void max_length() override
 	{
 		typename base::cvt_t cvt;
-		unsigned long max_value =
-		  std::min(N,
-		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
-
-		std::codecvt_mode m = static_cast<std::codecvt_mode>(M);
-
-		if (m & std::consume_header)
+		if (cvtMode & std::consume_header)
 		{
 			CPPUNIT_ASSERT(
 			  (utf8_chars_needed(max_value) +
@@ -70,10 +71,6 @@ class Test_codecvt_utf8
 	void encode_decode_char_range() override
 	{
 		typename base::cvt_t cvt;
-		unsigned long max_value =
-		  std::min(N,
-		    static_cast<unsigned long>(std::numeric_limits<C>::max()));
-
 		const int obufsz = 10;
 		char outbuffer[obufsz];
 		
@@ -81,14 +78,14 @@ class Test_codecvt_utf8
 		char * end = nullptr;
 
 		unsigned long cval = 0;
-		for (; cval <= std::min(0xd7fful, max_value); ++cval)
+		for (; cval <= min(0xd7fful, max_value); ++cval)
 		{
 			end = outbuffer + obufsz;
 			rc = out_for_ictype(cval, outbuffer, end);
 
 			CPPUNIT_ASSERT( (rc == std::codecvt_base::ok)
 			  || ( (N < static_cast<unsigned long>(bom_value()))
-			     && (static_cast<std::codecvt_mode>(M) & std::generate_header)
+			     && (cvtMode & std::generate_header)
 			     && (rc == std::codecvt_base::error)) );
 
 			ictype x = 0;
@@ -97,7 +94,7 @@ class Test_codecvt_utf8
 		}
 
 		for (cval = 0xe000ul;
-		     cval <= std::min(0x10fffful, max_value);
+		     cval <= min(0x10fffful, max_value);
 		     cval += 0x100ul)
 		{
 			// N
