@@ -49,9 +49,18 @@ class Test_codecvt_utf8
 	CPPUNIT_TEST(unshift_errors);
 	CPPUNIT_TEST_SUITE_END();
 
+#if 0
 	static const std::codecvt_mode cvtMode = static_cast<std::codecvt_mode>(M);
 	static const bool has_bom  = (cvtMode & std::generate_header);
 	static const bool eats_bom = (cvtMode & std::consume_header);
+	static constexpr unsigned long max_value =
+	  min(N, static_cast<unsigned long>(std::numeric_limits<C>::max()));
+#endif
+
+	static const std::codecvt_mode cvtMode;
+	static const bool has_bom;
+	static const bool eats_bom;
+//	static constexpr unsigned long max_value;
 	static constexpr unsigned long max_value =
 	  min(N, static_cast<unsigned long>(std::numeric_limits<C>::max()));
 
@@ -232,6 +241,21 @@ class Test_codecvt_utf8
 		return rc;
 	}
 };
+
+template <typename C, unsigned long N, int M>
+const std::codecvt_mode Test_codecvt_utf8<C, N, M>::cvtMode =
+	static_cast<std::codecvt_mode>(M);
+
+template <typename C, unsigned long N, int M>
+const bool Test_codecvt_utf8<C, N, M>::has_bom =
+	(cvtMode & std::generate_header);
+
+template <typename C, unsigned long N, int M>
+const bool Test_codecvt_utf8<C, N, M>::eats_bom =
+	(cvtMode & std::consume_header);
+
+template <typename C, unsigned long N, int M>
+constexpr unsigned long Test_codecvt_utf8<C, N, M>::max_value;
 
 #define REGISTER_CVT_UTF8(C, N, M) \
 	static CppUnit::AutoRegisterSuite< \
