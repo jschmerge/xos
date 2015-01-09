@@ -1,3 +1,6 @@
+#ifndef GUARD_UNIT_CODECVT_BASE_H
+#define GUARD_UNIT_CODECVT_BASE_H 1
+
 #include "codecvt/codecvt"
 
 #include <cstring>
@@ -74,29 +77,38 @@ class Test_codecvt_base : public CppUnit::TestFixture
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;
 typedef Test_codecvt_base<std::codecvt<char32_t, char, std::mbstate_t>> c32;
 
-#define REGISTER_CVT_UTF_CLASS(CVT, C, MAX, MODE) \
+#define REGISTER_UTF_TEST(CVT_TEST, CHAR_T, MAX, MODE) \
 	static CppUnit::AutoRegisterSuite< \
-		Test_codecvt_base< \
-			std::CVT<C, MAX, static_cast<std::codecvt_mode>(MODE)>>>  \
-	autoRegisterRegistry__ ## CVT ## _ ## C ## _ ## MAX ## _ ## MODE;
+		CVT_TEST<CHAR_T, MAX, MODE>> \
+	autoRegisterRegistry__ ## CVT_TEST ## _ ## CHAR_T ## _ ## MAX ## _ ## MODE;
 
-#define CVT_UTF_CLASS_MODES(CVT, C, MAX) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 0) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 1) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 2) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 3) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 4) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 5) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 6) \
-	REGISTER_CVT_UTF_CLASS(CVT, C, MAX, 7)
+#define EXTERN_DECLS(CVT, CHAR_T, MAX, MODE) \
+	extern template class \
+	deletable_facet<CVT<CHAR_T, MAX, cvt_mode_constants::cvt_ ## MODE>>; \
+	extern template class \
+	Test_codecvt_base<CVT<CHAR_T, MAX, cvt_mode_constants::cvt_ ## MODE>>;
 
-#define CVT_UTF_CLASS_TYPES(CVT, MAX) \
-	CVT_UTF_CLASS_MODES(CVT, wchar_t, MAX) \
-	CVT_UTF_CLASS_MODES(CVT, char16_t, MAX) \
-	CVT_UTF_CLASS_MODES(CVT, char32_t, MAX)
+#define INSTANTIATE_DECLS(CVT, CHAR_T, MAX, MODE) \
+	template class \
+	deletable_facet<CVT<CHAR_T, MAX, cvt_mode_constants::cvt_ ## MODE>>; \
+	template class \
+	Test_codecvt_base<CVT<CHAR_T, MAX, cvt_mode_constants::cvt_ ## MODE>>;
 
-#define CVT_UTF_CLASS_MAXES(CVT) \
-	CVT_UTF_CLASS_TYPES(CVT, 0x7f) \
-	CVT_UTF_CLASS_TYPES(CVT, 0xff) \
-	CVT_UTF_CLASS_TYPES(CVT, 0xffff) \
-	CVT_UTF_CLASS_TYPES(CVT, 0x10ffff)
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, wchar_t, 0x7f);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, wchar_t, 0xff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, wchar_t, 0xffff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, wchar_t, 0x10ffff);
+
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char16_t, 0x7f);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char16_t, 0xff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char16_t, 0xffff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char16_t, 0x10ffff);
+
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char32_t, 0x7f);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char32_t, 0xff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char32_t, 0xffff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char32_t, 0x10ffff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char32_t, 0x3ffffff);
+FOR_ALL_CVT_MODES(EXTERN_DECLS, std::codecvt_utf8, char32_t, 0x7fffffff);
+
+#endif // GUARD_UNIT_CODECVT_BASE_H

@@ -9,31 +9,6 @@
 #include "codecvt_mode.h"
 #include "utf_conversion_helpers.h"
 
-namespace {
-
-constexpr std::codecvt_mode cvt_mode0 = ( std::little_endian
-                                        ^ std::little_endian );
-
-constexpr std::codecvt_mode cvt_mode1 = std::little_endian;
-
-constexpr std::codecvt_mode cvt_mode2 = std::generate_header;
-
-constexpr std::codecvt_mode cvt_mode3 = ( std::little_endian
-                                        | std::generate_header );
-
-constexpr std::codecvt_mode cvt_mode4 = std::consume_header;
-
-constexpr std::codecvt_mode cvt_mode5 = ( std::little_endian
-                                        | std::consume_header );
-
-constexpr std::codecvt_mode cvt_mode6 = ( std::generate_header
-                                        | std::consume_header );
-
-constexpr std::codecvt_mode cvt_mode7 = ( std::little_endian
-                                        | std::generate_header
-                                        | std::consume_header );
-}
-
 
 namespace std {
 
@@ -285,33 +260,22 @@ class codecvt_utf8
 // file, but we can at least provide some coverage of the common
 // cases.
 //
-#define DECLARE_EXTERNS(CHAR_T, MAX) \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode0>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode1>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode2>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode3>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode4>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode5>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode6>; \
-	extern template class codecvt_utf8<CHAR_T, MAX, cvt_mode7>
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, wchar_t, 0x7f);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, wchar_t, 0xff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, wchar_t, 0xffff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, wchar_t, 0x10ffff);
 
-DECLARE_EXTERNS(wchar_t, 0x7f);
-DECLARE_EXTERNS(wchar_t, 0xff);
-DECLARE_EXTERNS(wchar_t, 0xffff);
-DECLARE_EXTERNS(wchar_t, max_unicode_codepoint());
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char16_t, 0x7f);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char16_t, 0xff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char16_t, 0xffff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char16_t, 0x10ffff);
 
-DECLARE_EXTERNS(char16_t, 0x7f);
-DECLARE_EXTERNS(char16_t, 0xff);
-DECLARE_EXTERNS(char16_t, 0xffff);
-DECLARE_EXTERNS(char16_t, max_unicode_codepoint());
-
-DECLARE_EXTERNS(char32_t, 0x7f);
-DECLARE_EXTERNS(char32_t, 0xff);
-DECLARE_EXTERNS(char32_t, 0xffff);
-DECLARE_EXTERNS(char32_t, max_unicode_codepoint());
-DECLARE_EXTERNS(char32_t, 0x7fffffff);
-
-#undef DECLARE_EXTERNS
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char32_t, 0x7f);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char32_t, 0xff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char32_t, 0xffff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char32_t, 0x10ffff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char32_t, 0x3ffffff);
+FOR_ALL_CVT_MODES(EXTERN_CVT_TEMPLATE, codecvt_utf8, char32_t, 0x7fffffff);
 
 } // namespace std
 

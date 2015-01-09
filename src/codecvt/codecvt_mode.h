@@ -72,4 +72,47 @@ inline codecvt_mode & operator ^= (codecvt_mode & a, const codecvt_mode & b)
 
 } // namespace std
 
+namespace cvt_mode_constants {
+  constexpr std::codecvt_mode cvt_0 =
+	( std::little_endian ^ std::little_endian );
+
+  constexpr std::codecvt_mode cvt_1 =
+	( std::little_endian | std::little_endian );
+
+  constexpr std::codecvt_mode cvt_2 =
+	( std::generate_header | std::generate_header );
+
+  constexpr std::codecvt_mode cvt_3 =
+	( std::little_endian | std::generate_header );
+
+  constexpr std::codecvt_mode cvt_4 =
+	( std::consume_header | std::consume_header );
+
+  constexpr std::codecvt_mode cvt_5 =
+	( std::little_endian | std::consume_header );
+
+  constexpr std::codecvt_mode cvt_6 =
+	( std::generate_header | std::consume_header );
+
+  constexpr std::codecvt_mode cvt_7 =
+	( std::little_endian | std::generate_header | std::consume_header );
+}
+
+#define FOR_ALL_CVT_MODES(FN, CVT, CHAR_T, MAX) \
+	FN(CVT, CHAR_T, MAX, 0); \
+	FN(CVT, CHAR_T, MAX, 1); \
+	FN(CVT, CHAR_T, MAX, 2); \
+	FN(CVT, CHAR_T, MAX, 3); \
+	FN(CVT, CHAR_T, MAX, 4); \
+	FN(CVT, CHAR_T, MAX, 5); \
+	FN(CVT, CHAR_T, MAX, 6); \
+	FN(CVT, CHAR_T, MAX, 7);
+
+#define EXTERN_CVT_TEMPLATE(CVT, CHAR_T, MAX, MODE) \
+	extern template class CVT<CHAR_T, MAX, cvt_mode_constants::cvt_ ## MODE>
+
+#define INSTANTIATE_CVT_TEMPLATE(CVT, CHAR_T, MAX, MODE) \
+	template class CVT<CHAR_T, MAX, cvt_mode_constants::cvt_ ## MODE>;
+
+
 #endif // GUARD_CODECVT_MODE_H

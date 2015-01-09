@@ -257,36 +257,20 @@ const bool Test_codecvt_utf8<C, N, M>::eats_bom =
 template <typename C, unsigned long N, int M>
 constexpr unsigned long Test_codecvt_utf8<C, N, M>::max_value;
 
-#define REGISTER_CVT_UTF8(C, N, M) \
-	static CppUnit::AutoRegisterSuite< \
-		Test_codecvt_utf8<C, N, M>> \
-	autoRegisterRegistry__CVTUTF8_ ## C ## N ## M;
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, wchar_t, 0x7f);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, wchar_t, 0xff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, wchar_t, 0xffff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, wchar_t, 0x10ffff);
 
-#define REGISTER_CVT_UTF8_ALL_MODES(C, MAX) \
-	REGISTER_CVT_UTF8(C, MAX, 0) \
-	REGISTER_CVT_UTF8(C, MAX, 1) \
-	REGISTER_CVT_UTF8(C, MAX, 2) \
-	REGISTER_CVT_UTF8(C, MAX, 3) \
-	REGISTER_CVT_UTF8(C, MAX, 4) \
-	REGISTER_CVT_UTF8(C, MAX, 5) \
-	REGISTER_CVT_UTF8(C, MAX, 6) \
-	REGISTER_CVT_UTF8(C, MAX, 7)
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char16_t, 0x7f);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char16_t, 0xff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char16_t, 0xffff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char16_t, 0x10ffff);
 
-REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x7f);
-REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xff);
-REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xffff);
-REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x10ffff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x7f);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0xff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0xffff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x10ffff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x3ffffff);
+FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x7fffffff);
 
-REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0x7f);
-REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0xff);
-REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0xffff);
-REGISTER_CVT_UTF8_ALL_MODES(char16_t, 0x10ffff);
-
-REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x7f);
-REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0xff);
-REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0xffff);
-REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x10ffff);
-REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x3ffffff);
-REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x7fffffff);
-#if 0
-#endif
