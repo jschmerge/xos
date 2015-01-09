@@ -185,30 +185,8 @@ class Test_codecvt_utf8
 		state = std::mbstate_t();
 		int len = cvt.length(state, buffer, to_next, 4);
 
-#if 0
-		if(rc == std::codecvt_base::error
-		              || len == (to_next - buffer)
-		              || (M & std::consume_header))
-		{ } else {
-			printf("\nLENGTH = %d, %zd, rc = %d\n", len, to_next - buffer, rc);
-			for (auto p = buffer; p < to_next; ++p)
-				printf("%02hhx ", *p);
-			printf("\n");
-		}
-//		CPPUNIT_ASSERT(rc == std::codecvt_base::error
-//		              || len == (to_next - buffer)
-//		              || (M & std::consume_header));
-
-		printf("\nhas %d eats %d\n", has_bom, eats_bom);
-		printf("num eaten = %zd\n", to_next - buffer);
-
-		if(  (has_bom  &&  eats_bom && ((to_next - buffer) == 4))
-		  || (!has_bom &&  eats_bom && ((to_next - buffer) == 1))
-		  || (has_bom  && !eats_bom && ((to_next - buffer) == 3))
-		  || (!has_bom && !eats_bom && ((to_next - buffer) == 1))
-		  )
-		{ } else { CPPUNIT_ASSERT(false); }
-#endif
+		CPPUNIT_ASSERT(  len == encoded_length
+		              || (has_bom && !eats_bom && N < 0xfffful && len == 3) );
 
 		buffer_end = to_next;
 
@@ -270,11 +248,8 @@ class Test_codecvt_utf8
 	REGISTER_CVT_UTF8(C, MAX, 6) \
 	REGISTER_CVT_UTF8(C, MAX, 7)
 
-#if 0
-#endif
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x7f);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xff);
-#if 0
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0xffff);
 REGISTER_CVT_UTF8_ALL_MODES(wchar_t, 0x10ffff);
 
@@ -288,4 +263,5 @@ REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0xffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x10ffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x3ffffff);
 REGISTER_CVT_UTF8_ALL_MODES(char32_t, 0x7fffffff);
+#if 0
 #endif
