@@ -39,6 +39,37 @@ enum codecvt_mode
 	little_endian = 1
 };
 
+inline constexpr codecvt_mode operator & (codecvt_mode a, codecvt_mode b)
+{
+	return static_cast<codecvt_mode>(
+	static_cast<unsigned>(a) & static_cast<unsigned>(b));
+}
+
+inline constexpr codecvt_mode operator | (codecvt_mode a, codecvt_mode b)
+{
+	return static_cast<codecvt_mode>(
+	static_cast<unsigned>(a) | static_cast<unsigned>(b));
+}
+
+inline constexpr codecvt_mode operator ^ (codecvt_mode a, codecvt_mode b)
+{
+	return static_cast<codecvt_mode>(
+	static_cast<unsigned>(a) ^ static_cast<unsigned>(b));
+}
+
+inline constexpr codecvt_mode operator ~ (codecvt_mode a)
+	{ return static_cast<codecvt_mode>(~static_cast<unsigned>(a)); }
+
+inline codecvt_mode & operator &= (codecvt_mode & a, const codecvt_mode & b)
+	{ a = (a & b); return a; }
+
+inline codecvt_mode & operator |= (codecvt_mode & a, const codecvt_mode & b)
+	{ a = (a | b); return a; }
+
+inline codecvt_mode & operator ^= (codecvt_mode & a, const codecvt_mode & b)
+	{ a = (a ^ b); return a; }
+
+
 } // namespace std
 
 #endif // GUARD_CODECVT_MODE_H
