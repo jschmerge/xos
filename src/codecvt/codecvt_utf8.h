@@ -72,6 +72,8 @@ class codecvt_utf8
 		namespace utf8 = utf8_conversion;
 		namespace utf16 = utf16_conversion;
 
+		codecvt_base::result rc = codecvt_base::ok;
+
 		assert(from_begin <= from_end);
 		assert(to_begin <= to_end);
 
@@ -92,7 +94,9 @@ class codecvt_utf8
 			++to_last;
 		}
 
-		while ((to_last < to_end) && (from_last < from_end))
+		while (  (to_last < to_end)
+		      && (from_last < from_end)
+		      && rc == codecvt_base::ok)
 		{
 			if (state.__count == 0)
 			{
@@ -105,21 +109,24 @@ class codecvt_utf8
 				char val = utf8::extract_leader_byte(state);
 
 				if (state.__count < 0)
-					return codecvt_base::error;
-
-				*to_last = val;
-				++to_last;
-				++from_last;
+				{
+					rc = codecvt_base::error;
+					break;
+				} else
+				{
+					*to_last = val;
+					++to_last;
+					++from_last;
+				}
 			}
 
-			this->do_unshift(state, to_last, to_end, to_last);
+			rc = this->do_unshift(state, to_last, to_end, to_last);
 		}
 
-		this->do_unshift(state, to_last, to_end, to_last);
+		if (rc == codecvt_base::ok)
+			this->do_unshift(state, to_last, to_end, to_last);
 
-		return ( (  (state.__count == 0)
-		         && (from_last == from_end)) ?
-		         codecvt_base::codecvt_base::ok : codecvt_base::partial );
+		return rc;
 	}
 
 	virtual codecvt_base::result
@@ -131,6 +138,13 @@ class codecvt_utf8
 		namespace utf8 = utf8_conversion;
 
 //		assert((state.__count) >= 0 && (state.__count < this->do_max_length()));
+
+		if (  (state.__count < 0)
+		   || (state.__count > std::max(this->do_max_length(), 3)))
+			return codecvt_base::error;
+
+		if ( state.__value.__wch > Maxcode)
+			return codecvt_base::error;
 
 		to_last = to_begin;
 
