@@ -82,11 +82,6 @@ class codecvt_utf8
 
 		if (this->generate_bom() && (from_last < from_end))
 		{
-#if 0
-			if (bom_value() > this->max_encodable())
-				return codecvt_base::error;
-#endif
-
 			state.__value.__wch = bom_value();
 			char val = utf8::extract_leader_byte(state);
 
@@ -137,13 +132,13 @@ class codecvt_utf8
 	{
 		namespace utf8 = utf8_conversion;
 
-//		assert((state.__count) >= 0 && (state.__count < this->do_max_length()));
-
 		if (  (state.__count < 0)
 		   || (state.__count > std::max(this->do_max_length(), 3)))
 			return codecvt_base::error;
 
-		if ( state.__value.__wch > Maxcode)
+		if ( (  ((Mode & generate_header) != generate_header)
+		     || (state.__value.__wch != bom_value()) )
+		   && ( state.__value.__wch > Maxcode) )
 			return codecvt_base::error;
 
 		to_last = to_begin;
