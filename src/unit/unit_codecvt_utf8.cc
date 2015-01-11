@@ -98,7 +98,6 @@ class Test_codecvt_utf8
 			const char * end2 = end;
 			in_for_ictype(x, outbuffer, end2);
 		}
-		printf("\n");
 
 		for (cval = 0xe000ul;
 		     cval <= std::min(0x10fffful, max_value);
