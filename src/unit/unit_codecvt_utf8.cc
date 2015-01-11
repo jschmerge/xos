@@ -172,12 +172,13 @@ class Test_codecvt_utf8
 		rc = cvt.out(state, internarray, internarray + 1, from_next,
 		             buffer, buffer_end, to_next);
 
+		CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
+
 		const int bom_length = utf8_chars_needed(bom_value());
 		const int encoded_length = has_bom ?
 		                             utf8_chars_needed(c) + bom_length :
 		                             utf8_chars_needed(c);
 
-		CPPUNIT_ASSERT(rc == std::codecvt_base::ok);
 		if( (to_next - buffer) != encoded_length)
 		{
 			printf("\n%08X:, difference = %zd, computed = %d\n",
@@ -267,4 +268,3 @@ FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0xffff);
 FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x10ffff);
 FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x3ffffff);
 FOR_ALL_CVT_MODES(REGISTER_UTF_TEST, Test_codecvt_utf8, char32_t, 0x7fffffff);
-
