@@ -51,6 +51,13 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		static_assert(std::is_same<char, typename cvt_t::extern_type>::value,
 		              "codecvt<> extern_type is invalid");
 		CPPUNIT_ASSERT(cvt.encoding() == 0);
+
+		Test_codecvt_base dummy;
+		dummy.max_length();
+		dummy.encode_decode_char_range();
+		dummy.unshift();
+		dummy.unshift_errors();
+		std::unique_ptr<TestFixture> p_dummy(new Test_codecvt_base);
 	}
 
 	virtual void encoding()
@@ -65,13 +72,13 @@ class Test_codecvt_base : public CppUnit::TestFixture
 		CPPUNIT_ASSERT(cvt.always_noconv() == false);
 	}
 
-	virtual void max_length() = 0;
+	virtual void max_length() { CPPUNIT_ASSERT(true); }
 
-	virtual void encode_decode_char_range() = 0;
+	virtual void encode_decode_char_range() { CPPUNIT_ASSERT(true); }
 
-	virtual void unshift() = 0;
+	virtual void unshift() { CPPUNIT_ASSERT(true); }
 
-	virtual void unshift_errors() = 0;
+	virtual void unshift_errors() { CPPUNIT_ASSERT(true); }
 };
 
 typedef Test_codecvt_base<std::codecvt<char16_t, char, std::mbstate_t>> c16;

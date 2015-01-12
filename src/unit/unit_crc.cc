@@ -97,7 +97,7 @@ class Test_Crc : public CppUnit::TestFixture
 		std::mutex m;
 		std::condition_variable c;
 		bool ready = false;
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
 		for (int i = 0; i < 100; ++i)
 		{
 			threads.emplace_back([&] {
@@ -107,7 +107,7 @@ class Test_Crc : public CppUnit::TestFixture
 			});
 		}
 
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
 
 		m.lock();
 		ready = true;
