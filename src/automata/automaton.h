@@ -6,15 +6,17 @@
 #include <set>
 
 //////////////////////////////////////////////////////////////////////
-template <typename S_ID_T>
+template <typename SID_T>
 class state
 {
  public:
-	typedef S_ID_T state_id_type;
+	typedef SID_T state_id_type;
 
 	state(const state_id_type & name) : m_id(name) { }
 
 	state(const state & other) : m_id(other.m_id) { }
+
+	state(state && other) noexcept : m_id(std::move(other.m_id)) { }
 
 	state & operator = (const state & other)
 	{
@@ -23,8 +25,6 @@ class state
 		return *this;
 	}
 
-	state(state && other) noexcept : m_id(std::move(other.m_id)) { }
-
 	state & operator = (state && other) noexcept
 	{
 		using std::swap;
@@ -32,10 +32,7 @@ class state
 		return *this;
 	}
 
-	state_id_type id() const
-	{
-		return m_id;
-	}
+	state_id_type id() const { return m_id; }
 
  protected:
 	state_id_type m_id;
@@ -66,14 +63,13 @@ template <typename SID_T>
 bool operator >= (const state<SID_T> & a, const state<SID_T> & b)
 	{ return a.id() >= b.id(); }
 
-
 //////////////////////////////////////////////////////////////////////
-template <typename IN_T, typename S_ID_T>
+template <typename IN_T, typename SID_T>
 class transition
 {
  public:
 	typedef IN_T input_type;
-	typedef S_ID_T state_id_type;
+	typedef SID_T state_id_type;
 
 	transition(const state_id_type & old_state,
 	           const state_id_type & new_state,
@@ -109,12 +105,12 @@ class transition
 };
 
 //////////////////////////////////////////////////////////////////////
-template <typename IN_T, typename S_ID_T>
+template <typename IN_T, typename SID_T>
 class automaton
 {
  public:
 	typedef IN_T input_type;
-	typedef S_ID_T state_id_type;
+	typedef SID_T state_id_type;
 
 	automaton() { }
 	automaton(const automaton & other) = default;
@@ -130,7 +126,7 @@ class automaton
 
 	void declare_state(const state_id_type & id)
 	{
-		m_states.emplace_back(id);
+		m_states.emplace(id);
 	}
 
 	void declare_transition(const state_id_type & old_state,
