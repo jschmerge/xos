@@ -1,0 +1,61 @@
+digraph Input {
+	rankdir="LR"
+
+//	[label="std::codecvt_utf16 input"]
+
+
+	subgraph BOM {
+	edge [color="gray"]
+	node [color="gray"]
+	start -> be_bom1 [label="0xfe"]
+	start -> le_bom1 [label="0xff"]
+	}
+
+	subgraph {
+	node [color="blue"]
+	edge [color="blue"]
+	be_start -> be_one [label="0x00-d7,0xc0-ff"]
+	be_one -> be_start [label="0x00-ff"]
+	be_start -> be_two [label="0xd8-db"]
+	be_two -> be_three [label="0x00-ff"]
+	be_three -> be_four [label="0xdc-df"]
+	be_four -> be_start [label="0x00-ff"]
+	be_start [peripheries=2]
+	}
+
+	subgraph {
+	node [color="green"]
+	edge [color="green"]
+	le_start -> le_one [label="0x00-ff"]
+	le_one -> le_start [label="0x00-d7,0xc0-ff"]
+	le_one -> le_two [label="0xd8-db"]
+	le_two -> le_three [label="0x00-ff"]
+	le_three -> le_start [label="0xdc-df"]
+	le_start [peripheries=2]
+	}
+
+	subgraph BOM {
+	be_bom1 -> be_bom2 [label="0xff"]
+	be_bom1 -> be_start [label="0x00-fe"]
+	be_bom2 -> be_one [label="0x00-d7,0xc0-ff"]
+	be_bom2 -> be_two [label="0xd8-db"]
+
+	le_bom1 -> be_start [label="0x00-fd,0xff"]
+	le_bom1 -> le_bom2 [label="0xfe"]
+	le_bom2 -> le_one [label="0x00-ff"]
+	}
+
+	start [peripheries=2]
+	be_bom2 [peripheries=2]
+	le_bom2 [peripheries=2]
+
+//	{ rank=same be_bom2; le_bom2; }
+	{ rank=max le_start; be_start; }
+//	{ rank=same le_one; le_one; }
+
+//	five_bytes [label="0x4000000 -\n0x7FFFFFFF"]
+//	four_bytes [label="0x200000 -\n0x3FFFFFF"]
+//	three_bytes [label="0x10000 -\n0x1FFFFF"]
+//	two_bytes [label="0x0800 -\n0xFFFF"]
+//	one_byte [label="0x0080 -\n0x07ff"]
+}

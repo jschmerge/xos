@@ -1,5 +1,5 @@
 digraph Input {
-//	rankdir="LR"
+	rankdir="LR"
 	splines=true
 //	layout=fdp
 	layout=dot
