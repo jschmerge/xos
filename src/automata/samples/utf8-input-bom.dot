@@ -1,0 +1,61 @@
+digraph Input {
+//	rankdir="LR"
+	splines=true
+//	layout=fdp
+	layout=dot
+
+	edge [color=gray]
+
+	Start -> next_char [label="0x00-7F"]
+	Start -> one_byte [label="0xC0-DF"]
+	Start -> two_bytes [label="0xE0-EE"]
+	Start -> bom1 [label="0xEF"]
+	Start -> three_bytes [label="0xF0-F7"]
+	Start -> four_bytes [label="0xF8-FB"]
+	Start -> five_bytes [label="0xFC-FD"]
+
+	subgraph {
+		edge [color=black]
+
+		next_char -> next_char [label="0x00-7F"]
+		next_char -> one_byte [label="0xC0-DF"]
+		next_char -> two_bytes [label="0xE0-EF"]
+		next_char -> three_bytes [label="0xF0-F7"]
+		next_char -> four_bytes [label="0xF8-FB"]
+		next_char -> five_bytes [label="0xFC-FD"]
+
+		one_byte -> next_char [label="0x80-BF"]
+		two_bytes -> one_byte [label="0x80-BF"]
+		three_bytes -> two_bytes [label="0x80-BF"]
+		four_bytes -> three_bytes [label="0x80-BF"]
+		five_bytes -> four_bytes [label="0x80-BF"]
+	}
+
+	Start [peripheries=2]
+	next_char [peripheries=2]
+	bom3 [peripheries=2]
+
+	bom1 -> bom2 [label="0xBB"]
+	bom1 -> one_byte [label="0x80-BA,0xBC-BF"]
+
+	bom2 -> bom3 [label="0xBF"]
+	bom2 -> next_char [label="0x80-BE"]
+
+	bom3 -> next_char [label="0x00-7F"]
+	bom3 -> one_byte [label="0xC0-DF"]
+	bom3 -> two_bytes [label="0xE0-EF"]
+	bom3 -> three_bytes [label="0xF0-F7"]
+	bom3 -> four_bytes [label="0xF8-FB"]
+	bom3 -> five_bytes [label="0xFC-FD"]
+
+//	{ rank=same; "next_char"; "bom3"; }
+// 	Start -> error [label="0x80-BF"]
+// 	next_char -> error [label="0x80-BF"]
+
+
+//	five_bytes [label="0x4000000 -\n7FFFFFFF"]
+//	four_bytes [label="0x200000 -\n3FFFFFF"]
+//	three_bytes [label="0x10000 -\n1FFFFF"]
+//	two_bytes [label="0x0800 -\nFFFF"]
+//	one_byte [label="0x0080 -\n07ff"]
+}

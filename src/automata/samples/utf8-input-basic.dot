@@ -1,27 +1,28 @@
 digraph Input {
-	Start -> done [label="0x00-0x7F"]
+	rankdir="LR"
 
- 	Start -> error [label="0x80-0xBF"]
+	next_char -> next_char [label="0x00-0x7F"]
 
-	Start -> one_byte [label="0xC0-0xDF"]
+	next_char -> one_byte [label="0xC0-0xDF"]
 
-	Start -> two_bytes [label="0xE0-0xEF"]
+	next_char -> two_bytes [label="0xE0-0xEF"]
 
-	Start -> three_bytes [label="0xF0-0xF7"]
+	next_char -> three_bytes [label="0xF0-0xF7"]
 
-	Start -> four_bytes [label="0xF8-0xFB"]
+	next_char -> four_bytes [label="0xF8-0xFB"]
 
-	Start -> five_bytes [label="0xFC-0xFD"]
-	five_bytes -> four_bytes [label="0x80-0xBF"]
-	four_bytes -> three_bytes [label="0x80-0xBF"]
-	three_bytes -> two_bytes [label="0x80-0xBF"]
+	next_char -> five_bytes [label="0xFC-0xFD"]
+	one_byte -> next_char [label="0x80-0xBF"]
 	two_bytes -> one_byte [label="0x80-0xBF"]
-	one_byte -> done [label="0x80-0xBF"]
+	three_bytes -> two_bytes [label="0x80-0xBF"]
+	four_bytes -> three_bytes [label="0x80-0xBF"]
+	five_bytes -> four_bytes [label="0x80-0xBF"]
 
-	Start [peripheries=2]
-	five_bytes [label="0x4000000 -\n0x7FFFFFFF"]
-	four_bytes [label="0x200000 -\n0x3FFFFFF"]
-	three_bytes [label="0x10000 -\n0x1FFFFF"]
-	two_bytes [label="0x0800 -\n0xFFFF"]
-	one_byte [label="0x0080 -\n0x07ff"]
+	next_char [peripheries=2]
+
+//	five_bytes [label="0x4000000 -\n0x7FFFFFFF"]
+//	four_bytes [label="0x200000 -\n0x3FFFFFF"]
+//	three_bytes [label="0x10000 -\n0x1FFFFF"]
+//	two_bytes [label="0x0800 -\n0xFFFF"]
+//	one_byte [label="0x0080 -\n0x07ff"]
 }
