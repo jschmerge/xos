@@ -1,54 +1,191 @@
 digraph Input {
 	rankdir="LR"
+	node [shape=circle,fontname="times bold italic",fontsize=20]
+//	edge [fontname=courier]
 
-	subgraph cluster_one {
-		label="consume_header == true and little_endian == false"
+	Initial2 [shape=point]
+	subgraph cluster_two {
+		label="std::codecvt_mode = { 5, 7 }\n(little-endian with BOM sensing)"
 
-		start [peripheries=2]
-		be_bom2 [peripheries=2]
-		le_bom2 [peripheries=2]
+		Initial2 -> A2
 
-		subgraph BOM {
-			edge [color="gray"]
-			node [color="gray"]
-			start -> be_bom1 [label="0xfe"]
-			start -> le_bom1 [label="0xff"]
-		}
-
+		A2 [peripheries=2]
+		I2 [peripheries=2]
+		C2 [peripheries=2]
 		subgraph big_endian {
 			node [color="blue"]
 			edge [color="blue"]
-			be_start -> be_one [label="0x00-d7,0xc0-ff"]
-			be_one -> be_start [label="0x00-ff"]
-			be_start -> be_two [label="0xd8-db"]
-			be_two -> be_three [label="0x00-ff"]
-			be_three -> be_four [label="0xdc-df"]
-			be_four -> be_start [label="0x00-ff"]
-			be_start [peripheries=2]
+			N2 -> M2 [label="0x00-d7,0xc0-ff"]
+			M2 -> N2 [label="0x00-ff"]
+			N2 -> J2 [label="0xd8-db"]
+			J2 -> K2 [label="0x00-ff"]
+			K2 -> L2 [label="0xdc-df"]
+			L2 -> N2 [label="0x00-ff"]
+
+			J2 [label="J"]
+			K2 [label="K"]
+			L2 [label="L"]
+			M2 [label="M"]
+			N2 [label="N",peripheries=2]
 		}
 
 		subgraph little_endian {
 			node [color="green"]
 			edge [color="green"]
-			le_start -> le_one [label="0x00-ff"]
-			le_one -> le_start [label="0x00-d7,0xc0-ff"]
-			le_one -> le_two [label="0xd8-db"]
-			le_two -> le_three [label="0x00-ff"]
-			le_three -> le_start [label="0xdc-df"]
-			le_start [peripheries=2]
+			G2 -> D2 [label="0x00-ff"]
+			D2 -> G2 [label="0x00-d7,0xc0-ff"]
+			D2 -> E2 [label="0xd8-db"]
+			E2 -> F2 [label="0x00-ff"]
+			F2 -> G2 [label="0xdc-df"]
+
+			D2 [label="D"]
+			E2 [label="E"]
+			F2 [label="F"]
+			G2 [label="G",peripheries=2]
 		}
 
 		subgraph BOM {
-			be_bom1 -> be_bom2 [label="0xff"]
-			be_bom1 -> be_start [label="0x00-fe"]
-			be_bom2 -> be_one [label="0x00-d7,0xc0-ff"]
-			be_bom2 -> be_two [label="0xd8-db"]
+			edge [color="gray"]
+			node [color="gray"]
+			A2 -> D2 [label="0x00-fd"]
+			A2 -> H2 [label="0xfe"]
+			A2 -> B2 [label="0xff"]
+			H2 -> I2 [label="0xff"]
+			H2 -> G2 [label="0x00-fe"]
+			I2 -> M2 [label="0x00-d7,0xc0-ff"]
+			I2 -> J2 [label="0xd8-db"]
 
-			le_bom1 -> be_start [label="0x00-fd,0xff"]
-			le_bom1 -> le_bom2 [label="0xfe"]
-			le_bom2 -> le_one [label="0x00-ff"]
+			B2 -> G2 [label="0x00-fd,0xff"]
+			B2 -> C2 [label="0xfe"]
+			C2 -> D2 [label="0x00-ff"]
+
+
+
+			A2 [label="A"]
+			H2 [label="H"]
+			I2 [label="I"]
+			B2 [label="B"]
+			C2 [label="C"]
 		}
 
-		{ rank=max le_start; be_start; }
+		{ rank=max G2; N2; }
 	}
+
+	Initial1 [shape=point]
+	subgraph cluster_one {
+		label="std::codecvt_mode = { 4, 6 }\n(big-endian with BOM sensing)"
+
+		A1 [peripheries=2]
+		I1 [peripheries=2]
+		C1 [peripheries=2]
+
+		Initial1 -> A1
+
+		subgraph big_endian {
+			node [color="blue"]
+			edge [color="blue"]
+			N1 -> M1 [label="0x00-d7,0xc0-ff"]
+			M1 -> N1 [label="0x00-ff"]
+			N1 -> J1 [label="0xd8-db"]
+			J1 -> K1 [label="0x00-ff"]
+			K1 -> L1 [label="0xdc-df"]
+			L1 -> N1 [label="0x00-ff"]
+
+			J1 [label="J"]
+			K1 [label="K"]
+			L1 [label="L"]
+			M1 [label="M"]
+			N1 [label="N",peripheries=2]
+		}
+
+		subgraph little_endian {
+			node [color="green"]
+			edge [color="green"]
+			G1 -> D1 [label="0x00-ff"]
+			D1 -> G1 [label="0x00-d7,0xc0-ff"]
+			D1 -> E1 [label="0xd8-db"]
+			E1 -> F1 [label="0x00-ff"]
+			F1 -> G1 [label="0xdc-df"]
+
+			D1 [label="D"]
+			E1 [label="E"]
+			F1 [label="F"]
+			G1 [label="G",peripheries=2]
+		}
+
+		subgraph BOM {
+			edge [color="gray"]
+			node [color="gray"]
+			A1 -> M1 [label="0x00-fd"]
+			A1 -> H1 [label="0xfe"]
+			A1 -> B1 [label="0xff"]
+			H1 -> I1 [label="0xff"]
+			H1 -> N1 [label="0x00-fe"]
+			I1 -> M1 [label="0x00-d7,0xc0-ff"]
+			I1 -> J1 [label="0xd8-db"]
+
+			B1 -> N1 [label="0x00-fd,0xff"]
+			B1 -> C1 [label="0xfe"]
+			C1 -> D1 [label="0x00-ff"]
+
+
+
+			A1 [label="A"]
+			H1 [label="H"]
+			I1 [label="I"]
+			B1 [label="B"]
+			C1 [label="C"]
+		}
+
+		{ rank=max G1; N1; }
+	}
+
+	Initial4 [shape=point]
+	subgraph cluster_four {
+		label="std::codecvt_mode = { 1, 3 }\n(basic little-endian)"
+
+		Initial4 -> G4
+
+		subgraph little_endian {
+			node [color="green"]
+			edge [color="green"]
+			G4 -> D4 [label="0x00-ff"]
+			D4 -> G4 [label="0x00-d7,0xc0-ff"]
+			D4 -> E4 [label="0xd8-db"]
+			E4 -> F4 [label="0x00-ff"]
+			F4 -> G4 [label="0xdc-df"]
+
+			D4 [label="D"]
+			E4 [label="E"]
+			F4 [label="F"]
+			G4 [label="G",color=green,peripheries=2]
+		}
+	}
+
+	Initial3 [shape=point]
+	subgraph cluster_three {
+		label="std::codecvt_mode = { 0, 2 }\n(basic big-endian)"
+
+		Initial3 -> N3
+
+		subgraph big_endian {
+			node [color="blue"]
+			edge [color="blue"]
+			N3 -> M3 [label="0x00-d7,0xc0-ff"]
+			M3 -> N3 [label="0x00-ff"]
+			N3 -> J3 [label="0xd8-db"]
+			J3 -> K3 [label="0x00-ff"]
+			K3 -> L3 [label="0xdc-df"]
+			L3 -> N3 [label="0x00-ff"]
+
+			J3 [label="J"]
+			K3 [label="K"]
+			L3 [label="L"]
+			M3 [label="M"]
+			N3 [label="N",color=blue,peripheries=2]
+		}
+
+		//{ rank=max N3; }
+	}
+
 }

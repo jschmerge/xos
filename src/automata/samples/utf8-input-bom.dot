@@ -3,79 +3,98 @@ digraph Input {
 	splines=true
 	layout=dot
 
+	node [shape=circle]
+
 	Initial1 [shape=point]
 	Initial2 [shape=point]
 
-	Initial1 -> BOM_A [color=black]
-	Initial2 -> S1
+	subgraph cluster_input_modes {
+		label="UTF8 input"
+		Initial1 -> BOM_A [color=black]
+		Initial2 -> S1
 
-	subgraph cluster_consume_header {
-		label="with std::consume_header"
+		subgraph cluster_consume_header {
+			label="std::codecvt_mode = { 4, 5, 6, 7 }"
 
-		subgraph {
-			edge [color=gray]
-			BOM_A [peripheries=2]
-			BOM_D [peripheries=2]
-
-			BOM_A -> S2 [label="0x00-7F"]
-			BOM_A -> A2 [label="0xC0-DF"]
-			BOM_A -> B2 [label="0xE0-EE"]
-			BOM_A -> BOM_B [label="0xEF"]
-			BOM_A -> C2 [label="0xF0-F7"]
-			BOM_A -> D2 [label="0xF8-FB"]
-			BOM_A -> E2 [label="0xFC-FD"]
+			subgraph {
+				node [color=gray]
+				edge [color=gray]
+				BOM_A -> S2 [label="0x00-7F"]
+				BOM_A -> A2 [label="0xC0-DF"]
+				BOM_A -> B2 [label="0xE0-EE"]
+				BOM_A -> BOM_B [label="0xEF"]
+				BOM_A -> C2 [label="0xF0-F7"]
+				BOM_A -> D2 [label="0xF8-FB"]
+				BOM_A -> E2 [label="0xFC-FD"]
 
 
-			BOM_B -> BOM_C [label="0xBB"]
-			BOM_B -> A2 [label="0x80-BA,0xBC-BF"]
+				BOM_B -> BOM_C [label="0xBB"]
+				BOM_B -> A2 [label="0x80-BA,0xBC-BF"]
 
-			BOM_C -> BOM_D [label="0xBF"]
-			BOM_C -> S2 [label="0x80-BE"]
+				BOM_C -> BOM_D [label="0xBF"]
+				BOM_C -> S2 [label="0x80-BE"]
 
-			BOM_D -> S2 [label="0x00-7F"]
-			BOM_D -> A2 [label="0xC0-DF"]
-			BOM_D -> B2 [label="0xE0-EF"]
-			BOM_D -> C2 [label="0xF0-F7"]
-			BOM_D -> D2 [label="0xF8-FB"]
-			BOM_D -> E2 [label="0xFC-FD"]
+				BOM_D -> S2 [label="0x00-7F"]
+				BOM_D -> A2 [label="0xC0-DF"]
+				BOM_D -> B2 [label="0xE0-EF"]
+				BOM_D -> C2 [label="0xF0-F7"]
+				BOM_D -> D2 [label="0xF8-FB"]
+				BOM_D -> E2 [label="0xFC-FD"]
+			}
+
+			subgraph {
+				edge [color=black]
+
+				S2 [peripheries=2,color=black]
+				S2 -> S2 [label="0x00-7F"]
+				S2 -> A2 [label="0xC0-DF"]
+				S2 -> B2 [label="0xE0-EF"]
+				S2 -> C2 [label="0xF0-F7"]
+				S2 -> D2 [label="0xF8-FB"]
+				S2 -> E2 [label="0xFC-FD"]
+
+				A2 -> S2 [label="0x80-BF"]
+				B2 -> A2 [label="0x80-BF"]
+				C2 -> B2 [label="0x80-BF"]
+				D2 -> C2 [label="0x80-BF"]
+				E2 -> D2 [label="0x80-BF"]
+			}
+
+			BOM_A [label="1",  color=gray,  peripheries=2]
+			BOM_B [label="2"   color=grey,  peripheries=1]
+			BOM_C [label="3"   color=grey,  peripheries=1]
+			BOM_D [label="4",  color=grey,  peripheries=2]
+			S2    [label="5",  color=black, peripheries=2]
+			A2    [label="6",  color=black, peripheries=1]
+			E2    [label="7",  color=black, peripheries=1]
+			D2    [label="8",  color=black, peripheries=1]
+			C2    [label="9",  color=black, peripheries=1]
+			B2    [label="10", color=black, peripheries=1]
 		}
 
-		subgraph {
-			edge [color=black]
+		subgraph cluster_basic
+		{
+			label="std::codecvt_mode = { 0, 1, 2, 3 }"
+			S1 -> S1 [label="0x00-7F"]
+			S1 -> A1 [label="0xC0-DF"]
+			S1 -> B1 [label="0xE0-EF"]
+			S1 -> C1 [label="0xF0-F7"]
+			S1 -> D1 [label="0xF8-FB"]
 
-			S2 [peripheries=2]
-			S2 -> S2 [label="0x00-7F"]
-			S2 -> A2 [label="0xC0-DF"]
-			S2 -> B2 [label="0xE0-EF"]
-			S2 -> C2 [label="0xF0-F7"]
-			S2 -> D2 [label="0xF8-FB"]
-			S2 -> E2 [label="0xFC-FD"]
+			S1 -> E1 [label="0xFC-FD"]
+			A1 -> S1 [label="0x80-BF"]
+			B1 -> A1 [label="0x80-BF"]
+			C1 -> B1 [label="0x80-BF"]
+			D1 -> C1 [label="0x80-BF"]
+			E1 -> D1 [label="0x80-BF"]
 
-			A2 -> S2 [label="0x80-BF"]
-			B2 -> A2 [label="0x80-BF"]
-			C2 -> B2 [label="0x80-BF"]
-			D2 -> C2 [label="0x80-BF"]
-			E2 -> D2 [label="0x80-BF"]
+			S1    [label="5",  color=black, peripheries=2]
+			A1    [label="6",  color=black, peripheries=1]
+			E1    [label="7",  color=black, peripheries=1]
+			D1    [label="8",  color=black, peripheries=1]
+			C1    [label="9",  color=black, peripheries=1]
+			B1    [label="10", color=black, peripheries=1]
 		}
 
-	}
-
-	subgraph cluster_basic
-	{
-		label="without std::consume_header"
-		S1 -> S1 [label="0x00-7F"]
-		S1 -> A1 [label="0xC0-DF"]
-		S1 -> B1 [label="0xE0-EF"]
-		S1 -> C1 [label="0xF0-F7"]
-		S1 -> D1 [label="0xF8-FB"]
-
-		S1 -> E1 [label="0xFC-FD"]
-		A1 -> S1 [label="0x80-BF"]
-		B1 -> A1 [label="0x80-BF"]
-		C1 -> B1 [label="0x80-BF"]
-		D1 -> C1 [label="0x80-BF"]
-		E1 -> D1 [label="0x80-BF"]
-
-		S1 [peripheries=2]
 	}
 }

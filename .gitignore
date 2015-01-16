@@ -24,3 +24,4 @@ bin
 *.app
 
 .ycm_extra_conf.pyc
+src/automata/samples/*.pdf
