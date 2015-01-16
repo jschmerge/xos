@@ -1,61 +1,81 @@
 digraph Input {
 	rankdir="LR"
 	splines=true
-//	layout=fdp
 	layout=dot
 
-	edge [color=gray]
+	Initial1 [shape=point]
+	Initial2 [shape=point]
 
-	Start -> next_char [label="0x00-7F"]
-	Start -> one_byte [label="0xC0-DF"]
-	Start -> two_bytes [label="0xE0-EE"]
-	Start -> bom1 [label="0xEF"]
-	Start -> three_bytes [label="0xF0-F7"]
-	Start -> four_bytes [label="0xF8-FB"]
-	Start -> five_bytes [label="0xFC-FD"]
+	Initial1 -> BOM_A [color=black]
+	Initial2 -> S1
 
-	subgraph {
-		edge [color=black]
+	subgraph cluster_consume_header {
+		label="with std::consume_header"
 
-		next_char -> next_char [label="0x00-7F"]
-		next_char -> one_byte [label="0xC0-DF"]
-		next_char -> two_bytes [label="0xE0-EF"]
-		next_char -> three_bytes [label="0xF0-F7"]
-		next_char -> four_bytes [label="0xF8-FB"]
-		next_char -> five_bytes [label="0xFC-FD"]
+		subgraph {
+			edge [color=gray]
+			BOM_A [peripheries=2]
+			BOM_D [peripheries=2]
 
-		one_byte -> next_char [label="0x80-BF"]
-		two_bytes -> one_byte [label="0x80-BF"]
-		three_bytes -> two_bytes [label="0x80-BF"]
-		four_bytes -> three_bytes [label="0x80-BF"]
-		five_bytes -> four_bytes [label="0x80-BF"]
+			BOM_A -> S2 [label="0x00-7F"]
+			BOM_A -> A2 [label="0xC0-DF"]
+			BOM_A -> B2 [label="0xE0-EE"]
+			BOM_A -> BOM_B [label="0xEF"]
+			BOM_A -> C2 [label="0xF0-F7"]
+			BOM_A -> D2 [label="0xF8-FB"]
+			BOM_A -> E2 [label="0xFC-FD"]
+
+
+			BOM_B -> BOM_C [label="0xBB"]
+			BOM_B -> A2 [label="0x80-BA,0xBC-BF"]
+
+			BOM_C -> BOM_D [label="0xBF"]
+			BOM_C -> S2 [label="0x80-BE"]
+
+			BOM_D -> S2 [label="0x00-7F"]
+			BOM_D -> A2 [label="0xC0-DF"]
+			BOM_D -> B2 [label="0xE0-EF"]
+			BOM_D -> C2 [label="0xF0-F7"]
+			BOM_D -> D2 [label="0xF8-FB"]
+			BOM_D -> E2 [label="0xFC-FD"]
+		}
+
+		subgraph {
+			edge [color=black]
+
+			S2 [peripheries=2]
+			S2 -> S2 [label="0x00-7F"]
+			S2 -> A2 [label="0xC0-DF"]
+			S2 -> B2 [label="0xE0-EF"]
+			S2 -> C2 [label="0xF0-F7"]
+			S2 -> D2 [label="0xF8-FB"]
+			S2 -> E2 [label="0xFC-FD"]
+
+			A2 -> S2 [label="0x80-BF"]
+			B2 -> A2 [label="0x80-BF"]
+			C2 -> B2 [label="0x80-BF"]
+			D2 -> C2 [label="0x80-BF"]
+			E2 -> D2 [label="0x80-BF"]
+		}
+
 	}
 
-	Start [peripheries=2]
-	next_char [peripheries=2]
-	bom3 [peripheries=2]
+	subgraph cluster_basic
+	{
+		label="without std::consume_header"
+		S1 -> S1 [label="0x00-7F"]
+		S1 -> A1 [label="0xC0-DF"]
+		S1 -> B1 [label="0xE0-EF"]
+		S1 -> C1 [label="0xF0-F7"]
+		S1 -> D1 [label="0xF8-FB"]
 
-	bom1 -> bom2 [label="0xBB"]
-	bom1 -> one_byte [label="0x80-BA,0xBC-BF"]
+		S1 -> E1 [label="0xFC-FD"]
+		A1 -> S1 [label="0x80-BF"]
+		B1 -> A1 [label="0x80-BF"]
+		C1 -> B1 [label="0x80-BF"]
+		D1 -> C1 [label="0x80-BF"]
+		E1 -> D1 [label="0x80-BF"]
 
-	bom2 -> bom3 [label="0xBF"]
-	bom2 -> next_char [label="0x80-BE"]
-
-	bom3 -> next_char [label="0x00-7F"]
-	bom3 -> one_byte [label="0xC0-DF"]
-	bom3 -> two_bytes [label="0xE0-EF"]
-	bom3 -> three_bytes [label="0xF0-F7"]
-	bom3 -> four_bytes [label="0xF8-FB"]
-	bom3 -> five_bytes [label="0xFC-FD"]
-
-//	{ rank=same; "next_char"; "bom3"; }
-// 	Start -> error [label="0x80-BF"]
-// 	next_char -> error [label="0x80-BF"]
-
-
-//	five_bytes [label="0x4000000 -\n7FFFFFFF"]
-//	four_bytes [label="0x200000 -\n3FFFFFF"]
-//	three_bytes [label="0x10000 -\n1FFFFF"]
-//	two_bytes [label="0x0800 -\nFFFF"]
-//	one_byte [label="0x0080 -\n07ff"]
+		S1 [peripheries=2]
+	}
 }
