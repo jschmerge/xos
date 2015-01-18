@@ -68,7 +68,7 @@ digraph Input {
 			C2 [label="C"]
 		}
 
-		{ rank=max G2; N2; }
+//		{ rank=max G2; N2; }
 	}
 
 	Initial1 [shape=point]
@@ -76,26 +76,26 @@ digraph Input {
 		label="std::codecvt_mode = { 4, 6 }\n(big-endian with BOM sensing)"
 
 		A1 [peripheries=2]
-		I1 [peripheries=2]
 		C1 [peripheries=2]
+		I1 [peripheries=2]
 
 		Initial1 -> A1
 
 		subgraph big_endian {
 			node [color="blue"]
 			edge [color="blue"]
-			N1 -> M1 [label="0x00-d7,0xc0-ff"]
-			M1 -> N1 [label="0x00-ff"]
 			N1 -> J1 [label="0xd8-db"]
 			J1 -> K1 [label="0x00-ff"]
 			K1 -> L1 [label="0xdc-df"]
 			L1 -> N1 [label="0x00-ff"]
+			N1 -> M1 [label="0x00-d7,0xc0-ff"]
+			M1 -> N1 [label="0x00-ff"]
 
-			J1 [label="J"]
-			K1 [label="K"]
-			L1 [label="L"]
-			M1 [label="M"]
-			N1 [label="N",peripheries=2]
+			J1 [label="J",color=blue]
+			K1 [label="K",color=blue]
+			L1 [label="L",color=blue]
+			M1 [label="M",color=blue]
+			N1 [label="N",peripheries=2,color=blue]
 		}
 
 		subgraph little_endian {
@@ -116,9 +116,11 @@ digraph Input {
 		subgraph BOM {
 			edge [color="gray"]
 			node [color="gray"]
-			A1 -> M1 [label="0x00-fd"]
-			A1 -> H1 [label="0xfe"]
 			A1 -> B1 [label="0xff"]
+			A1 -> H1 [label="0xfe"]
+			A1 -> M1 [label="0x00-d7,0xc0-fd"]
+			A1 -> J1 [label="0xd8-db"]
+
 			H1 -> I1 [label="0xff"]
 			H1 -> N1 [label="0x00-fe"]
 			I1 -> M1 [label="0x00-d7,0xc0-ff"]
@@ -131,10 +133,10 @@ digraph Input {
 
 
 			A1 [label="A"]
-			H1 [label="H"]
-			I1 [label="I"]
 			B1 [label="B"]
 			C1 [label="C"]
+			H1 [label="H"]
+			I1 [label="I"]
 		}
 
 		{ rank=max G1; N1; }
