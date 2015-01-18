@@ -105,6 +105,24 @@ class transition
 };
 
 //////////////////////////////////////////////////////////////////////
+template <typename VAL_T>
+class value_range
+{
+ public:
+	typedef VAL_T value_type;
+	typedef std::size_t size_type;
+
+	value_range() { }
+
+	~value_range() { }
+
+	bool contains(const value_type & v) const;
+	value_type min() const;
+	value_type max() const;
+	size_type size() const;
+};
+
+//////////////////////////////////////////////////////////////////////
 template <typename IN_T, typename SID_T>
 class automaton
 {
@@ -135,6 +153,16 @@ class automaton
 	{
 		m_transitions.emplace_back(old_state, new_state, value);
 	}
+
+#if 0
+	void declare_transition_range(const state_id_type & old_state,
+	                              const state_id_type & new_state,
+	                              const input_range<input_type> & range)
+	{
+		for (input_type v = range.begin(); v != range.end(); ++v)
+			m_transitions.emplace_back(old_state, new_state, v);
+	}
+#endif
 
  protected:
 	void compile() { }
