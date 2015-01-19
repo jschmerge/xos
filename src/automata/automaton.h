@@ -4,6 +4,8 @@
 #include <limits>
 #include <vector>
 #include <set>
+#include <cstdio>
+#include <stdexcept>
 
 //////////////////////////////////////////////////////////////////////
 template <typename SID_T>
@@ -12,9 +14,15 @@ class state
  public:
 	typedef SID_T state_id_type;
 
-	state(const state_id_type & name) : m_id(name) { }
+	state(const state_id_type & name, bool accept = false)
+	  : m_id(name)
+	  , m_accept(accept)
+		{ }
 
-	state(const state & other) : m_id(other.m_id) { }
+	state(const state & other)
+	  : m_id(other.m_id)
+	  , m_accept(other.m_accept)
+		{ }
 
 	state(state && other) noexcept : m_id(std::move(other.m_id)) { }
 
@@ -33,9 +41,11 @@ class state
 	}
 
 	state_id_type id() const { return m_id; }
+	bool accept_state() const { return m_accept; }
 
  protected:
 	state_id_type m_id;
+	bool m_accept;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -65,7 +75,7 @@ bool operator >= (const state<SID_T> & a, const state<SID_T> & b)
 
 //////////////////////////////////////////////////////////////////////
 template <typename IN_T, typename SID_T>
-class transition
+struct transition
 {
  public:
 	typedef IN_T input_type;
@@ -79,32 +89,18 @@ class transition
 	  , m_value(value)
 		{ }
 
-	transition(const transition &) = delete;
+	transition(const transition &) = default;
 
-	transition & operator = (const transition &) = delete;
+	transition & operator = (const transition &) = default;
 
-	transition(transition && other) noexcept
-	  : m_old_state(std::move(other.m_old_state))
-	  , m_new_state(std::move(other.m_new_state))
-	  , m_value(std::move(other.m_value))
-		{ }
-
-	transition & operator = (transition && other) noexcept
-	{
-		using std::swap;
-		swap(m_old_state, other.m_old_state);
-		swap(m_new_state, other.m_new_state);
-		swap(m_value, other.m_value);
-		return *this;
-	}
-
- private:
 	state_id_type m_old_state;
 	state_id_type m_new_state;
 	input_type m_value;
 };
 
 //////////////////////////////////////////////////////////////////////
+// FIXME: this class really isn't a nice interface for this
+// Represents the range [low,high]
 template <typename VAL_T>
 class value_range
 {
@@ -112,14 +108,31 @@ class value_range
 	typedef VAL_T value_type;
 	typedef std::size_t size_type;
 
-	value_range() { }
+	value_range()
+	  : begin(0)
+	  , end(0)
+		{ }
+
+	value_range(const value_type & low, const value_type & high)
+	  : begin(low)
+	  , end(high)
+		{ }
 
 	~value_range() { }
 
-	bool contains(const value_type & v) const;
-	value_type min() const;
-	value_type max() const;
-	size_type size() const;
+	bool contains(const value_type & v) const
+		{ return ((v >= begin) && (v <= end)); }
+
+	value_type min() const
+		{ return begin; }
+	value_type max() const
+		{ return end; }
+
+	size_type size() const
+		{ return (end - begin); }
+
+ private:
+	value_type begin, end;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -130,21 +143,33 @@ class automaton
 	typedef IN_T input_type;
 	typedef SID_T state_id_type;
 
-	automaton() { }
+	automaton()
+	  : m_start_state(m_states.end())
+		{ }
+
 	automaton(const automaton & other) = default;
+
 	automaton(automaton && other) = default;
+
 	automaton & operator = (const automaton & other) = default;
+
 	automaton & operator = (automaton && other) = default;
+
 	~automaton() { }
 
-	void declare_start_state(const state_id_type & id)
+	void declare_start_state(const state_id_type & id, bool accept = false)
 	{
-		declare_state(id);
+		auto i = m_states.emplace(id, accept).first;
+
+		if (m_start_state != m_states.end())
+			throw std::logic_error("Bad start state");
+
+		m_start_state = i;
 	}
 
-	void declare_state(const state_id_type & id)
+	void declare_state(const state_id_type & id, bool accept = false)
 	{
-		m_states.emplace(id);
+		m_states.emplace(id, accept);
 	}
 
 	void declare_transition(const state_id_type & old_state,
@@ -154,22 +179,54 @@ class automaton
 		m_transitions.emplace_back(old_state, new_state, value);
 	}
 
-#if 0
 	void declare_transition_range(const state_id_type & old_state,
 	                              const state_id_type & new_state,
-	                              const input_range<input_type> & range)
+	                              const value_range<input_type> & range)
 	{
-		for (input_type v = range.begin(); v != range.end(); ++v)
-			m_transitions.emplace_back(old_state, new_state, v);
+		for (input_type v = range.min(); v != range.max(); ++v)
+			declare_transition(old_state, new_state, v);
 	}
-#endif
+
+	void dump_all(FILE * f = stdout)
+	{
+		fprintf(f, "%zu States:\n", m_states.size());
+		for (auto s : m_states)
+		{
+			if (m_start_state->id() == s.id() && ! s.accept_state())
+				fprintf(f, "\t<%02x>\n", s.id());
+			else if (m_start_state->id() == s.id() && s.accept_state())
+				fprintf(f, "\t<<%02x>>\n", s.id());
+			else if (s.accept_state())
+				fprintf(f, "\t((%02x))\n", s.id());
+			else
+				fprintf(f, "\t(%02x)\n", s.id());
+		}
+
+		fprintf(f, "%zd Transitions:\n", m_transitions.size());
+		for (const auto & t : m_transitions)
+		{
+			if (m_start_state->id() == t.m_old_state)
+				fprintf(f, "\t<%02x> --> ", t.m_old_state);
+			else
+				fprintf(f, "\t(%02x) --> ", t.m_old_state);
+
+			if (m_start_state->id() == t.m_new_state)
+				fprintf(f, "<%02x> [value = 0x%02hhx]\n", t.m_new_state,
+				        t.m_value);
+			else
+				fprintf(f, "(%02x) [value = 0x%02hhx]\n", t.m_new_state,
+				        t.m_value);
+		}
+
+	}
 
  protected:
 	void compile() { }
 
  private:
 	std::set<state<state_id_type>> m_states;
-	std::vector<transition<state_id_type, input_type>> m_transitions;
+	typename std::set<state<state_id_type>>::iterator m_start_state;
+	std::vector<transition<input_type, state_id_type>> m_transitions;
 };
 
 #endif // GUARD_AUTOMATON_H
