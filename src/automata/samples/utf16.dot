@@ -5,7 +5,8 @@ digraph Input {
 
 	Initial2 [shape=point]
 	subgraph cluster_two {
-		label="std::codecvt_mode = { 5, 7 }\n(little-endian with BOM sensing)"
+		label="codecvt_utf16 input for std::codecvt_mode = { 5, 7 }
+(little-endian with BOM sensing)"
 
 		Initial2 -> A2
 
@@ -15,28 +16,26 @@ digraph Input {
 		subgraph big_endian {
 			node [color="blue"]
 			edge [color="blue"]
-			N2 -> M2 [label="0x00-d7,0xc0-ff"]
-			M2 -> N2 [label="0x00-ff"]
-			N2 -> J2 [label="0xd8-db"]
 			J2 -> K2 [label="0x00-ff"]
 			K2 -> L2 [label="0xdc-df"]
-			L2 -> N2 [label="0x00-ff"]
+			M2 -> L2 [label="0x00-d7,0xc0-ff"]
+			M2 -> J2 [label="0xd8-db"]
+			L2 -> M2 [label="0x00-ff"]
 
 			J2 [label="J"]
 			K2 [label="K"]
 			L2 [label="L"]
-			M2 [label="M"]
-			N2 [label="N",peripheries=2]
+			M2 [label="M",peripheries=2]
 		}
 
 		subgraph little_endian {
 			node [color="green"]
 			edge [color="green"]
-			G2 -> D2 [label="0x00-ff"]
 			D2 -> G2 [label="0x00-d7,0xc0-ff"]
 			D2 -> E2 [label="0xd8-db"]
 			E2 -> F2 [label="0x00-ff"]
 			F2 -> G2 [label="0xdc-df"]
+			G2 -> D2 [label="0x00-ff"]
 
 			D2 [label="D"]
 			E2 [label="E"]
@@ -50,62 +49,72 @@ digraph Input {
 			A2 -> D2 [label="0x00-fd"]
 			A2 -> H2 [label="0xfe"]
 			A2 -> B2 [label="0xff"]
-			H2 -> I2 [label="0xff"]
-			H2 -> G2 [label="0x00-fe"]
-			I2 -> M2 [label="0x00-d7,0xc0-ff"]
-			I2 -> J2 [label="0xd8-db"]
 
-			B2 -> G2 [label="0x00-fd,0xff"]
+			B2 -> G2 [label="0x00-d7,0xc0-fd,0xff"]
 			B2 -> C2 [label="0xfe"]
+			B2 -> E2 [label="0xd8-db"]
+
 			C2 -> D2 [label="0x00-ff"]
 
+			H2 -> I2 [label="0xff"]
+			H2 -> G2 [label="0x00-d7,0xc0-fe"]
+			H2 -> E2 [label="0xd8-db"]
 
+			I2 -> L2 [label="0x00-d7,0xc0-ff"]
+			I2 -> J2 [label="0xd8-db"]
 
 			A2 [label="A"]
-			H2 [label="H"]
-			I2 [label="I"]
 			B2 [label="B"]
 			C2 [label="C"]
+			H2 [label="H"]
+			I2 [label="I"]
 		}
 
-		{ rank=max G2; N2; }
+		{ rank=max G2; M2; }
 	}
 
 	Initial1 [shape=point]
 	subgraph cluster_one {
-		label="std::codecvt_mode = { 4, 6 }\n(big-endian with BOM sensing)"
+		label="codecvt_utf16 input for std::codecvt_mode = { 4, 6 }
+(big-endian with BOM sensing)"
 
 		A1 [peripheries=2]
-		I1 [peripheries=2]
 		C1 [peripheries=2]
+		I1 [peripheries=2]
 
 		Initial1 -> A1
 
-		subgraph big_endian {
-			node [color="blue"]
-			edge [color="blue"]
-			N1 -> M1 [label="0x00-d7,0xc0-ff"]
-			M1 -> N1 [label="0x00-ff"]
-			N1 -> J1 [label="0xd8-db"]
-			J1 -> K1 [label="0x00-ff"]
-			K1 -> L1 [label="0xdc-df"]
-			L1 -> N1 [label="0x00-ff"]
+		subgraph BOM {
+			edge [color="gray"]
+			node [color="gray"]
+			A1 -> B1 [label="0xff"]
+			A1 -> H1 [label="0xfe"]
+			A1 -> L1 [label="0x00-d7,0xc0-fd"]
+			A1 -> J1 [label="0xd8-db"]
 
-			J1 [label="J"]
-			K1 [label="K"]
-			L1 [label="L"]
-			M1 [label="M"]
-			N1 [label="N",peripheries=2]
+			B1 -> M1 [label="0x00-fd,0xff"]
+			B1 -> C1 [label="0xfe"]
+			C1 -> D1 [label="0x00-ff"]
+
+			H1 -> I1 [label="0xff"]
+			H1 -> M1 [label="0x00-fe"]
+			I1 -> L1 [label="0x00-d7,0xc0-ff"]
+			I1 -> J1 [label="0xd8-db"]
+
+			A1 [label="A"]
+			B1 [label="B"]
+			C1 [label="C"]
+			H1 [label="H"]
+			I1 [label="I"]
 		}
-
 		subgraph little_endian {
 			node [color="green"]
 			edge [color="green"]
-			G1 -> D1 [label="0x00-ff"]
 			D1 -> G1 [label="0x00-d7,0xc0-ff"]
 			D1 -> E1 [label="0xd8-db"]
 			E1 -> F1 [label="0x00-ff"]
 			F1 -> G1 [label="0xdc-df"]
+			G1 -> D1 [label="0x00-ff"]
 
 			D1 [label="D"]
 			E1 [label="E"]
@@ -113,36 +122,54 @@ digraph Input {
 			G1 [label="G",peripheries=2]
 		}
 
-		subgraph BOM {
-			edge [color="gray"]
-			node [color="gray"]
-			A1 -> M1 [label="0x00-fd"]
-			A1 -> H1 [label="0xfe"]
-			A1 -> B1 [label="0xff"]
-			H1 -> I1 [label="0xff"]
-			H1 -> N1 [label="0x00-fe"]
-			I1 -> M1 [label="0x00-d7,0xc0-ff"]
-			I1 -> J1 [label="0xd8-db"]
+		subgraph big_endian {
+			node [color="blue"]
+			edge [color="blue"]
+			J1 -> K1 [label="0x00-ff"]
+			K1 -> L1 [label="0xdc-df"]
+			L1 -> M1 [label="0x00-ff"]
+			M1 -> L1 [label="0x00-d7,0xc0-ff"]
+			M1 -> J1 [label="0xd8-db"]
 
-			B1 -> N1 [label="0x00-fd,0xff"]
-			B1 -> C1 [label="0xfe"]
-			C1 -> D1 [label="0x00-ff"]
-
-
-
-			A1 [label="A"]
-			H1 [label="H"]
-			I1 [label="I"]
-			B1 [label="B"]
-			C1 [label="C"]
+			J1 [label="J",color=blue]
+			K1 [label="K",color=blue]
+			L1 [label="L",color=blue]
+			M1 [label="M",peripheries=2,color=blue]
 		}
 
-		{ rank=max G1; N1; }
+
+		{ rank=max G1; M1; }
+	}
+
+	Initial3 [shape=point]
+	subgraph cluster_three {
+		label="codecvt_utf16 input for std::codecvt_mode = { 0, 2 }
+(basic big-endian)"
+
+		Initial3 -> M3
+
+		subgraph big_endian {
+			node [color="blue"]
+			edge [color="blue"]
+			M3 -> L3 [label="0x00-d7,0xc0-ff"]
+			L3 -> M3 [label="0x00-ff"]
+			M3 -> J3 [label="0xd8-db"]
+			J3 -> K3 [label="0x00-ff"]
+			K3 -> L3 [label="0xdc-df"]
+
+			J3 [label="J"]
+			K3 [label="K"]
+			L3 [label="L"]
+			M3 [label="M",color=blue,peripheries=2]
+		}
+
+		//{ rank=max M3; }
 	}
 
 	Initial4 [shape=point]
 	subgraph cluster_four {
-		label="std::codecvt_mode = { 1, 3 }\n(basic little-endian)"
+		label="codecvt_utf16 input for std::codecvt_mode = { 1, 3 }
+(basic little-endian)"
 
 		Initial4 -> G4
 
@@ -160,32 +187,6 @@ digraph Input {
 			F4 [label="F"]
 			G4 [label="G",color=green,peripheries=2]
 		}
-	}
-
-	Initial3 [shape=point]
-	subgraph cluster_three {
-		label="std::codecvt_mode = { 0, 2 }\n(basic big-endian)"
-
-		Initial3 -> N3
-
-		subgraph big_endian {
-			node [color="blue"]
-			edge [color="blue"]
-			N3 -> M3 [label="0x00-d7,0xc0-ff"]
-			M3 -> N3 [label="0x00-ff"]
-			N3 -> J3 [label="0xd8-db"]
-			J3 -> K3 [label="0x00-ff"]
-			K3 -> L3 [label="0xdc-df"]
-			L3 -> N3 [label="0x00-ff"]
-
-			J3 [label="J"]
-			K3 [label="K"]
-			L3 [label="L"]
-			M3 [label="M"]
-			N3 [label="N",color=blue,peripheries=2]
-		}
-
-		//{ rank=max N3; }
 	}
 
 }
