@@ -187,19 +187,29 @@ class automaton
 			declare_transition(old_state, new_state, v);
 	}
 
+	int format_state(char buffer[], const state<state_id_type> & s)
+	{
+		const char * format = nullptr;
+		if (m_start_state->id() == s.id() && ! s.accept_state())
+			format = "<%02x>";
+		else if (m_start_state->id() == s.id() && s.accept_state())
+			format = "<<%02x>>";
+		else if (s.accept_state())
+			format = "((%02x))";
+		else
+			format = "(%02x)";
+
+		return sprintf(buffer, format, s.id());
+	}
+
 	void dump_all(FILE * f = stdout)
 	{
 		fprintf(f, "%zu States:\n", m_states.size());
 		for (auto s : m_states)
 		{
-			if (m_start_state->id() == s.id() && ! s.accept_state())
-				fprintf(f, "\t<%02x>\n", s.id());
-			else if (m_start_state->id() == s.id() && s.accept_state())
-				fprintf(f, "\t<<%02x>>\n", s.id());
-			else if (s.accept_state())
-				fprintf(f, "\t((%02x))\n", s.id());
-			else
-				fprintf(f, "\t(%02x)\n", s.id());
+			char buffer[16];
+			format_state(buffer, s);
+			fprintf(f, "\t%s\n", buffer);
 		}
 
 		fprintf(f, "%zd Transitions:\n", m_transitions.size());

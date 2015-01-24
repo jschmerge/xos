@@ -1,12 +1,12 @@
 ####
 # Project-specific details & settings
 ####
-TARGETS           = unittest
+TARGETS           = unittest diskspace
+
+diskspace_OBJS    = unit_fs_foo.o
+diskspace_LIBDEPS = filesystem codecvt
 
 unittest_OBJS     = cppunit-main.o \
-                    unit_codecvt_utf8.o \
-                    unit_codecvt.o \
-                    unit_codecvt_base.o \
                     unit_file_status.o \
                     unit_directory_entry.o \
                     unit_fs_operations.o \
@@ -18,10 +18,13 @@ unittest_OBJS     = cppunit-main.o \
                     unit_path_iterator.o \
                     unit_program_config.o \
                     unit_timeutil.o \
-                    unit_bithacks.o \
                     unit_average.o \
                     unit_bithacks.o \
                     unit_crc.o 
+
+#                    unit_codecvt_utf8.o \
+#                    unit_codecvt.o \
+#                    unit_codecvt_base.o \
 
 #                    unit_unicode.o \
 #                    unit_codecvt_utf16.o \
