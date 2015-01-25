@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <vector>
+#include <list>
 #include <set>
 #include <cstdio>
 #include <stdexcept>
@@ -99,7 +100,6 @@ struct transition
 };
 
 //////////////////////////////////////////////////////////////////////
-// FIXME: this class really isn't a nice interface for this
 // Represents the range [low,high]
 template <typename VAL_T>
 class value_range
@@ -118,22 +118,90 @@ class value_range
 	  , end(high)
 		{ }
 
-	~value_range() { }
-
-	bool contains(const value_type & v) const
-		{ return ((v >= begin) && (v <= end)); }
+	~value_range() = default;
 
 	value_type min() const
 		{ return begin; }
+
 	value_type max() const
 		{ return end; }
 
 	size_type size() const
 		{ return (end - begin); }
 
+	bool intersects(const value_range & other)
+	{
+		return (  ( other.begin >= begin && other.begin <= end )
+		       || ( other.end >= begin && other.end <= end )
+		       || ( begin >= other.begin && begin <= other.end )
+		       || ( end >= other.begin && end <= other.end ) );
+	}
+
+	bool operator == (const value_range & other)
+	{ return ( (begin == other.begin) && (end == other.end) ); }
+
  private:
 	value_type begin, end;
 };
+
+template <typename T>
+std::vector<value_range<T>>
+split_ranges(const value_range<T> & a, const value_range<T> & b)
+{
+	std::vector<value_range<T>> ret;
+	ret.reserve(3);
+	if (a.min() < b.min())
+	{
+		ret.emplace_back(a.min(), b.min() - 1);
+
+		if (a.max() < b.max())
+		{
+			ret.emplace_back(b.min(), a.max());
+			ret.emplace_back(a.max() + 1, b.max());
+		} else if (b.max() < a.max())
+		{
+			ret.emplace_back(b.min(), b.max());
+			ret.emplace_back(b.max() + 1, a.max());
+		} else if (b.max() == a.max())
+		{
+			ret.emplace_back(b.min(), a.max());
+		}
+
+	} else if (a.min() > b.min())
+	{
+		ret.emplace_back(b.min(), a.min() - 1);
+
+		if (b.max() < a.max())
+		{
+			ret.emplace_back(a.min(), b.max());
+			ret.emplace_back(b.max() + 1, a.max());
+		} else if (a.max() < b.max())
+		{
+			ret.emplace_back(a.min(), a.max());
+			ret.emplace_back(a.max() + 1, b.max());
+		} else if (b.max() == a.max())
+		{
+			ret.emplace_back(a.min(), a.max());
+		}
+
+	} else // a.min == b.min
+	{
+		if (a.max() < b.max())
+		{
+			ret.emplace_back(a.min(), a.max());
+			ret.emplace_back(a.max() + 1, b.max());
+		} else if (b.max() < a.max())
+		{
+			ret.emplace_back(a.min(), b.max());
+			ret.emplace_back(b.max() + 1, a.max());
+		} else
+		{
+			ret.emplace_back(a.min(), a.max());
+		}
+	}
+	putchar('\n');
+	return ret;
+}
 
 //////////////////////////////////////////////////////////////////////
 template <typename IN_T, typename SID_T>
@@ -172,61 +240,113 @@ class automaton
 		m_states.emplace(id, accept);
 	}
 
-	void declare_transition(const state_id_type & old_state,
-	                        const state_id_type & new_state,
-	                        const input_type & value)
+	void add_input_range(const value_range<input_type> & r)
 	{
-		m_transitions.emplace_back(old_state, new_state, value);
+		std::vector<
+			typename std::list<value_range<input_type>>::iterator> removals;
+
+		for (auto i = input_boundaries.begin();
+		     i != input_boundaries.end(); ++i)
+		{
+			if (*i == r)
+			{
+				return;
+			}
+		}
+
+		std::vector<value_range<input_type>> nr;
+		for (auto i = input_boundaries.begin();
+		     i != input_boundaries.end(); ++i)
+		{
+			if (i->intersects(r))
+			{
+				auto x = split_ranges(*i, r);
+
+				nr.insert(nr.end(), x.begin(), x.end());
+
+				removals.push_back(i);
+			}
+		}
+
+		if (nr.empty())
+			input_boundaries.emplace_back(r);
+
+		for (auto iter : removals)
+			input_boundaries.erase(iter);
+
+		for (auto y : nr)
+			add_input_range(y);
 	}
 
-	void declare_transition_range(const state_id_type & old_state,
-	                              const state_id_type & new_state,
+	void declare_transition(const state_id_type & ,//old_state,
+	                        const state_id_type & ,//new_state,
+	                        const input_type & value)
+	{
+		add_input_range(value_range<input_type>(value, value));
+	}
+
+	void declare_transition_range(const state_id_type & ,//old_state,
+	                              const state_id_type & ,//new_state,
 	                              const value_range<input_type> & range)
 	{
-		for (input_type v = range.min(); v != range.max(); ++v)
-			declare_transition(old_state, new_state, v);
+		add_input_range(range);
 	}
 
 	int format_state(char buffer[], const state<state_id_type> & s)
 	{
 		const char * format = nullptr;
 		if (m_start_state->id() == s.id() && ! s.accept_state())
-			format = "<%02x>";
+			format = " <%02x> ";
 		else if (m_start_state->id() == s.id() && s.accept_state())
 			format = "<<%02x>>";
 		else if (s.accept_state())
 			format = "((%02x))";
 		else
-			format = "(%02x)";
+			format = " (%02x) ";
 
 		return sprintf(buffer, format, s.id());
 	}
 
 	void dump_all(FILE * f = stdout)
 	{
+		char buffer1[16];
+
 		fprintf(f, "%zu States:\n", m_states.size());
 		for (auto s : m_states)
 		{
-			char buffer[16];
-			format_state(buffer, s);
-			fprintf(f, "\t%s\n", buffer);
+			format_state(buffer1, s);
+			fprintf(f, "\t%s\n", buffer1);
 		}
 
+		input_boundaries.sort([](const value_range<input_type> & a,
+		                         const value_range<input_type> & b) {
+			return (a.min() < b.min());
+		});
+
+		printf("%zu Input classes:\n", input_boundaries.size());
+		int x = 0;
+		for (auto r : input_boundaries)
+		{
+			printf("\t[%02x - %02x] - > %d\n", r.min(), r.max(), x++);
+		}
+#if 0
+		char buffer2[16];
 		fprintf(f, "%zd Transitions:\n", m_transitions.size());
 		for (const auto & t : m_transitions)
 		{
-			if (m_start_state->id() == t.m_old_state)
-				fprintf(f, "\t<%02x> --> ", t.m_old_state);
-			else
-				fprintf(f, "\t(%02x) --> ", t.m_old_state);
+			auto o = m_states.find(t.m_old_state);
+			auto n = m_states.find(t.m_new_state);
 
-			if (m_start_state->id() == t.m_new_state)
-				fprintf(f, "<%02x> [value = 0x%02hhx]\n", t.m_new_state,
-				        t.m_value);
-			else
-				fprintf(f, "(%02x) [value = 0x%02hhx]\n", t.m_new_state,
-				        t.m_value);
+			if (o == m_states.end() || n == m_states.end())
+				throw std::logic_error("Bad state");
+
+			format_state(buffer1, *o);
+			format_state(buffer2, *n);
+
+			fprintf(f, "%s --> %s [value = 0x%02x]\n", buffer1, buffer2,
+			        t.m_value);
 		}
+#endif
 
 	}
 
@@ -237,6 +357,8 @@ class automaton
 	std::set<state<state_id_type>> m_states;
 	typename std::set<state<state_id_type>>::iterator m_start_state;
 	std::vector<transition<input_type, state_id_type>> m_transitions;
+
+	std::list<value_range<input_type>> input_boundaries;
 };
 
 #endif // GUARD_AUTOMATON_H

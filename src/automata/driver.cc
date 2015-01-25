@@ -4,7 +4,7 @@ enum class utf8 : unsigned { A, B, C, D, E, F, G, H, I, J, };
 
 int main(int, char **)
 {
-	automaton<char, utf8> a;
+	automaton<uint8_t, utf8> a;
 
 	a.declare_start_state(utf8::A, true);
 	a.declare_state(utf8::B);
