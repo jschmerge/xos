@@ -111,3 +111,9 @@ filesystem draft proposal (n4100).
 
 I chose XOS for the name as a 3-letter name that is short for
 Linux/Unix/Posix-OS. 
+
+<a href="https://scan.coverity.com/projects/4008">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/4008/badge.svg"/>
+</a>
+
