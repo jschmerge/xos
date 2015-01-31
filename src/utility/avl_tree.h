@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include <cstdio>
+#include <cassert>
 
 template <typename T>
 struct avl_tree_node
@@ -25,12 +26,15 @@ struct avl_tree_node
 		{ }
 
 	avl_tree_node(value_type && _value)
-	  : value(std::forward<T>(_value))
+	  : value(std::move<T>(_value))
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
 	  , balance(0)
 		{ }
+
+	~avl_tree_node()
+		{ assert(left == nullptr && right == nullptr); }
 };
 
 
@@ -42,10 +46,6 @@ template <typename T,
           typename Allocator = std::allocator<T>>
 class avl_tree
 {
-	typedef avl_tree_node<T> node_type;
-	node_type * root;
-	unsigned long node_count;
-
  public:
 	typedef T                  key_type;
 	typedef T                  value_type;
@@ -74,13 +74,15 @@ class avl_tree
 	//
 	avl_tree()
 	  : root(nullptr)
+	  , minimum(nullptr)
+	  , maximum(nullptr)
 	  , node_count(0)
 		{ }
 
 	//
 	// Destructor
 	//
-	~avl_tree() { }
+	~avl_tree() { destroy_tree(); }
 
 	//
 	// Assignment
@@ -98,58 +100,19 @@ class avl_tree
 	//
 	// Capacity
 	//
-	bool empty() const
-		{ return (root == nullptr); }
+	bool empty() const { return (root == nullptr); }
 
-	size_type size() const
-		{ return node_count; }
+	size_type size() const { return node_count; }
 
 	size_type max_size() const;
 
 	//
 	// Modifiers
 	//
-	void clear();
+	void clear() { destroy_tree(); }
 
 	// insert() // emplace() // emplace_hint() // erase()
-	void insert(const value_type & val)
-	{
-		node_type * n = new node_type(val);
-
-		if (root == nullptr)
-			root = n;
-		else
-		{
-			node_type * p = root;
-			node_type * last = nullptr;
-
-			while (last != p)
-			{
-				last = p;
-				if (n->value < p->value)
-				{
-					printf("going left\n");
-					if (p->left != nullptr)
-						p = p->left;
-				} else
-				{
-					printf("going right\n");
-					if (p->right != nullptr)
-						p = p->right;
-				}
-			}
-
-			if (n->value < p->value)
-			{
-				p->left = n;
-			} else
-			{
-				p->right = n;
-			}
-
-			n->parent = p;
-		}
-	}
+	void insert(const value_type & val);
 
 	void swap(avl_tree & other);
 
@@ -166,8 +129,89 @@ class avl_tree
 
 	// find()
 
-	
+ private:
+	typedef avl_tree_node<T> node_type;
+
+	node_type * root, * minimum, * maximum;
+	unsigned long node_count;
+
+	void destroy_tree();
 };
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename Comp, typename Alloc>
+void avl_tree<T, Comp, Alloc>::insert(const value_type & val)
+{
+	node_type * n = new node_type(val);
+
+	if (root == nullptr)
+		root = n;
+	else
+	{
+		node_type * p = root;
+		node_type * last = nullptr;
+
+		while (last != p)
+		{
+			last = p;
+			if (n->value < p->value)
+			{
+				if (p->left != nullptr) p = p->left;
+			} else
+			{
+				if (p->right != nullptr) p = p->right;
+			}
+		}
+
+		if (n->value < p->value)
+			p->left = n;
+		else
+			p->right = n;
+
+		n->parent = p;
+	}
+
+	++node_count;
+
+	if (minimum == nullptr)
+		minimum = n;
+	else if (minimum->left != nullptr)
+		minimum = minimum->left;
+
+	if (maximum == nullptr)
+		maximum = n;
+	else if (maximum->right != nullptr)
+		maximum = maximum->right;
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename Comp, typename Alloc>
+void avl_tree<T, Comp, Alloc>::destroy_tree()
+{
+	node_type * p = root;
+	root = maximum = minimum = nullptr;
+
+	while (p != nullptr)
+	{
+		if (p->left != nullptr)
+		{
+			p = p->left;
+			p->parent->left = nullptr;
+		} else if (p->right != nullptr)
+		{
+			p = p->right;
+			p->parent->right = nullptr;
+		} else
+		{
+			node_type * tmp = p;
+			p = p->parent;
+			delete tmp;
+			--node_count;
+		}
+	}
+
+	assert(node_count == 0);
+}
 
 #endif // GUARD_AVL_TREE_H
 
