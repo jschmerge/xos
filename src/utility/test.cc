@@ -9,6 +9,8 @@ int main()
 {
 	avl_tree<int> tree;
 
+	printf("Size of tree: %zu\n", sizeof(tree));
+
 	tree.insert(1);
 	tree.insert(-20);
 	tree.insert(6);
@@ -17,13 +19,6 @@ int main()
 	tree.insert(10);
 	tree.insert(-4);
 
-//	auto i = tree.begin();
-//	printf("%d\n", *i);
-//	++i;
-//	printf("%d\n", *i);
-//	++i;
-//	printf("%d\n", *i);
-//	++i;
 	for (const auto & i: tree)
 		printf("%d\n", i);
 

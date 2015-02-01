@@ -41,15 +41,6 @@ struct avl_tree_node
 		{ assert(left == nullptr && right == nullptr); }
 };
 
-enum class avl_iterator_orientation
-{
-	none,
-	right,
-	left,
-	up,
-	end
-};
-
 template <typename T>
 class avl_tree_iterator
   : public std::iterator<std::bidirectional_iterator_tag, T>
@@ -142,36 +133,34 @@ template <typename T,
           typename Allocator = std::allocator<T>>
 class avl_tree
 {
+ public:
+	typedef T                                         key_type;
+	typedef T                                         value_type;
+	typedef std::size_t                               size_type;
+	typedef std::ptrdiff_t                            difference_type;
+	typedef Compare                                   key_compare;
+	typedef Compare                                   value_compare;
+	typedef Allocator                                 allocator_type;
+	typedef value_type                              & reference;
+	typedef const value_type                        & const_reference;
+	typedef typename
+	  std::allocator_traits<Allocator>::pointer       pointer;
+	typedef typename
+	  std::allocator_traits<Allocator>::const_pointer const_pointer;
+	typedef avl_tree_iterator<T>                      iterator;
+	typedef avl_tree_iterator<T>                      const_iterator;
+	typedef std::reverse_iterator<iterator>           reverse_iterator;
+	typedef std::reverse_iterator<const_iterator>     const_reverse_iterator;
+
+ private:
 	typedef avl_tree_node<T> node_type;
 
 	node_type * root, * minimum, * maximum;
-	unsigned long node_count;
+	size_type node_count;
 
 	void destroy_tree();
 
  public:
-	typedef T                  key_type;
-	typedef T                  value_type;
-	typedef std::size_t        size_type;
-	typedef std::ptrdiff_t     difference_type;
-	typedef Compare            key_compare;
-	typedef Compare            value_compare;
-	typedef Allocator          allocator_type;
-	typedef value_type       & reference;
-	typedef const value_type & const_reference;
-	typedef typename std::allocator_traits<Allocator>::pointer
-	                           pointer;
-	typedef typename std::allocator_traits<Allocator>::const_pointer
-	                           const_pointer;
-	typedef avl_tree_iterator<T>
-	                           iterator;
-	typedef avl_tree_iterator<T>
-	                           const_iterator;
-	typedef std::reverse_iterator<iterator>
-	                           reverse_iterator;
-	typedef std::reverse_iterator<const_iterator>
-	                           const_reverse_iterator;
-
 	//
 	// Constructors
 	//
@@ -235,10 +224,6 @@ class avl_tree
 	key_compare key_comp() const { return Compare{}; }
 	value_compare value_comp() const { return Compare{}; }
 	allocator_type get_allocator() const;
-
-
-
- private:
 };
 
 //////////////////////////////////////////////////////////////////////
