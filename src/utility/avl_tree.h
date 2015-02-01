@@ -43,28 +43,30 @@ struct avl_tree_node
 
 template <typename T>
 class avl_tree_iterator
-  : public std::iterator<std::bidirectional_iterator_tag, T>
+  : public std::iterator<std::bidirectional_iterator_tag,
+                         T, std::ptrdiff_t, const T *, const T &>
 {
 	typedef avl_tree_node<T> node_type;
  public:
-	avl_tree_iterator()
+	avl_tree_iterator() noexcept
 	  : root(nullptr)
 	  , current(nullptr)
 		{ }
 
-	avl_tree_iterator(const avl_tree_iterator & other)
+	avl_tree_iterator(const avl_tree_iterator & other) noexcept
 	  : root(other.root)
 	  , current(other.current)
 		{ }
 
 	avl_tree_iterator(const node_type * _root, const node_type * _start)
+	  noexcept
 	  : root(_root)
 	  , current(_start)
 		{ }
 
 	~avl_tree_iterator() = default;
 
-	avl_tree_iterator & operator = (const avl_tree_iterator & other)
+	avl_tree_iterator & operator = (const avl_tree_iterator & other) noexcept
 	{
 		if (this != &other)
 		{
@@ -74,13 +76,16 @@ class avl_tree_iterator
 		return *this;
 	}
 
-	bool operator == (const avl_tree_iterator & other)
+	bool operator == (const avl_tree_iterator & other) noexcept
 		{ return ( (root == other.root) && (current == other.current) ); }
 
-	bool operator != (const avl_tree_iterator & other)
+	bool operator != (const avl_tree_iterator & other) noexcept
 		{ return !(*this == other); }
 
-	avl_tree_iterator & operator ++ ()
+	// This function is based on and adapted from the SGI rbtree implementation
+	// Since we are using a different representation for end(), the handling
+	// of that case is slightly different
+	avl_tree_iterator & operator ++ () noexcept
 	{
 		if (current->right != nullptr)
 		{
@@ -89,32 +94,64 @@ class avl_tree_iterator
 				current = current->left;
 		} else
 		{
-			node_type * tmp_parent = current->parent;
-			while (tmp_parent != nullptr && current == tmp_parent->right)
+			node_type * parent_node = current->parent;
+			while (parent_node != nullptr && current == parent_node->right)
 			{
-				current = tmp_parent;
-				tmp_parent = tmp_parent->parent;
+				current = parent_node;
+				parent_node = parent_node->parent;
 			}
 
-			if (current->right != tmp_parent)
-				current = tmp_parent;
+			current = parent_node;
 		}
-
 		return *this;
 	}
 
-	avl_tree_iterator & operator ++ (int);
+	avl_tree_iterator & operator -- () noexcept
+	{
+		if (current == nullptr)
+		{
+			// if the iterator currently contains the value of end()
+			current = root;
+			while (current->right != nullptr)
+				current = current->right;
+		} else if (current->left != nullptr)
+		{
+			node_type * tmp = current->left;
+			while (tmp->right != 0)
+				tmp = tmp->right;
+			current = tmp;
+		}
+		else
+		{
+			node_type * tmp = current->parent;
+			while (current == tmp->left)
+			{
+				current = tmp;
+				tmp = tmp->parent;
+			}
+			current = tmp;
+		}
+		return *this;
+	}
 
-	avl_tree_iterator & operator -- ();
-	avl_tree_iterator & operator -- (int);
+	avl_tree_iterator & operator ++ (int) noexcept
+		{ avl_tree_iterator tmp = *this; ++(*this); return tmp; }
 
-	const T & operator * () const
+	avl_tree_iterator & operator -- (int) noexcept
+		{ avl_tree_iterator tmp = *this; --(*this); return tmp; }
+
+	const T & operator * () const noexcept
 		{ return current->value; }
 
-	const T * operator -> () const
+	const T * operator -> () const noexcept
 		{ return &(current->value); }
 
-	void swap(avl_tree_iterator & other);
+	void swap(avl_tree_iterator & other) noexcept
+	{
+		using std::swap;
+		swap(root, other.root);
+		swap(current, other.current);
+	}
 
  private:
 	const node_type * root;
@@ -122,7 +159,7 @@ class avl_tree_iterator
 };
 
 template <typename T>
-void swap(avl_tree_iterator<T> & a, avl_tree_iterator<T> & b)
+void swap(avl_tree_iterator<T> & a, avl_tree_iterator<T> & b) noexcept
 	{ a.swap(b); }
 
 //
@@ -134,6 +171,9 @@ template <typename T,
 class avl_tree
 {
  public:
+	///
+	/// Type definitions
+	///
 	typedef T                                         key_type;
 	typedef T                                         value_type;
 	typedef std::size_t                               size_type;
@@ -149,7 +189,7 @@ class avl_tree
 	  std::allocator_traits<Allocator>::const_pointer const_pointer;
 	typedef avl_tree_iterator<T>                      iterator;
 	typedef avl_tree_iterator<T>                      const_iterator;
-	typedef std::reverse_iterator<iterator>           reverse_iterator;
+	typedef std::reverse_iterator<const_iterator>     reverse_iterator;
 	typedef std::reverse_iterator<const_iterator>     const_reverse_iterator;
 
  private:
@@ -161,9 +201,9 @@ class avl_tree
 	void destroy_tree();
 
  public:
-	//
-	// Constructors
-	//
+	///
+	/// Constructors
+	///
 	avl_tree()
 	  : root(nullptr)
 	  , minimum(nullptr)
@@ -171,30 +211,52 @@ class avl_tree
 	  , node_count(0)
 		{ }
 
-	//
-	// Destructor
-	//
+	///
+	/// Destructor
+	///
 	~avl_tree() { destroy_tree(); }
 
-	//
-	// Assignment
-	//
+	///
+	/// Assignment
+	///
 	avl_tree & operator = (const avl_tree & other);
 	avl_tree & operator = (avl_tree && other);
 	avl_tree & operator = (std::initializer_list<value_type> list);
 
-	//
-	// iterators
-	//
-	iterator begin()
+	///
+	/// iteration bounds
+	///
+	iterator begin() noexcept
 		{ return iterator(root, minimum); }
-	
-	iterator end()
+	const_iterator begin() const noexcept
+		{ return const_iterator(root, minimum); }
+	const_iterator cbegin() const noexcept
+		{ return const_iterator(root, minimum); }
+
+	iterator end() noexcept
 		{ return iterator(root, nullptr); }
+	const_iterator end() const noexcept
+		{ return const_iterator(root, nullptr); }
+	const_iterator cend() const noexcept
+		{ return const_iterator(root, nullptr); }
+
+	reverse_iterator rbegin() noexcept
+		{ return reverse_iterator(end()); }
+	const_reverse_iterator rbegin() const noexcept
+		{ return const_reverse_iterator(end()); }
+	const_reverse_iterator crbegin() const noexcept
+		{ return const_reverse_iterator(end()); }
+
+	reverse_iterator rend()
+		{ return reverse_iterator(begin()); }
+	const_reverse_iterator rend() const
+		{ return const_reverse_iterator(begin()); }
+	const_reverse_iterator crend() const
+		{ return const_reverse_iterator(begin()); }
 	
-	//
-	// Capacity
-	//
+	///
+	/// Capacity
+	///
 	bool empty() const { return (root == nullptr); }
 
 	size_type size() const { return node_count; }
@@ -209,7 +271,17 @@ class avl_tree
 	// insert() // emplace() // emplace_hint() // erase()
 	void insert(const value_type & val);
 
-	void swap(avl_tree & other);
+#if 0
+//	std::pair<iterator, bool> insert(const value_type& value);
+	std::pair<iterator, bool> insert(value_type&& value);
+//	iterator insert(iterator hint, const value_type& value);
+	iterator insert(const_iterator hint, const value_type& value);
+	iterator insert(const_iterator hint, value_type&& value);
+	template<class InputIt> void insert(InputIt first, InputIt last);
+	void insert(std::initializer_list<value_type> ilist);
+#endif
+
+	void swap(avl_tree & other) noexcept;
 
 	//
 	// Lookup

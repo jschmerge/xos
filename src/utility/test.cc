@@ -20,9 +20,16 @@ int main()
 	tree.insert(-4);
 
 	for (const auto & i: tree)
-		printf("%d\n", i);
+		printf("\t%d\n", i);
+
+	printf("reverse:\n");
+
+	for (auto i = tree.rbegin(); i != tree.rend(); ++i)
+		printf("\t%d\n", *i);
 
 	avl_tree<int> empty;
+
+	assert(empty.begin() == empty.end());
 
 	print();
 }
