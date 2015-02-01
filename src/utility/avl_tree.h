@@ -3,9 +3,13 @@
 
 #include <memory>
 #include <algorithm>
+#include <iterator>
 
 #include <cstdio>
 #include <cassert>
+
+// forward declaration
+template <typename T, typename C, typename A> class avl_tree;
 
 template <typename T>
 struct avl_tree_node
@@ -37,6 +41,50 @@ struct avl_tree_node
 		{ assert(left == nullptr && right == nullptr); }
 };
 
+enum class avl_iterator_orientation
+{
+	none,
+	right,
+	left,
+	up,
+	end
+};
+
+template <typename T, typename C, typename A>
+class avl_tree_iterator
+  : public std::iterator<std::bidirectional_iterator_tag, T>
+{
+ public:
+	avl_tree_iterator();
+	avl_tree_iterator(const avl_tree_iterator & other);
+
+	~avl_tree_iterator();
+
+	avl_tree_iterator & operator = (const avl_tree_iterator & other);
+
+	bool operator == (const avl_tree_iterator & other);
+	bool operator != (const avl_tree_iterator & other);
+
+	avl_tree_iterator & operator ++ ();
+	avl_tree_iterator & operator ++ (int);
+
+	avl_tree_iterator & operator -- ();
+	avl_tree_iterator & operator -- (int);
+
+	const T & operator * () const;
+	const T * operator -> () const;
+
+	void swap(avl_tree_iterator & other);
+
+ private:
+	avl_tree<T, C, A> * container;
+	avl_tree_node<T> * current;
+	avl_iterator_orientation orientation;
+};
+
+template <typename T, typename C, typename A>
+void swap(avl_tree_iterator<T, C, A> & a, avl_tree_iterator<T, C, A> & b)
+	{ a.swap(b); }
 
 //
 // TODO - This class needs noexcept specifications
