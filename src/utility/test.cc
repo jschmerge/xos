@@ -17,6 +17,16 @@ int main()
 	tree.insert(10);
 	tree.insert(-4);
 
+//	auto i = tree.begin();
+//	printf("%d\n", *i);
+//	++i;
+//	printf("%d\n", *i);
+//	++i;
+//	printf("%d\n", *i);
+//	++i;
+	for (const auto & i: tree)
+		printf("%d\n", i);
+
 	avl_tree<int> empty;
 
 	print();

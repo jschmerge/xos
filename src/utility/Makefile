@@ -1,6 +1,6 @@
 TARGETS             = avl_test
 
-avl_test_OBJS           = avl_test.o
+avl_test_OBJS           = test.o
 
 ifndef TOPDIR
   TOPDIR            = ..
