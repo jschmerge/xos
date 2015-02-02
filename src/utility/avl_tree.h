@@ -29,8 +29,9 @@ struct avl_tree_node
 	  , balance(0)
 		{ }
 
-	explicit avl_tree_node(value_type && _value)
-	  : value(std::move<T>(_value))
+  template <typename ... Args>
+	avl_tree_node(Args && ... args)
+	  : value(std::forward<Args>(args)...)
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
@@ -198,13 +199,14 @@ class avl_tree
 	node_type * root, * minimum, * maximum;
 	size_type node_count;
 
+	bool insert_node(node_type * n);
 	void destroy_tree();
 
  public:
 	///
 	/// Constructors
 	///
-	avl_tree()
+	avl_tree() noexcept
 	  : root(nullptr)
 	  , minimum(nullptr)
 	  , maximum(nullptr)
@@ -263,23 +265,43 @@ class avl_tree
 
 	size_type max_size() const { return size_type(-1); }
 
-	//
-	// Modifiers
-	//
+	///
+	/// Modifiers
+	///
 	void clear() { destroy_tree(); }
 
-	// insert() // emplace() // emplace_hint() // erase()
-	void insert(const value_type & val);
+	///
+	/// insert()
+	///
+	std::pair<iterator, bool> insert(const value_type & val)
+	{
+		node_type * n = new node_type(val);
+		bool rc = insert_node(n);
+		return std::make_pair(iterator(root, n), rc);
+	}
+
+	std::pair<iterator, bool> insert(value_type&& val)
+	{
+		node_type * n = new node_type(std::move(val));
+		bool rc = insert_node(n);
+		return std::make_pair(iterator(root, n), rc);
+	}
 
 #if 0
-//	std::pair<iterator, bool> insert(const value_type& value);
-	std::pair<iterator, bool> insert(value_type&& value);
 //	iterator insert(iterator hint, const value_type& value);
 	iterator insert(const_iterator hint, const value_type& value);
 	iterator insert(const_iterator hint, value_type&& value);
 	template<class InputIt> void insert(InputIt first, InputIt last);
 	void insert(std::initializer_list<value_type> ilist);
 #endif
+
+	template <typename ... Args>
+	std::pair<iterator, bool> emplace(Args && ... args)
+	{
+		node_type * n = new node_type(std::forward<Args>(args)...);
+		bool rc = insert_node(n);
+		return std::make_pair(iterator(root, n), rc);
+	}
 
 	void swap(avl_tree & other) noexcept;
 
@@ -298,12 +320,10 @@ class avl_tree
 	allocator_type get_allocator() const;
 };
 
-//////////////////////////////////////////////////////////////////////
 template <typename T, typename Comp, typename Alloc>
-void avl_tree<T, Comp, Alloc>::insert(const value_type & val)
+  bool avl_tree<T, Comp, Alloc>::insert_node(
+    typename avl_tree<T, Comp, Alloc>::node_type * n)
 {
-	node_type * n = new node_type(val);
-
 	if (root == nullptr)
 		root = n;
 	else
@@ -342,6 +362,8 @@ void avl_tree<T, Comp, Alloc>::insert(const value_type & val)
 		maximum = n;
 	else if (maximum->right != nullptr)
 		maximum = maximum->right;
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////

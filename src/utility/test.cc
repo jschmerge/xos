@@ -1,4 +1,5 @@
 #include "avl_tree.h"
+#include <string>
 
 void print()
 {
@@ -16,7 +17,7 @@ int main()
 	tree.insert(6);
 	tree.insert(3);
 	tree.insert(2);
-	tree.insert(10);
+	tree.emplace(10);
 	tree.insert(-4);
 
 	for (const auto & i: tree)
@@ -27,7 +28,7 @@ int main()
 	for (auto i = tree.rbegin(); i != tree.rend(); ++i)
 		printf("\t%d\n", *i);
 
-	avl_tree<int> empty;
+	avl_tree<std::string> empty;
 
 	assert(empty.begin() == empty.end());
 
