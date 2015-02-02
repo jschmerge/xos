@@ -19,6 +19,7 @@ struct avl_tree_node
 	value_type value;
 	avl_tree_node * parent, * left, * right;
 
+	uint16_t height;
 	int8_t balance;
 
 	explicit avl_tree_node(const value_type & _value)
@@ -26,6 +27,7 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
+	  , height(0)
 	  , balance(0)
 		{ }
 
@@ -35,6 +37,7 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
+	  , height(0)
 	  , balance(0)
 		{ }
 
@@ -77,6 +80,7 @@ class avl_tree_iterator
 		return *this;
 	}
 
+	int height() const { return current->height; }
 	bool operator == (const avl_tree_iterator & other) noexcept
 		{ return ( (root == other.root) && (current == other.current) ); }
 
@@ -142,7 +146,9 @@ class avl_tree_iterator
 		{ avl_tree_iterator tmp = *this; --(*this); return tmp; }
 
 	const T & operator * () const noexcept
-		{ return current->value; }
+	{
+ 		return current->value;
+	}
 
 	const T * operator -> () const noexcept
 		{ return &(current->value); }
@@ -201,6 +207,7 @@ class avl_tree
 
 	bool insert_node(node_type * n);
 	void destroy_tree();
+	void rebalance_from(node_type * start);
 
  public:
 	///
@@ -320,6 +327,35 @@ class avl_tree
 	allocator_type get_allocator() const;
 };
 
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename Comp, typename Alloc>
+void avl_tree<T, Comp, Alloc>::rebalance_from(
+    typename avl_tree<T, Comp, Alloc>::node_type * start)
+{
+	node_type * p = start;
+
+	int left_height = 0, right_height = 0;
+
+	printf("Starting with node %d\n", start->value);
+	while (p != nullptr)
+	{
+		left_height  = ((p->left == nullptr)  ? 0 : p->left->height);
+		right_height = ((p->right == nullptr) ? 0 : p->right->height);
+
+		printf("\tleft = %d, right = %d\n", left_height, right_height);
+		if (left_height - right_height >= 2)
+		{
+			printf("\trebalancing right\n");
+		} else if (left_height - right_height <= -2)
+		{
+			printf("\trebalancing left\n");
+		}
+
+		p = p->parent;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
 template <typename T, typename Comp, typename Alloc>
   bool avl_tree<T, Comp, Alloc>::insert_node(
     typename avl_tree<T, Comp, Alloc>::node_type * n)
@@ -341,6 +377,7 @@ template <typename T, typename Comp, typename Alloc>
 			{
 				if (p->right != nullptr) p = p->right;
 			}
+			++(n->height);
 		}
 
 		if (n->value < p->value)
@@ -351,8 +388,6 @@ template <typename T, typename Comp, typename Alloc>
 		n->parent = p;
 	}
 
-	++node_count;
-
 	if (minimum == nullptr)
 		minimum = n;
 	else if (minimum->left != nullptr)
@@ -362,6 +397,10 @@ template <typename T, typename Comp, typename Alloc>
 		maximum = n;
 	else if (maximum->right != nullptr)
 		maximum = maximum->right;
+
+	rebalance_from(n);
+
+	++node_count;
 
 	return true;
 }
@@ -396,4 +435,3 @@ void avl_tree<T, Comp, Alloc>::destroy_tree()
 }
 
 #endif // GUARD_AVL_TREE_H
-
