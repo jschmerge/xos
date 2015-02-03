@@ -295,12 +295,15 @@ class avl_tree
 	}
 
 #if 0
-//	iterator insert(iterator hint, const value_type& value);
 	iterator insert(const_iterator hint, const value_type& value);
 	iterator insert(const_iterator hint, value_type&& value);
-	template<class InputIt> void insert(InputIt first, InputIt last);
-	void insert(std::initializer_list<value_type> ilist);
 #endif
+	template<class InputIt>
+	  void insert(InputIt first, InputIt last)
+		{ for (;first != last; ++first) insert(*first); }
+
+	void insert(std::initializer_list<value_type> list)
+		{ for (auto v : list) insert(v); }
 
 	template <typename ... Args>
 	std::pair<iterator, bool> emplace(Args && ... args)
