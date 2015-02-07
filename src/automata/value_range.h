@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <utility>
 
+//////////////////////////////////////////////////////////////////////
 template <typename T>
 class value_range
 {
@@ -49,46 +50,35 @@ class value_range
 		return *this;
 	}
 
+	value_type min() const { return begin; }
+
+	value_type max() const { return end; }
+
+	size_type size() const { return (end - begin); }
+
+	value_type midpoint() const { return ((begin + end) / 2); }
+
 	bool contains(const value_type & v) const
 		{ return ((v >= begin) && (v <= end)); }
 
-	value_type min() const
-		{ return begin; }
+	bool contains(const value_range & r) const
+		{ return ((r.begin >= begin) && (r.end <= end)); }
 
-	value_type max() const
-		{ return end; }
-
-	size_type size() const
-		{ return (end - begin); }
-
-	value_type midpoint() const
-		{ return ((begin + end) / 2); }
-
-	bool less_than_by_position(const value_range & other)
+	bool intersects(const value_range & other)
 	{
-		bool rc = false;
-		if (this->midpoint() < other.midpoint())
-			rc = true;
-		else if (this->midpoint() == other.midpoint())
-			rc = (this->size() < other.size());
-
-		return rc;
+		return (  ( other.begin >= begin && other.begin <= end )
+		       || ( other.end >= begin   && other.end <= end )
+		       || ( begin >= other.begin && begin <= other.end )
+		       || ( end >= other.begin   && end <= other.end ) );
 	}
-
-	bool less_than_by_size(const value_range & other)
-	{
-		bool rc = false;
-		if (this->size() < other.size())
-			rc = true;
-		else if (this->size() == other.size())
-			rc = (this->midpoint() < other.midpoint());
-
-		return rc;
-	}
-	
 
  private:
 	value_type begin, end;
 };
+
+//////////////////////////////////////////////////////////////////////
+template <typename T>
+bool operator < (const value_range<T> & a, const value_range<T> & b)
+	{ return (a.min() < b.min()); }
 
 #endif // GUARD_VALUE_RANGE_H
