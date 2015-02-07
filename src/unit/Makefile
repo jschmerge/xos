@@ -1,10 +1,7 @@
 ####
 # Project-specific details & settings
 ####
-TARGETS           = unittest diskspace
-
-diskspace_OBJS    = unit_fs_foo.o
-diskspace_LIBDEPS = filesystem codecvt
+TARGETS           = unittest
 
 unittest_OBJS     = cppunit-main.o \
                     unit_file_status.o \
