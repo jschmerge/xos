@@ -177,30 +177,31 @@ template <typename T,
           typename Allocator = std::allocator<T>>
 class avl_tree
 {
+ private:
+	typedef std::allocator_traits<Allocator>       alloc_traits;
+	typedef avl_tree_node<T>                       node_type;
+
  public:
 	///
 	/// Type definitions
 	///
-	typedef T                                         key_type;
-	typedef T                                         value_type;
-	typedef std::size_t                               size_type;
-	typedef std::ptrdiff_t                            difference_type;
-	typedef Compare                                   key_compare;
-	typedef Compare                                   value_compare;
-	typedef Allocator                                 allocator_type;
-	typedef value_type                              & reference;
-	typedef const value_type                        & const_reference;
-	typedef typename
-	  std::allocator_traits<Allocator>::pointer       pointer;
-	typedef typename
-	  std::allocator_traits<Allocator>::const_pointer const_pointer;
-	typedef avl_tree_iterator<T>                      iterator;
-	typedef avl_tree_iterator<T>                      const_iterator;
-	typedef std::reverse_iterator<const_iterator>     reverse_iterator;
-	typedef std::reverse_iterator<const_iterator>     const_reverse_iterator;
+	typedef T                                      key_type;
+	typedef T                                      value_type;
+	typedef std::size_t                            size_type;
+	typedef std::ptrdiff_t                         difference_type;
+	typedef Compare                                key_compare;
+	typedef Compare                                value_compare;
+	typedef Allocator                              allocator_type;
+	typedef value_type                           & reference;
+	typedef const value_type                     & const_reference;
+	typedef typename alloc_traits::pointer         pointer;
+	typedef typename alloc_traits::const_pointer   const_pointer;
+	typedef avl_tree_iterator<T>                   iterator;
+	typedef avl_tree_iterator<T>                   const_iterator;
+	typedef std::reverse_iterator<const_iterator>  reverse_iterator;
+	typedef std::reverse_iterator<const_iterator>  const_reverse_iterator;
 
  private:
-	typedef avl_tree_node<T> node_type;
 
 	node_type * root, * minimum, * maximum;
 	size_type node_count;
@@ -209,12 +210,10 @@ class avl_tree
 	allocator_type allocator;
 
 	bool insert_node(node_type * n);
-	void destroy_tree();
+	void destroy_tree() noexcept;
 	void rebalance_from(node_type * start);
 
  public:
-
-
 
 	///
 	/// Constructors
@@ -233,48 +232,36 @@ class avl_tree
 	  
 	template <class InputIterator>
 	avl_tree(InputIterator first, InputIterator last,
-	         const Compare& comp = Compare{},
-	         const Allocator& = Allocator{});
+	         const Compare & comp = Compare{},
+	         const Allocator & alloc = Allocator{})
+	  : avl_tree(comp, alloc)
+		{ insert(first, last); }
 
 	template <class InputIterator>
-	avl_tree(InputIterator first, InputIterator last, const Allocator& a)
-	  : avl_tree(first, last, Compare(), a)
-		{ }
+	avl_tree(InputIterator first, InputIterator last, const Allocator & a)
+	  : avl_tree(first, last, Compare{}, a) { }
 
-	explicit avl_tree(const Allocator & a) : avl_tree(key_compare(), a) { }
+	explicit avl_tree(const Allocator & a)
+	  : avl_tree(key_compare(), a) { }
 
 	avl_tree(const avl_tree & other, const allocator_type & a)
-	  : avl_tree(other.compare, a)
-		{ insert(other.begin(), other.end()); }
+	  : avl_tree(other.begin(), other.end(), other.compare, a) { }
 
 	avl_tree(const avl_tree & other)
-	  : avl_tree(other,
-	             std::allocator_traits<allocator_type>
-	               ::select_on_container_copy_construction(
-	                   other.get_allocator())) { }
+	  : avl_tree(other, alloc_traits::select_on_container_copy_construction(
+	                      other.get_allocator())) { }
 
-	// todo
-	avl_tree(avl_tree && other, const allocator_type & a);
-
-	avl_tree(avl_tree && other)
-	  : root(other.root)
-	  , minimum(other.minimum)
-	  , maximum(other.maximum)
-	  , node_count(other.node_count)
- 	  , compare(std::move(other.compare))
-	  , allocator(std::move(other.allocator))
-	{
-		other.root = other.minimum = other.maximum = nullptr;
-		other.node_count = 0;
-	}
-
-	avl_tree(std::initializer_list<value_type>,
-	         const key_compare & = key_compare{},
-	         const allocator_type & = allocator_type{});
+	avl_tree(std::initializer_list<value_type> list,
+	         const key_compare & c = key_compare{},
+	         const allocator_type & a = allocator_type{})
+	  : avl_tree(list, c, a) { }
 
 	avl_tree(std::initializer_list<value_type> list, const allocator_type & a)
-	  : avl_tree(list, key_compare{}, a)
-		{ }
+	  : avl_tree(list, key_compare{}, a) { }
+
+	// TODO
+	avl_tree(avl_tree && other, const allocator_type & a);
+	avl_tree(avl_tree && other);
 
 	///
 	/// Destructor
@@ -283,10 +270,12 @@ class avl_tree
 
 	///
 	/// Assignment
-	///
+	/// TODO
 	avl_tree & operator = (const avl_tree & other);
 	avl_tree & operator = (avl_tree && other);
 	avl_tree & operator = (std::initializer_list<value_type> list);
+
+	allocator_type get_allocator() const noexcept { return allocator; }
 
 	///
 	/// iteration bounds
@@ -319,17 +308,20 @@ class avl_tree
 	const_reverse_iterator crend() const
 		{ return const_reverse_iterator(begin()); }
 	
+	//////
 	///
 	/// Capacity
 	///
+	//////
 	bool empty() const noexcept { return (root == nullptr); }
 	size_type size() const noexcept { return node_count; }
 	size_type max_size() const noexcept { return size_type(-1); }
 
+	//////
 	///
 	/// Modifiers
 	///
-	void clear() { destroy_tree(); }
+	//////
 
 	///
 	/// modifiers - emplace
@@ -343,11 +335,11 @@ class avl_tree
 	}
 
 	template <typename ... Args>
-	std::pair<iterator, bool> emplace_hint(const_iterator, Args && ... args)
+	iterator emplace_hint(const_iterator, Args && ... args)
 	{
 		node_type * n = new node_type(std::forward<Args>(args)...);
 		bool rc = insert_node(n);
-		return std::make_pair(iterator(root, n), rc);
+		return iterator(root, n);
 	}
 
 	///
@@ -367,27 +359,72 @@ class avl_tree
 
 	template<class InputIterator>
 	  void insert(InputIterator first, InputIterator last)
-		{ for (;first != last; ++first) insert(*first); }
+		{ for (;first != last; ++first) insert(this->end(), *first); }
 
 	void insert(std::initializer_list<value_type> list)
-		{ for (auto & v : list) insert(v); }
+		{ insert(list.begin(), list.end()); }
 
-	void swap(avl_tree & other) noexcept;
+	///
+	/// modifiers - erase
+	///
+	iterator erase(const_iterator position);
 
-	//
-	// Lookup
-	//
-	size_type count(const key_type & key) const;
+	iterator erase(const_iterator first, const_iterator last);
 
-	template <typename K>
-	size_type count(const K & key) const;
+	size_type erase(const key_type & x);
 
-	// find()
 
+	// TODO
+	void swap(avl_tree &)
+	  noexcept(alloc_traits::is_always_equal::value &&
+	           noexcept(swap(std::declval<key_compare&>(),
+	                         std::declval<key_compare&>())));
+
+	void clear() noexcept { destroy_tree(); }
+
+	///
+	/// Observers
+	///
 	key_compare key_comp() const { return Compare{}; }
 	value_compare value_comp() const { return Compare{}; }
 
-	allocator_type get_allocator() const { return allocator; }
+	///
+	/// Operations
+	///
+	iterator find(const key_type& x);
+	const_iterator find(const key_type& x) const;
+	template <class K>
+	  iterator find(const K & x);
+	template <class K>
+	  const_iterator find(const K & x) const;
+
+	size_type count(const key_type& x) const;
+	template <class K>
+	  size_type count(const K& x) const;
+
+	iterator lower_bound(const key_type & x);
+	const_iterator lower_bound(const key_type& x) const;
+	template <class K>
+	  iterator lower_bound(const K& x);
+	template <class K>
+	  const_iterator lower_bound(const K& x) const;
+
+	iterator upper_bound(const key_type & x);
+	const_iterator upper_bound(const key_type& x) const;
+	template <class K>
+	  iterator upper_bound(const K& x);
+	template <class K>
+	  const_iterator upper_bound(const K& x) const;
+
+	typedef std::pair<iterator,iterator> iter_range;
+	typedef std::pair<const_iterator,const_iterator> const_iter_range;
+
+	iter_range equal_range(const key_type& x);
+	const_iter_range equal_range(const key_type& x) const;
+	template <class K>
+	  iter_range equal_range(const K& x);
+	template <class K>
+	  const_iter_range equal_range(const K& x) const;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -470,7 +507,7 @@ template <typename T, typename Comp, typename Alloc>
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename Comp, typename Alloc>
-void avl_tree<T, Comp, Alloc>::destroy_tree()
+void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 {
 	node_type * p = root;
 	root = maximum = minimum = nullptr;

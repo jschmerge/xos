@@ -41,7 +41,7 @@ int main()
 
 	assert(empty.begin() == empty.end());
 
-	avl_tree<int> mycopy(std::move(tree));
+	avl_tree<int> mycopy(tree);
 	for (auto x : mycopy)
 		printf("-> %d\n", x);
 
