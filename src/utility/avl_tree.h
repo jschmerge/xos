@@ -27,7 +27,7 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
-	  , height(0)
+	  , height(1)
 	  , balance(0)
 		{ }
 
@@ -37,7 +37,7 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
-	  , height(0)
+	  , height(1)
 	  , balance(0)
 		{ }
 
@@ -209,7 +209,7 @@ class avl_tree
 	key_compare compare;
 	allocator_type allocator;
 
-	bool insert_node(node_type * n);
+	node_type * insert_node(node_type * n);
 	void destroy_tree() noexcept;
 	void rebalance_from(node_type * start);
 
@@ -330,16 +330,22 @@ class avl_tree
 	std::pair<iterator, bool> emplace(Args && ... args)
 	{
 		node_type * n = new node_type(std::forward<Args>(args)...);
-		bool rc = insert_node(n);
-		return std::make_pair(iterator(root, n), rc);
+		node_type * ret = insert_node(n);
+		if (ret == n)
+			return std::make_pair(iterator(root, n), true);
+		else {
+			delete n;
+			return std::make_pair(iterator(root, ret), false);
+		}
 	}
 
 	template <typename ... Args>
 	iterator emplace_hint(const_iterator, Args && ... args)
 	{
 		node_type * n = new node_type(std::forward<Args>(args)...);
-		bool rc = insert_node(n);
-		return iterator(root, n);
+		node_type * ret = insert_node(n);
+		if (n != ret) delete n;
+		return iterator(root, ret);
 	}
 
 	///
@@ -457,52 +463,55 @@ void avl_tree<T, Comp, Alloc>::rebalance_from(
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename Comp, typename Alloc>
-  bool avl_tree<T, Comp, Alloc>::insert_node(
-    typename avl_tree<T, Comp, Alloc>::node_type * n)
+  typename avl_tree<T, Comp, Alloc>::node_type *
+    avl_tree<T, Comp, Alloc>::insert_node(
+      typename avl_tree<T, Comp, Alloc>::node_type * n)
 {
 	if (root == nullptr)
-		root = n;
-	else
 	{
-		node_type * p = root;
-		node_type * last = nullptr;
+		root = n;
+		minimum = n;
+		maximum = n;
+	} else
+	{
+		node_type * current = root;
+		node_type * parent = nullptr;
+		node_type ** child_link = nullptr;
 
-		while (last != p)
+		while (current != nullptr)
 		{
-			last = p;
-			if (compare(n->value, p->value))
+			parent = current;
+
+			if (compare(n->value, current->value))
 			{
-				if (p->left != nullptr) p = p->left;
+				child_link = &(current->left);
+				current = current->left;
+			} else if (compare(current->value, n->value))
+			{
+				child_link = &(current->right);
+				current = current->right;
 			} else
 			{
-				if (p->right != nullptr) p = p->right;
+				return current;
 			}
-			++(n->height);
 		}
 
-		if (compare(n->value, p->value))
-			p->left = n;
-		else
-			p->right = n;
+		*child_link = n;
 
-		n->parent = p;
+		n->parent = parent;
+		n->height = (parent->height + 1);
+
+		rebalance_from(n);
+
+		if (child_link == &(minimum->left))
+			minimum = minimum->left;
+		else if (child_link == &(maximum->right))
+			maximum = maximum->right;
 	}
-
-	if (minimum == nullptr)
-		minimum = n;
-	else if (minimum->left != nullptr)
-		minimum = minimum->left;
-
-	if (maximum == nullptr)
-		maximum = n;
-	else if (maximum->right != nullptr)
-		maximum = maximum->right;
-
-	rebalance_from(n);
 
 	++node_count;
 
-	return true;
+	return n;
 }
 
 //////////////////////////////////////////////////////////////////////
