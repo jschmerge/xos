@@ -205,19 +205,75 @@ class avl_tree
 	node_type * root, * minimum, * maximum;
 	size_type node_count;
 
+	key_compare compare;
+	allocator_type allocator;
+
 	bool insert_node(node_type * n);
 	void destroy_tree();
 	void rebalance_from(node_type * start);
 
  public:
+
+
+
 	///
 	/// Constructors
 	///
-	avl_tree() noexcept
+	avl_tree() : avl_tree(key_compare()) { }
+
+	explicit
+	avl_tree(const key_compare & c, const allocator_type & a = allocator_type())
 	  : root(nullptr)
 	  , minimum(nullptr)
 	  , maximum(nullptr)
 	  , node_count(0)
+	  , compare(c)
+	  , allocator(a)
+		{ }
+	  
+	template <class InputIterator>
+	avl_tree(InputIterator first, InputIterator last,
+	         const Compare& comp = Compare{},
+	         const Allocator& = Allocator{});
+
+	template <class InputIterator>
+	avl_tree(InputIterator first, InputIterator last, const Allocator& a)
+	  : avl_tree(first, last, Compare(), a)
+		{ }
+
+	explicit avl_tree(const Allocator & a) : avl_tree(key_compare(), a) { }
+
+	avl_tree(const avl_tree & other, const allocator_type & a)
+	  : avl_tree(other.compare, a)
+		{ insert(other.begin(), other.end()); }
+
+	avl_tree(const avl_tree & other)
+	  : avl_tree(other,
+	             std::allocator_traits<allocator_type>
+	               ::select_on_container_copy_construction(
+	                   other.get_allocator())) { }
+
+	// todo
+	avl_tree(avl_tree && other, const allocator_type & a);
+
+	avl_tree(avl_tree && other)
+	  : root(other.root)
+	  , minimum(other.minimum)
+	  , maximum(other.maximum)
+	  , node_count(other.node_count)
+ 	  , compare(std::move(other.compare))
+	  , allocator(std::move(other.allocator))
+	{
+		other.root = other.minimum = other.maximum = nullptr;
+		other.node_count = 0;
+	}
+
+	avl_tree(std::initializer_list<value_type>,
+	         const key_compare & = key_compare{},
+	         const allocator_type & = allocator_type{});
+
+	avl_tree(std::initializer_list<value_type> list, const allocator_type & a)
+	  : avl_tree(list, key_compare{}, a)
 		{ }
 
 	///
@@ -266,11 +322,9 @@ class avl_tree
 	///
 	/// Capacity
 	///
-	bool empty() const { return (root == nullptr); }
-
-	size_type size() const { return node_count; }
-
-	size_type max_size() const { return size_type(-1); }
+	bool empty() const noexcept { return (root == nullptr); }
+	size_type size() const noexcept { return node_count; }
+	size_type max_size() const noexcept { return size_type(-1); }
 
 	///
 	/// Modifiers
@@ -278,33 +332,8 @@ class avl_tree
 	void clear() { destroy_tree(); }
 
 	///
-	/// insert()
+	/// modifiers - emplace
 	///
-	std::pair<iterator, bool> insert(const value_type & val)
-	{
-		node_type * n = new node_type(val);
-		bool rc = insert_node(n);
-		return std::make_pair(iterator(root, n), rc);
-	}
-
-	std::pair<iterator, bool> insert(value_type&& val)
-	{
-		node_type * n = new node_type(std::move(val));
-		bool rc = insert_node(n);
-		return std::make_pair(iterator(root, n), rc);
-	}
-
-#if 0
-	iterator insert(const_iterator hint, const value_type& value);
-	iterator insert(const_iterator hint, value_type&& value);
-#endif
-	template<class InputIt>
-	  void insert(InputIt first, InputIt last)
-		{ for (;first != last; ++first) insert(*first); }
-
-	void insert(std::initializer_list<value_type> list)
-		{ for (auto v : list) insert(v); }
-
 	template <typename ... Args>
 	std::pair<iterator, bool> emplace(Args && ... args)
 	{
@@ -312,6 +341,36 @@ class avl_tree
 		bool rc = insert_node(n);
 		return std::make_pair(iterator(root, n), rc);
 	}
+
+	template <typename ... Args>
+	std::pair<iterator, bool> emplace_hint(const_iterator, Args && ... args)
+	{
+		node_type * n = new node_type(std::forward<Args>(args)...);
+		bool rc = insert_node(n);
+		return std::make_pair(iterator(root, n), rc);
+	}
+
+	///
+	/// modifiers - insert
+	///
+	std::pair<iterator, bool> insert(const value_type & val)
+		{ return emplace(val); }
+
+	std::pair<iterator, bool> insert(value_type && val)
+		{ return emplace(std::forward<value_type>(val)); }
+
+	iterator insert(const_iterator pos, const value_type & value)
+		{ return emplace_hint(pos, value); }
+
+	iterator insert(const_iterator pos, value_type && value)
+		{ return emplace_hint(pos, std::forward<value_type>(value)); }
+
+	template<class InputIterator>
+	  void insert(InputIterator first, InputIterator last)
+		{ for (;first != last; ++first) insert(*first); }
+
+	void insert(std::initializer_list<value_type> list)
+		{ for (auto & v : list) insert(v); }
 
 	void swap(avl_tree & other) noexcept;
 
@@ -327,7 +386,8 @@ class avl_tree
 
 	key_compare key_comp() const { return Compare{}; }
 	value_compare value_comp() const { return Compare{}; }
-	allocator_type get_allocator() const;
+
+	allocator_type get_allocator() const { return allocator; }
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -339,19 +399,19 @@ void avl_tree<T, Comp, Alloc>::rebalance_from(
 
 	int left_height = 0, right_height = 0;
 
-	printf("Starting with node %d\n", start->value);
+//	printf("Starting with node %d\n", start->value);
 	while (p != nullptr)
 	{
 		left_height  = ((p->left == nullptr)  ? 0 : p->left->height);
 		right_height = ((p->right == nullptr) ? 0 : p->right->height);
 
-		printf("\tleft = %d, right = %d\n", left_height, right_height);
+//		printf("\tleft = %d, right = %d\n", left_height, right_height);
 		if (left_height - right_height >= 2)
 		{
-			printf("\trebalancing right\n");
+//			printf("\trebalancing right\n");
 		} else if (left_height - right_height <= -2)
 		{
-			printf("\trebalancing left\n");
+//			printf("\trebalancing left\n");
 		}
 
 		p = p->parent;
@@ -373,7 +433,7 @@ template <typename T, typename Comp, typename Alloc>
 		while (last != p)
 		{
 			last = p;
-			if (n->value < p->value)
+			if (compare(n->value, p->value))
 			{
 				if (p->left != nullptr) p = p->left;
 			} else
@@ -383,7 +443,7 @@ template <typename T, typename Comp, typename Alloc>
 			++(n->height);
 		}
 
-		if (n->value < p->value)
+		if (compare(n->value, p->value))
 			p->left = n;
 		else
 			p->right = n;
