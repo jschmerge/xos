@@ -132,9 +132,9 @@ class value_range
 	bool intersects(const value_range & other)
 	{
 		return (  ( other.begin >= begin && other.begin <= end )
-		       || ( other.end >= begin && other.end <= end )
+		       || ( other.end >= begin   && other.end <= end )
 		       || ( begin >= other.begin && begin <= other.end )
-		       || ( end >= other.begin && end <= other.end ) );
+		       || ( end >= other.begin   && end <= other.end ) );
 	}
 
 	bool operator == (const value_range & other)
@@ -144,6 +144,7 @@ class value_range
 	value_type begin, end;
 };
 
+//////////////////////////////////////////////////////////////////////
 template <typename T>
 std::vector<value_range<T>>
 split_ranges(const value_range<T> & a, const value_range<T> & b)
@@ -199,7 +200,6 @@ split_ranges(const value_range<T> & a, const value_range<T> & b)
 			ret.emplace_back(a.min(), a.max());
 		}
 	}
-	putchar('\n');
 	return ret;
 }
 
@@ -347,7 +347,6 @@ class automaton
 			        t.m_value);
 		}
 #endif
-
 	}
 
  protected:
@@ -357,7 +356,6 @@ class automaton
 	std::set<state<state_id_type>> m_states;
 	typename std::set<state<state_id_type>>::iterator m_start_state;
 	std::vector<transition<input_type, state_id_type>> m_transitions;
-
 	std::list<value_range<input_type>> input_boundaries;
 };
 
