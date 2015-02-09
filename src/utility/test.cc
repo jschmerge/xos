@@ -55,5 +55,6 @@ int main()
 	for (auto x : mycopy)
 		printf("-> %d\n", x);
 
+	printf("-----------------\n");
 	tree.dump();
 }

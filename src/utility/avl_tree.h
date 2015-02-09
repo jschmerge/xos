@@ -467,20 +467,19 @@ class avl_tree
 
 		if (n == nullptr) return;
 
-		printf("%6d", n->value);
+		printf("%-6d", n->value);
 
 		if (n->left != nullptr)
 			dump(n->left, level + 1);
 		else
-			printf(" (nil)\n");
+			printf("-(nil)\n");
+
+		printf("%*s", (level + 1) * 6, "");
 
 		if (n->right != nullptr)
 			dump(n->right, level + 1);
 		else
-			printf(" (nil)\n");
-
-//		if (n->left == nullptr && n->right == nullptr)
-//			putchar('\n');
+			printf("`(nil)\n");
 	}
 };
 
@@ -563,6 +562,7 @@ template <typename T, typename C, typename A>
 	return n;
 }
 
+//////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
   typename avl_tree<T,C,A>::node_type *
   avl_tree<T,C,A>::insert_node_before(typename avl_tree<T,C,A>::node_type * n,
