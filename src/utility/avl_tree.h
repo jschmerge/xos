@@ -210,6 +210,7 @@ class avl_tree
 	allocator_type allocator;
 
 	node_type * insert_node(node_type * n);
+	node_type * insert_node_before(node_type * n, node_type * start);
 	void destroy_tree() noexcept;
 	void rebalance_from(node_type * start);
 
@@ -462,55 +463,68 @@ void avl_tree<T, Comp, Alloc>::rebalance_from(
 }
 
 //////////////////////////////////////////////////////////////////////
-template <typename T, typename Comp, typename Alloc>
-  typename avl_tree<T, Comp, Alloc>::node_type *
-    avl_tree<T, Comp, Alloc>::insert_node(
-      typename avl_tree<T, Comp, Alloc>::node_type * n)
+template <typename T, typename C, typename A>
+  typename avl_tree<T,C,A>::node_type *
+  avl_tree<T,C,A>::insert_node(typename avl_tree<T,C,A>::node_type * n)
 {
-	if (root == nullptr)
+	node_type * current = root;
+	node_type * parent = nullptr;
+	node_type ** child_link = &root;
+
+	while (current != nullptr)
 	{
-		root = n;
-		minimum = n;
-		maximum = n;
+		parent = current;
+
+		if (compare(n->value, current->value))
+		{
+			child_link = &(current->left);
+			current = current->left;
+		} else if (compare(current->value, n->value))
+		{
+			child_link = &(current->right);
+			current = current->right;
+		} else
+		{
+			return current;
+		}
+	}
+
+	*child_link = n;
+
+	n->parent = parent;
+
+	if (parent == nullptr)
+	{
+		minimum = maximum = n;
 	} else
 	{
-		node_type * current = root;
-		node_type * parent = nullptr;
-		node_type ** child_link = nullptr;
-
-		while (current != nullptr)
-		{
-			parent = current;
-
-			if (compare(n->value, current->value))
-			{
-				child_link = &(current->left);
-				current = current->left;
-			} else if (compare(current->value, n->value))
-			{
-				child_link = &(current->right);
-				current = current->right;
-			} else
-			{
-				return current;
-			}
-		}
-
-		*child_link = n;
-
-		n->parent = parent;
 		n->height = (parent->height + 1);
-
-		rebalance_from(n);
-
-		if (child_link == &(minimum->left))
-			minimum = minimum->left;
-		else if (child_link == &(maximum->right))
-			maximum = maximum->right;
 	}
+
+	rebalance_from(n);
+
+	if (child_link == &(minimum->left))
+		minimum = minimum->left;
+	else if (child_link == &(maximum->right))
+		maximum = maximum->right;
 
 	++node_count;
 
+	return n;
+}
+
+template <typename T, typename C, typename A>
+  typename avl_tree<T,C,A>::node_type *
+  avl_tree<T,C,A>::insert_node_before(typename avl_tree<T,C,A>::node_type * n,
+                                      typename avl_tree<T,C,A>::node_type * end)
+{
+	node_type * current = ((end == nullptr) ? maximum : end);
+	node_type * last = nullptr;
+
+	while (current != nullptr)
+	{
+	}
+	
 	return n;
 }
 
