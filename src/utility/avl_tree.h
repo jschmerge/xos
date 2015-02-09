@@ -373,11 +373,38 @@ class avl_tree
 	///
 	/// modifiers - erase
 	///
-	iterator erase(const_iterator position);
+	iterator erase(const_iterator position)
+	{
+		if (position == end())
+			return position;
 
-	iterator erase(const_iterator first, const_iterator last);
+		iterator rc(position);
+		++rc;
 
-	size_type erase(const key_type & x);
+		
+
+		return rc;
+	}
+
+	iterator erase(const_iterator first, const_iterator last)
+	{
+		iterator i;
+		for (i = first; i != last; i = erase(first)) { }
+		return i;
+	}
+
+	size_type erase(const key_type & k)
+	{
+		size_type count = 1;
+		iterator i = find(k);
+
+		if (i != end())
+			erase(i);
+		else
+			count = 0;
+
+		return count;
+	}
 
 
 	// TODO
@@ -431,6 +458,29 @@ class avl_tree
 	  iter_range equal_range(const K& x);
 	template <class K>
 	  const_iter_range equal_range(const K& x) const;
+
+
+	void dump(node_type * n = nullptr, int level = 0)
+	{
+		if (n == nullptr) n = root;
+
+		if (n == nullptr) return;
+
+		printf("%6d", n->value);
+
+		if (n->left != nullptr)
+			dump(n->left, level + 1);
+		else
+			printf(" (nil)\n");
+
+		if (n->right != nullptr)
+			dump(n->right, level + 1);
+		else
+			printf(" (nil)\n");
+
+//		if (n->left == nullptr && n->right == nullptr)
+//			putchar('\n');
+	}
 };
 
 //////////////////////////////////////////////////////////////////////

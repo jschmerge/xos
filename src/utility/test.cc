@@ -27,9 +27,9 @@ int main()
 
 	printf("Size of tree: %zu\n", sizeof(tree));
 
+	test_insert(tree, 1);
 	test_insert(tree, -20);
 	test_insert(tree, -4);
-	test_insert(tree, 1);
 	test_insert(tree, 6);
 	test_insert(tree, 3);
 	test_insert(tree, 2);
@@ -54,4 +54,6 @@ int main()
 	avl_tree<int> mycopy(tree);
 	for (auto x : mycopy)
 		printf("-> %d\n", x);
+
+	tree.dump();
 }
