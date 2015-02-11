@@ -28,16 +28,23 @@ int main()
 	printf("Size of tree: %zu\n", sizeof(tree));
 
 	test_insert(tree, 1);
-	test_insert(tree, -20);
 	test_insert(tree, -4);
+	test_insert(tree, -20);
 	test_insert(tree, 6);
 	test_insert(tree, 3);
 	test_insert(tree, 2);
 	tree.emplace(10);
 	test_insert_dup(tree, 10);
+	test_insert(tree, 11);
+	test_insert(tree, 12);
+	test_insert(tree, 13);
+	test_insert(tree, 14);
+#if 0
+#endif
 
+	printf("-----------------\n");
 	for (auto i = tree.begin(); i != tree.end(); ++i)
-		printf("\t%d, (%d)\n", *i, i.height());
+		printf("\t%d, (%d, %d)\n", *i, i.height(), i.balance());
 
 	printf("reverse:\n");
 

@@ -81,6 +81,8 @@ class avl_tree_iterator
 	}
 
 	int height() const { return current->height; }
+	int balance() const { return current->balance; }
+
 	bool operator == (const avl_tree_iterator & other) noexcept
 		{ return ( (root == other.root) && (current == other.current) ); }
 
@@ -169,6 +171,8 @@ template <typename T>
 void swap(avl_tree_iterator<T> & a, avl_tree_iterator<T> & b) noexcept
 	{ a.swap(b); }
 
+
+//////////////////////////////////////////////////////////////////////
 //
 // TODO - This class needs noexcept specifications
 //
@@ -333,8 +337,10 @@ class avl_tree
 		node_type * n = new node_type(std::forward<Args>(args)...);
 		node_type * ret = insert_node(n);
 		if (ret == n)
+		{
 			return std::make_pair(iterator(root, n), true);
-		else {
+		} else
+		{
 			delete n;
 			return std::make_pair(iterator(root, ret), false);
 		}
@@ -548,6 +554,41 @@ template <typename T, typename C, typename A>
 	} else
 	{
 		n->height = (parent->height + 1);
+	}
+
+	{
+		for (node_type * _current = n; _current != nullptr;
+		     _current = _current->parent)
+		{
+			if (_current->left == nullptr && _current->right == nullptr)
+			{
+				_current->balance = 0;
+			}
+			else if (_current->right == nullptr && _current->left != nullptr)
+			{
+				--_current->balance;
+			}
+			else if (_current->right != nullptr && _current->left == nullptr)
+			{
+				++_current->balance;
+			}
+			else if (_current->right != nullptr && _current->left == nullptr)
+			{
+				_current->balance =  _current->right->balance
+				                   + _current->left->balance;
+			}
+
+			if (_current->balance < -1)
+			{
+				dump();
+				printf("rotate right at %d\n", _current->value);
+				dump();
+			} else if (_current->balance > 1)
+			{
+				printf("rotate left\n");
+			}
+		}
+		
 	}
 
 	rebalance_from(n);
