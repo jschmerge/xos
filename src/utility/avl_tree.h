@@ -19,7 +19,7 @@ struct avl_tree_node
 	value_type value;
 	avl_tree_node * parent, * left, * right;
 
-	uint16_t height;
+//	uint16_t height;
 	int8_t balance;
 
 	explicit avl_tree_node(const value_type & _value)
@@ -27,7 +27,7 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
-	  , height(1)
+//	  , height(1)
 	  , balance(0)
 		{ }
 
@@ -37,7 +37,7 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
-	  , height(1)
+//	  , height(1)
 	  , balance(0)
 		{ }
 
@@ -80,7 +80,18 @@ class avl_tree_iterator
 		return *this;
 	}
 
-	int height() const { return current->height; }
+	int height() const
+	{
+		const node_type * ptr = current;
+		int count = 1;
+		while (ptr->parent != nullptr)
+		{
+			++count;
+			ptr = ptr->parent;
+		}
+		return count;
+	}
+
 	int balance() const { return current->balance; }
 
 	bool operator == (const avl_tree_iterator & other) noexcept
@@ -380,6 +391,7 @@ class avl_tree
 	///
 	/// modifiers - erase
 	///
+#if 0
 	iterator erase(const_iterator position)
 	{
 		if (position == end())
@@ -387,8 +399,6 @@ class avl_tree
 
 		iterator rc(position);
 		++rc;
-
-		
 
 		return rc;
 	}
@@ -412,7 +422,7 @@ class avl_tree
 
 		return count;
 	}
-
+#endif
 
 	// TODO
 	void swap(avl_tree &)
@@ -475,21 +485,25 @@ class avl_tree
 
 		printf("%-6d", n->value);
 
-		if (n->left != nullptr)
-			dump(n->left, level + 1);
+		if (n->right != nullptr)
+			dump(n->right, level + 1);
 		else
 			printf("-(nil)\n");
 
 		printf("%*s", (level + 1) * 6, "");
 
-		if (n->right != nullptr)
-			dump(n->right, level + 1);
+		if (n->left != nullptr)
+			dump(n->left, level + 1);
 		else
 			printf("`(nil)\n");
 	}
+ private:
+	void rotate_right(node_type * node);
+	void rotate_left(node_type * node);
 };
 
 //////////////////////////////////////////////////////////////////////
+#if 0
 template <typename T, typename Comp, typename Alloc>
 void avl_tree<T, Comp, Alloc>::rebalance_from(
     typename avl_tree<T, Comp, Alloc>::node_type * start)
@@ -515,6 +529,83 @@ void avl_tree<T, Comp, Alloc>::rebalance_from(
 
 		p = p->parent;
 	}
+}
+#endif
+
+template <typename T, typename C, typename A>
+void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
+{
+	node_type *  subtree_parent = node->parent;
+	node_type *  pivot = node->left;
+	node_type *  new_left = node->left->left;
+	node_type *  new_right = node;
+	node_type ** parent_link = nullptr;
+
+	if (subtree_parent == nullptr)
+		parent_link = &root;
+	else if (subtree_parent->left == node)
+		parent_link = &(subtree_parent->left);
+	else if (subtree_parent->right == node)
+		parent_link = &(subtree_parent->right);
+	else
+		abort();
+
+	//new_left->right is unchanged
+	//new_left->left is unchanged
+	//new_left->parent is unchanged
+
+	new_right->left = pivot->right;
+	//new_right->right is unchanged
+	new_right->parent = pivot;
+
+	if (new_right->left && new_right->right)
+		new_right->balance =   new_right->left->balance
+		                     + new_right->right->balance;
+	else if (new_right->left)
+		new_right->balance = new_right->left->balance - 1;
+	else if (new_right->right)
+		new_right->balance = new_right->right->balance + 1;
+	else
+		new_right->balance = 0;
+
+	pivot->left = new_left;
+	pivot->right = new_right;
+	pivot->parent = subtree_parent;
+
+	*parent_link = pivot;
+}
+
+template <typename T, typename C, typename A>
+void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
+{
+	node_type *  subtree_parent = node->parent;
+	node_type *  new_left = node;
+	node_type *  pivot = node->right;
+	node_type *  new_right = node->right->right;
+	node_type ** parent_link = nullptr;
+
+	if (subtree_parent == nullptr)
+		parent_link = &root;
+	else if (subtree_parent->left == node)
+		parent_link = &(subtree_parent->left);
+	else if (subtree_parent->right == node)
+		parent_link = &(subtree_parent->right);
+	else
+		abort();
+
+	//new_right->left is unchanged
+	//new_right->right is unchanged
+	//new_right->parent is unchanged
+
+	//new_left->right
+	//new_left->left
+	//new_left->parent
+
+	//pivot->left
+	//pivot->right
+	//pivot->parent
+
+	*parent_link = pivot;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -553,7 +644,7 @@ template <typename T, typename C, typename A>
 		minimum = maximum = n;
 	} else
 	{
-		n->height = (parent->height + 1);
+//		n->height = (parent->height + 1);
 	}
 
 	{
@@ -582,6 +673,7 @@ template <typename T, typename C, typename A>
 			{
 				dump();
 				printf("rotate right at %d\n", _current->value);
+				rotate_right(_current);
 				dump();
 			} else if (_current->balance > 1)
 			{
@@ -590,8 +682,6 @@ template <typename T, typename C, typename A>
 		}
 		
 	}
-
-	rebalance_from(n);
 
 	if (child_link == &(minimum->left))
 		minimum = minimum->left;
