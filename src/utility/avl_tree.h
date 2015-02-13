@@ -607,7 +607,10 @@ template <typename T, typename C, typename A>
 			else
 				++_current->balance;
 
-			if (_current->balance > 1)
+			if (_current->balance == 0)
+			{
+				break;
+			} else if (_current->balance > 1)
 			{
 				if (_current->right->balance == 1)
 				{
