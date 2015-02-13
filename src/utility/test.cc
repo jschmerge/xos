@@ -10,6 +10,7 @@
 
 void test_insert(avl_tree<int> & tree, int val)
 {
+	printf("ADDING %d\n", val);
 	auto p = tree.insert(val);
 	my_assert(p.second == true && *p.first == val);
 }
@@ -39,6 +40,25 @@ int main()
 	test_insert(tree, 12);
 	test_insert(tree, 13);
 	test_insert(tree, 14);
+	test_insert(tree, 15);
+	test_insert(tree, 16);
+	test_insert(tree, 17);
+	test_insert(tree, -21);
+
+	for (int x = 0; x < 31; ++x)
+	{
+		tree.insert(x);
+		printf("----\n");
+	for (auto i = tree.begin(); i != tree.end(); ++i)
+		printf("\t%d, (%d, %d)\n", *i, i.height(), i.balance());
+		tree.dump();
+	}
+	for (int x = 0; x > -33; --x)
+	{
+		tree.insert(x);
+		printf("----\n");
+		tree.dump();
+	}
 #if 0
 #endif
 
@@ -51,17 +71,18 @@ int main()
 	for (auto j = tree.rbegin(); j != tree.rend(); ++j)
 	{
 		auto i = j.base(); --i;
-		printf("\t%d (%d)\n", *j, i.height());
+		printf("\t%d, (%d, %d)\n", *j, i.height(), i.balance());
 	}
 
 	avl_tree<std::string> empty;
 
 	my_assert(empty.begin() == empty.end());
+	tree.dump();
 
 	avl_tree<int> mycopy(tree);
-	for (auto x : mycopy)
-		printf("-> %d\n", x);
+	for (auto i = mycopy.begin(); i != mycopy.end(); ++i)
+		printf("\t%d, (%d, %d)\n", *i, i.height(), i.balance());
 
 	printf("-----------------\n");
-	tree.dump();
+	mycopy.dump();
 }
