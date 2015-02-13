@@ -503,35 +503,6 @@ class avl_tree
 };
 
 //////////////////////////////////////////////////////////////////////
-#if 0
-template <typename T, typename Comp, typename Alloc>
-void avl_tree<T, Comp, Alloc>::rebalance_from(
-    typename avl_tree<T, Comp, Alloc>::node_type * start)
-{
-	node_type * p = start;
-
-	int left_height = 0, right_height = 0;
-
-//	printf("Starting with node %d\n", start->value);
-	while (p != nullptr)
-	{
-		left_height  = ((p->left == nullptr)  ? 0 : p->left->height);
-		right_height = ((p->right == nullptr) ? 0 : p->right->height);
-
-//		printf("\tleft = %d, right = %d\n", left_height, right_height);
-		if (left_height - right_height >= 2)
-		{
-//			printf("\trebalancing right\n");
-		} else if (left_height - right_height <= -2)
-		{
-//			printf("\trebalancing left\n");
-		}
-
-		p = p->parent;
-	}
-}
-#endif
-
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 {
@@ -579,6 +550,7 @@ template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 {
 	node_type *  subtree_parent = node->parent;
+#if 0
 	node_type *  new_left = node;
 	node_type *  pivot = node->right;
 	node_type *  new_right = node->right->right;
@@ -606,6 +578,7 @@ void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 	//pivot->parent
 
 	*parent_link = pivot;
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -677,7 +650,10 @@ template <typename T, typename C, typename A>
 				dump();
 			} else if (_current->balance > 1)
 			{
-				printf("rotate left\n");
+				dump();
+				printf("rotate left at %d\n", _current->value);
+				rotate_left(_current);
+				dump();
 			}
 		}
 		
