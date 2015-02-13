@@ -508,77 +508,57 @@ void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 {
 	node_type *  subtree_parent = node->parent;
 	node_type *  pivot = node->left;
-	node_type *  new_left = node->left->left;
 	node_type *  new_right = node;
-	node_type ** parent_link = nullptr;
 
 	if (subtree_parent == nullptr)
-		parent_link = &root;
+		root = pivot;
 	else if (subtree_parent->left == node)
-		parent_link = &(subtree_parent->left);
+		subtree_parent->left = pivot;
 	else if (subtree_parent->right == node)
-		parent_link = &(subtree_parent->right);
+		subtree_parent->right = pivot;
 	else
 		abort();
 
-	//new_left->right is unchanged
-	//new_left->left is unchanged
-	//new_left->parent is unchanged
-
-	new_right->left = pivot->right;
-	//new_right->right is unchanged
-	new_right->parent = pivot;
-
-	if (new_right->left && new_right->right)
-		new_right->balance =   new_right->left->balance
-		                     + new_right->right->balance;
-	else if (new_right->left)
-		new_right->balance = new_right->left->balance - 1;
-	else if (new_right->right)
-		new_right->balance = new_right->right->balance + 1;
-	else
-		new_right->balance = 0;
-
-	pivot->left = new_left;
-	pivot->right = new_right;
 	pivot->parent = subtree_parent;
 
-	*parent_link = pivot;
+	// move pivot's right subtree under left side of new_right
+	new_right->left = pivot->right;
+	if (new_right->left != nullptr)
+		new_right->left->parent = new_right;
+
+
+	// move new_right under right side of pivot
+	pivot->right = new_right;
+	new_right->parent = pivot;
 }
 
+//////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 {
 	node_type *  subtree_parent = node->parent;
-#if 0
-	node_type *  new_left = node;
 	node_type *  pivot = node->right;
-	node_type *  new_right = node->right->right;
-	node_type ** parent_link = nullptr;
+	node_type *  new_left = node;
 
 	if (subtree_parent == nullptr)
-		parent_link = &root;
+		root = pivot;
 	else if (subtree_parent->left == node)
-		parent_link = &(subtree_parent->left);
+		subtree_parent->left = pivot;
 	else if (subtree_parent->right == node)
-		parent_link = &(subtree_parent->right);
+		subtree_parent->right = pivot;
 	else
 		abort();
 
-	//new_right->left is unchanged
-	//new_right->right is unchanged
-	//new_right->parent is unchanged
+	pivot->parent = subtree_parent;
 
-	//new_left->right
-	//new_left->left
-	//new_left->parent
+	// move pivot's left subtree under right side of new_left
+	new_left->right = pivot->left;
+	if (new_left->right != nullptr)
+		new_left->right->parent = new_left;
 
-	//pivot->left
-	//pivot->right
-	//pivot->parent
-
-	*parent_link = pivot;
-#endif
+	// move new_right under right side of pivot
+	pivot->left = new_left;
+	new_left->parent = pivot;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -615,48 +595,61 @@ template <typename T, typename C, typename A>
 	if (parent == nullptr)
 	{
 		minimum = maximum = n;
-	} else
-	{
-//		n->height = (parent->height + 1);
 	}
 
 	{
-		for (node_type * _current = n; _current != nullptr;
-		     _current = _current->parent)
+		node_type * last = n;
+		for (node_type * _current = n->parent; _current != nullptr;
+		     last = _current, _current = _current->parent)
 		{
-			if (_current->left == nullptr && _current->right == nullptr)
-			{
-				_current->balance = 0;
-			}
-			else if (_current->right == nullptr && _current->left != nullptr)
-			{
+			if (_current->left == last)
 				--_current->balance;
-			}
-			else if (_current->right != nullptr && _current->left == nullptr)
-			{
+			else
 				++_current->balance;
-			}
-			else if (_current->right != nullptr && _current->left == nullptr)
+
+			if (_current->balance > 1)
 			{
-				_current->balance =  _current->right->balance
-				                   + _current->left->balance;
+				if (_current->right->balance == 1)
+				{
+					_current->balance = 0;
+					_current->right->balance = 0;
+				} else
+				{
+					_current->balance =
+					  std::min(0, -(_current->right->left->balance));
+					_current->right->balance =
+					  std::max(0, -(_current->right->left->balance));
+
+					_current->right->left->balance = 0;
+
+					rotate_right(_current->right);
+				}
+
+				rotate_left(_current);
+				break;
+			} else if (_current->balance < -1)
+			{
+				if (_current->left->balance == -1)
+				{
+					_current->balance = 0;
+					_current->left->balance = 0;
+				} else
+				{
+					_current->balance =
+					  std::max(0, -(_current->left->balance));
+					_current->left->balance =
+					  std::min(0, -(_current->left->balance));
+
+					_current->left->right->balance = 0;
+
+					rotate_left(_current->left);
+				}
+
+				rotate_right(_current);
+				break;
 			}
 
-			if (_current->balance < -1)
-			{
-				dump();
-				printf("rotate right at %d\n", _current->value);
-				rotate_right(_current);
-				dump();
-			} else if (_current->balance > 1)
-			{
-				dump();
-				printf("rotate left at %d\n", _current->value);
-				rotate_left(_current);
-				dump();
-			}
 		}
-		
 	}
 
 	if (child_link == &(minimum->left))
