@@ -19,7 +19,6 @@ struct avl_tree_node
 	value_type value;
 	avl_tree_node * parent, * left, * right;
 
-//	uint16_t height;
 	int8_t balance;
 
 	explicit avl_tree_node(const value_type & _value)
@@ -27,7 +26,6 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
-//	  , height(1)
 	  , balance(0)
 		{ }
 
@@ -37,7 +35,6 @@ struct avl_tree_node
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
-//	  , height(1)
 	  , balance(0)
 		{ }
 
@@ -159,9 +156,7 @@ class avl_tree_iterator
 		{ avl_tree_iterator tmp = *this; --(*this); return tmp; }
 
 	const T & operator * () const noexcept
-	{
- 		return current->value;
-	}
+		{ return current->value; }
 
 	const T * operator -> () const noexcept
 		{ return &(current->value); }
@@ -510,14 +505,9 @@ void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	node_type *  pivot = node->left;
 	node_type *  new_right = node;
 
-	if (subtree_parent == nullptr)
-		root = pivot;
-	else if (subtree_parent->left == node)
-		subtree_parent->left = pivot;
-	else if (subtree_parent->right == node)
-		subtree_parent->right = pivot;
-	else
-		abort();
+	( (subtree_parent == nullptr)    ? root : (
+	  (subtree_parent->left == node) ? subtree_parent->left :
+	                                   subtree_parent->right ) ) = pivot;
 
 	pivot->parent = subtree_parent;
 
@@ -540,14 +530,9 @@ void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 	node_type *  pivot = node->right;
 	node_type *  new_left = node;
 
-	if (subtree_parent == nullptr)
-		root = pivot;
-	else if (subtree_parent->left == node)
-		subtree_parent->left = pivot;
-	else if (subtree_parent->right == node)
-		subtree_parent->right = pivot;
-	else
-		abort();
+	( (subtree_parent == nullptr)    ? root : (
+	  (subtree_parent->left == node) ? subtree_parent->left :
+	                                   subtree_parent->right ) ) = pivot;
 
 	pivot->parent = subtree_parent;
 
