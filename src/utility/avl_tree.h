@@ -77,10 +77,10 @@ class avl_tree_iterator
 		return *this;
 	}
 
-	int height() const
+	size_t height() const
 	{
 		const node_type * ptr = current;
-		int count = 1;
+		size_t count = 1;
 		while (ptr->parent != nullptr)
 		{
 			++count;
@@ -168,6 +168,10 @@ class avl_tree_iterator
 		swap(current, other.current);
 	}
 
+	bool is_leaf_node()
+		{ return (  (current->left == nullptr)
+		         && (current->right == nullptr)); }
+
  private:
 	const node_type * root;
 	const node_type * current;
@@ -218,11 +222,6 @@ class avl_tree
 
 	key_compare compare;
 	allocator_type allocator;
-
-	node_type * insert_node(node_type * n);
-	node_type * insert_node_before(node_type * n, node_type * start);
-	void destroy_tree() noexcept;
-	void rebalance_from(node_type * start);
 
  public:
 
@@ -478,21 +477,27 @@ class avl_tree
 
 		if (n == nullptr) return;
 
-		printf("%-6d", n->value);
+		printf("%-10d", n->value);
 
 		if (n->right != nullptr)
 			dump(n->right, level + 1);
 		else
 			printf("-(nil)\n");
 
-		printf("%*s", (level + 1) * 6, "");
+		printf("%*s", (level + 1) * 10, "");
 
 		if (n->left != nullptr)
 			dump(n->left, level + 1);
 		else
 			printf("`(nil)\n");
 	}
+
  private:
+
+	node_type * insert_node(node_type * n);
+	node_type * insert_node_before(node_type * n, node_type * start);
+	void destroy_tree() noexcept;
+	void rebalance_from(node_type * n);
 	void rotate_right(node_type * node);
 	void rotate_left(node_type * node);
 };
@@ -548,6 +553,67 @@ void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
+void avl_tree<T,C,A>::rebalance_from(typename avl_tree<T,C,A>::node_type * n)
+{
+	node_type * last = n;
+	for (node_type * _current = n->parent; _current != nullptr;
+	     last = _current, _current = _current->parent)
+	{
+		if (_current->left == last)
+			--_current->balance;
+		else
+			++_current->balance;
+
+		if (_current->balance == 0)
+		{
+			break;
+		} else if (_current->balance > 1)
+		{
+			if (_current->right->balance == 1)
+			{
+				_current->balance = 0;
+				_current->right->balance = 0;
+			} else
+			{
+				_current->balance =
+				  std::min(0, -(_current->right->left->balance));
+				_current->right->balance =
+				  std::max(0, -(_current->right->left->balance));
+
+				_current->right->left->balance = 0;
+
+				rotate_right(_current->right);
+			}
+
+			rotate_left(_current);
+			break;
+		} else if (_current->balance < -1)
+		{
+			if (_current->left->balance == -1)
+			{
+				_current->balance = 0;
+				_current->left->balance = 0;
+			} else
+			{
+				_current->balance =
+				  std::max(0, -(_current->left->right->balance));
+				_current->left->balance =
+				  std::min(0, -(_current->left->right->balance));
+
+				_current->left->right->balance = 0;
+
+				rotate_left(_current->left);
+			}
+
+			rotate_right(_current);
+			break;
+		}
+
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
   typename avl_tree<T,C,A>::node_type *
   avl_tree<T,C,A>::insert_node(typename avl_tree<T,C,A>::node_type * n)
 {
@@ -582,6 +648,10 @@ template <typename T, typename C, typename A>
 		minimum = maximum = n;
 	}
 
+//	dump();
+	rebalance_from(n);
+#if 0
+	void rebalance_from(node_type * n)
 	{
 		node_type * last = n;
 		for (node_type * _current = n->parent; _current != nullptr;
@@ -624,9 +694,9 @@ template <typename T, typename C, typename A>
 				} else
 				{
 					_current->balance =
-					  std::max(0, -(_current->left->balance));
+					  std::max(0, -(_current->left->right->balance));
 					_current->left->balance =
-					  std::min(0, -(_current->left->balance));
+					  std::min(0, -(_current->left->right->balance));
 
 					_current->left->right->balance = 0;
 
@@ -639,6 +709,7 @@ template <typename T, typename C, typename A>
 
 		}
 	}
+#endif
 
 	if (child_link == &(minimum->left))
 		minimum = minimum->left;

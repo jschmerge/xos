@@ -1,5 +1,9 @@
 #include "avl_tree.h"
+#include <unistd.h>
 #include <string>
+#include <set>
+#include <random>
+#include "time/timeutil.h"
 
 #define my_assert(expr) do { \
 	if ( ! (expr)) { \
@@ -19,6 +23,30 @@ void test_insert_dup(avl_tree<int> & tree, int val)
 {
 	auto p = tree.insert(val);
 	my_assert(p.second == false && *p.first == val);
+}
+
+template<typename T>
+void test_speed(T & container, int total = 10000000)
+{
+	int64_t seed = container.empty() ? 0 : container.size();
+	std::default_random_engine engine(seed);
+	std::uniform_int_distribution<int64_t> dist(-(total * 10), total * 10);
+
+	auto begin = posix_clock<clock_source::realtime>::now();
+
+	for (int i = 0; i < total; ++i)
+	{
+		int64_t value = dist(engine);
+		container.insert(value);
+	}
+
+	auto end = posix_clock<clock_source::realtime>::now();
+
+	std::chrono::duration<double> d = end - begin;
+
+	printf("insertion took %.9f seconds for %ld random new values\n",
+	       d.count(), container.size() - seed);
+	fflush(stdout);
 }
 
 int main()
@@ -50,7 +78,7 @@ int main()
 		tree.insert(x);
 		printf("----\n");
 	for (auto i = tree.begin(); i != tree.end(); ++i)
-		printf("\t%d, (%d, %d)\n", *i, i.height(), i.balance());
+		printf("\t%d, (%zd, %d)\n", *i, i.height(), i.balance());
 		tree.dump();
 	}
 	for (int x = 0; x > -33; --x)
@@ -64,14 +92,14 @@ int main()
 
 	printf("-----------------\n");
 	for (auto i = tree.begin(); i != tree.end(); ++i)
-		printf("\t%d, (%d, %d)\n", *i, i.height(), i.balance());
+		printf("\t%d, (%zd, %d)\n", *i, i.height(), i.balance());
 
 	printf("reverse:\n");
 
 	for (auto j = tree.rbegin(); j != tree.rend(); ++j)
 	{
 		auto i = j.base(); --i;
-		printf("\t%d, (%d, %d)\n", *j, i.height(), i.balance());
+		printf("\t%d, (%zd, %d)\n", *j, i.height(), i.balance());
 	}
 
 	avl_tree<std::string> empty;
@@ -81,8 +109,44 @@ int main()
 
 	avl_tree<int> mycopy(tree);
 	for (auto i = mycopy.begin(); i != mycopy.end(); ++i)
-		printf("\t%d, (%d, %d)\n", *i, i.height(), i.balance());
+		printf("\t%d, (%zd, %d)\n", *i, i.height(), i.balance());
 
 	printf("-----------------\n");
 	mycopy.dump();
+
+
+	for (int64_t i = 1; i <= 10000000; i *= 10)
+	{
+		avl_tree<int64_t> a;
+		std::set<int64_t> b;
+		printf("i = %ld\n------------------------------------\n", i);
+		for (int j = 0; j < 3; ++j)
+		{
+			size_t min =  ~0, max = 0;
+			printf("AVL:\n");
+			test_speed(a, i);
+			test_speed(a, i);
+			test_speed(a, i);
+
+			for (auto x = a.begin(); x != a.end(); ++x)
+			{
+				if (x.is_leaf_node())
+				{
+					size_t h = x.height();
+					if (h < min)
+						min = h;
+					if (h > max)
+						max = h;
+				}
+			}
+			printf("Height min = %zu, max = %zu\n", min, max);
+			a.clear();
+
+			printf("RedBlack:\n");
+			test_speed(b, i);
+			test_speed(b, i);
+			test_speed(b, i);
+			b.clear();
+		}
+	}
 }
