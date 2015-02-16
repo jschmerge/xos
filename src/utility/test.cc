@@ -57,6 +57,7 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 	for (int64_t i = 0; i < total; ++i)
 	{
 		container.insert(container.end(), i);
+		//container.insert(i);
 	}
 
 	auto end = posix_clock<clock_source::realtime>::now();
@@ -133,8 +134,6 @@ int main()
 	printf("-----------------\n");
 	mycopy.dump();
 
-
-#if 0
 	for (int64_t i = 1; i <= 10000000; i *= 10)
 	{
 		avl_tree<int64_t> a;
@@ -169,37 +168,39 @@ int main()
 			b.clear();
 		}
 	}
-#endif
 
-	for (int64_t i = 1; i <= 100000000; i *= 10)
+	for (int64_t i = 1; i <= 10000000; i *= 10)
 	{
-		size_t min =  ~0, max = 0;
-		avl_tree<int64_t> a;
-		std::set<int64_t> b;
-		printf("AVL:\n");
-		test_ordered_insert(a, i);
-		test_ordered_insert(a, i);
-		test_ordered_insert(a, i);
-
-		for (auto x = a.begin(); x != a.end(); ++x)
+		printf("i = %ld\n--------------------------------------\n", i);
+		for (int j = 0; j < 3; ++j)
 		{
-			if (x.is_leaf_node())
-			{
-				size_t h = x.height();
-				if (h < min)
-					min = h;
-				if (h > max)
-					max = h;
-			}
-		}
-		printf("Height min = %zu, max = %zu\n", min, max);
-		a.clear();
-		a.clear();
-		printf("RB:\n");
+			size_t min =  ~0, max = 0;
+			avl_tree<int64_t> a;
+			std::set<int64_t> b;
+			printf("AVL:\n");
+			test_ordered_insert(a, i);
+			test_ordered_insert(a, i);
+			test_ordered_insert(a, i);
 
-		test_ordered_insert(b, i);
-		test_ordered_insert(b, i);
-		test_ordered_insert(b, i);
-		b.clear();
+			for (auto x = a.begin(); x != a.end(); ++x)
+			{
+				if (x.is_leaf_node())
+				{
+					size_t h = x.height();
+					if (h < min)
+						min = h;
+					if (h > max)
+						max = h;
+				}
+			}
+			printf("Height min = %zu, max = %zu\n", min, max);
+			a.clear();
+
+			printf("RB:\n");
+			test_ordered_insert(b, i);
+			test_ordered_insert(b, i);
+			test_ordered_insert(b, i);
+			b.clear();
+		}
 	}
 }
