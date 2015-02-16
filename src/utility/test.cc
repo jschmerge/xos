@@ -49,6 +49,25 @@ void test_speed(T & container, int total = 10000000)
 	fflush(stdout);
 }
 
+template<typename T>
+void test_ordered_insert(T & container, int64_t total = 10000000)
+{
+	auto begin = posix_clock<clock_source::realtime>::now();
+
+	for (int64_t i = 0; i < total; ++i)
+	{
+		container.insert(container.end(), i);
+	}
+
+	auto end = posix_clock<clock_source::realtime>::now();
+
+	std::chrono::duration<double> d = end - begin;
+
+	printf("insertion took %.9f seconds for %ld ordered values\n",
+	       d.count(), container.size());
+	fflush(stdout);
+}
+
 int main()
 {
 	avl_tree<int> tree;
@@ -115,6 +134,7 @@ int main()
 	mycopy.dump();
 
 
+#if 0
 	for (int64_t i = 1; i <= 10000000; i *= 10)
 	{
 		avl_tree<int64_t> a;
@@ -148,5 +168,38 @@ int main()
 			test_speed(b, i);
 			b.clear();
 		}
+	}
+#endif
+
+	for (int64_t i = 1; i <= 100000000; i *= 10)
+	{
+		size_t min =  ~0, max = 0;
+		avl_tree<int64_t> a;
+		std::set<int64_t> b;
+		printf("AVL:\n");
+		test_ordered_insert(a, i);
+		test_ordered_insert(a, i);
+		test_ordered_insert(a, i);
+
+		for (auto x = a.begin(); x != a.end(); ++x)
+		{
+			if (x.is_leaf_node())
+			{
+				size_t h = x.height();
+				if (h < min)
+					min = h;
+				if (h > max)
+					max = h;
+			}
+		}
+		printf("Height min = %zu, max = %zu\n", min, max);
+		a.clear();
+		a.clear();
+		printf("RB:\n");
+
+		test_ordered_insert(b, i);
+		test_ordered_insert(b, i);
+		test_ordered_insert(b, i);
+		b.clear();
 	}
 }
