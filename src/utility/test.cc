@@ -60,6 +60,7 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 	for (int64_t i = 0; i < total; ++i)
 	{
 		container.insert(container.end(), i);
+		//container.insert(i);
 	}
 
 	auto end = posix_clock<clock_source::realtime>::now();
