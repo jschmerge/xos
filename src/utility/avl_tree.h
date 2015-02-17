@@ -11,18 +11,19 @@
 // forward declaration
 template <typename T, typename C, typename A> class avl_tree;
 
+//////////////////////////////////////////////////////////////////////
 template <typename T>
 struct avl_tree_node
 {
 	typedef T value_type;
 
-	value_type value;
+	value_type m_value;
 	avl_tree_node * parent, * left, * right;
 
 	int8_t balance;
 
 	explicit avl_tree_node(const value_type & _value)
-	  : value(_value)
+	  : m_value(_value)
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
@@ -31,7 +32,7 @@ struct avl_tree_node
 
   template <typename ... Args>
 	avl_tree_node(Args && ... args)
-	  : value(std::forward<Args>(args)...)
+	  : m_value(std::forward<Args>(args)...)
 	  , parent(nullptr)
 	  , left(nullptr)
 	  , right(nullptr)
@@ -40,8 +41,15 @@ struct avl_tree_node
 
 	~avl_tree_node()
 		{ assert(left == nullptr && right == nullptr); }
+
+	value_type & value()
+		{ return m_value; }
+
+	const value_type & value() const
+		{ return m_value; }
 };
 
+//////////////////////////////////////////////////////////////////////
 template <typename T>
 class avl_tree_iterator
   : public std::iterator<std::bidirectional_iterator_tag,
@@ -156,10 +164,10 @@ class avl_tree_iterator
 		{ avl_tree_iterator tmp = *this; --(*this); return tmp; }
 
 	const T & operator * () const noexcept
-		{ return current->value; }
+		{ return current->value(); }
 
 	const T * operator -> () const noexcept
-		{ return &(current->value); }
+		{ return &(current->value()); }
 
 	void swap(avl_tree_iterator & other) noexcept
 	{
@@ -477,7 +485,7 @@ class avl_tree
 
 		if (n == nullptr) return;
 
-		printf("%-10d", n->value);
+		printf("%-10d", n->value());
 
 		if (n->right != nullptr)
 			dump(n->right, level + 1);
@@ -625,11 +633,11 @@ template <typename T, typename C, typename A>
 	{
 		parent = current;
 
-		if (compare(n->value, current->value))
+		if (compare(n->value(), current->value()))
 		{
 			child_link = &(current->left);
 			current = current->left;
-		} else if (compare(current->value, n->value))
+		} else if (compare(current->value(), n->value()))
 		{
 			child_link = &(current->right);
 			current = current->right;
