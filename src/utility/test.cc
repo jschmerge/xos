@@ -1,5 +1,6 @@
 #include "avl_tree.h"
 #include <unistd.h>
+#include <locale>
 #include <string>
 #include <set>
 #include <random>
@@ -71,6 +72,7 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 
 int main()
 {
+	std::locale::global(std::locale("en_GB.UTF-8"));
 	avl_tree<int> tree;
 	//avl_tree<int, std::greater<int>> tree;
 
@@ -138,7 +140,7 @@ int main()
 	{
 		avl_tree<int64_t> a;
 		std::set<int64_t> b;
-		printf("i = %ld\n------------------------------------\n", i);
+		printf("i = %'ld\n------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
 		{
 			size_t min =  ~0, max = 0;
@@ -171,7 +173,7 @@ int main()
 
 	for (int64_t i = 1; i <= 10000000; i *= 10)
 	{
-		printf("i = %ld\n--------------------------------------\n", i);
+		printf("i = %'ld\n--------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
 		{
 			size_t min =  ~0, max = 0;
