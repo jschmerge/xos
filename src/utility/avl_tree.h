@@ -17,36 +17,54 @@ struct avl_tree_node
 {
 	typedef T value_type;
 
-	value_type m_value;
 	avl_tree_node * parent, * left, * right;
+	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
-	int8_t balance;
+	static constexpr uintptr_t address_mask = ~static_cast<uintptr_t>(3);
+	static constexpr uintptr_t balance_mask = static_cast<uintptr_t>(3);
 
-	explicit avl_tree_node(const value_type & _value)
-	  : m_value(_value)
-	  , parent(nullptr)
-	  , left(nullptr)
-	  , right(nullptr)
-	  , balance(0)
-		{ }
+	value_type & value() noexcept
+		{ return *value_address(); }
 
-  template <typename ... Args>
-	avl_tree_node(Args && ... args)
-	  : m_value(std::forward<Args>(args)...)
-	  , parent(nullptr)
-	  , left(nullptr)
-	  , right(nullptr)
-	  , balance(0)
-		{ }
+	value_type * value_address() noexcept
+		{ return reinterpret_cast<value_type *>(&storage); }
 
-	~avl_tree_node()
-		{ assert(left == nullptr && right == nullptr); }
+	const value_type & value() const noexcept
+		{ return *value_address(); }
 
-	value_type & value()
-		{ return m_value; }
+	const value_type * value_address() const noexcept
+		{ return reinterpret_cast<const value_type *>(&storage); }
 
-	const value_type & value() const
-		{ return m_value; }
+	avl_tree_node * parent_node() const noexcept
+		{ return reinterpret_cast<avl_tree_node*>(
+		           reinterpret_cast<uintptr_t>(parent) & address_mask); }
+
+	void set_parent(avl_tree_node * p) noexcept
+	{
+		parent = reinterpret_cast<avl_tree_node*>(
+		             (reinterpret_cast<uintptr_t>(p) & address_mask)
+		           | (reinterpret_cast<uintptr_t>(parent) & balance_mask));
+	}
+
+	void set_parent(avl_tree_node * p, int _balance) noexcept
+	{
+		parent = reinterpret_cast<avl_tree_node*>(
+		             (reinterpret_cast<uintptr_t>(p) & address_mask)
+		           | (static_cast<uintptr_t>(_balance + 1) & balance_mask));
+	}
+
+	int balance() const noexcept
+	{
+		return (static_cast<int>( reinterpret_cast<uintptr_t>(parent)
+		                        & balance_mask) - 1);
+	}
+
+	void set_balance(int b) noexcept
+	{
+		parent = reinterpret_cast<avl_tree_node*>(
+		             (reinterpret_cast<uintptr_t>(parent) & address_mask)
+		           | (static_cast<uintptr_t>(b + 1) & balance_mask));
+	}
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -89,15 +107,15 @@ class avl_tree_iterator
 	{
 		const node_type * ptr = current;
 		size_t count = 1;
-		while (ptr->parent != nullptr)
+		while (ptr->parent_node() != nullptr)
 		{
 			++count;
-			ptr = ptr->parent;
+			ptr = ptr->parent_node();
 		}
 		return count;
 	}
 
-	int balance() const { return current->balance; }
+	int balance() const { return current->balance(); }
 
 	bool operator == (const avl_tree_iterator & other) noexcept
 		{ return ( (root == other.root) && (current == other.current) ); }
@@ -117,11 +135,11 @@ class avl_tree_iterator
 				current = current->left;
 		} else
 		{
-			node_type * parent_node = current->parent;
+			node_type * parent_node = current->parent_node();
 			while (parent_node != nullptr && current == parent_node->right)
 			{
 				current = parent_node;
-				parent_node = parent_node->parent;
+				parent_node = parent_node->parent_node();
 			}
 
 			current = parent_node;
@@ -146,11 +164,11 @@ class avl_tree_iterator
 		}
 		else
 		{
-			node_type * tmp = current->parent;
+			node_type * tmp = current->parent_node();
 			while (current == tmp->left)
 			{
 				current = tmp;
-				tmp = tmp->parent;
+				tmp = tmp->parent_node();
 			}
 			current = tmp;
 		}
@@ -176,7 +194,7 @@ class avl_tree_iterator
 		swap(current, other.current);
 	}
 
-	bool is_leaf_node()
+	bool is_leaf_node() noexcept
 		{ return (  (current->left == nullptr)
 		         && (current->right == nullptr)); }
 
@@ -202,6 +220,7 @@ class avl_tree
  private:
 	typedef std::allocator_traits<Allocator>       alloc_traits;
 	typedef avl_tree_node<T>                       node_type;
+	static_assert(alignof(node_type) >= 4, "Alignment too small");
 
  public:
 	///
@@ -224,12 +243,13 @@ class avl_tree
 	typedef std::reverse_iterator<const_iterator>  const_reverse_iterator;
 
  private:
+	using node_alloc_traits = typename alloc_traits::template rebind_traits<node_type>;
 
 	node_type * root, * minimum, * maximum;
 	size_type node_count;
 
+	typename node_alloc_traits::allocator_type node_allocator;
 	key_compare compare;
-	allocator_type allocator;
 
  public:
 
@@ -244,8 +264,8 @@ class avl_tree
 	  , minimum(nullptr)
 	  , maximum(nullptr)
 	  , node_count(0)
+	  , node_allocator(a)
 	  , compare(c)
-	  , allocator(a)
 		{ }
 	  
 	template <class InputIterator>
@@ -293,7 +313,8 @@ class avl_tree
 	avl_tree & operator = (avl_tree && other);
 	avl_tree & operator = (std::initializer_list<value_type> list);
 
-	allocator_type get_allocator() const noexcept { return allocator; }
+	allocator_type get_allocator() const noexcept
+		{ return allocator_type{node_allocator}; }
 
 	///
 	/// iteration bounds
@@ -319,11 +340,11 @@ class avl_tree
 	const_reverse_iterator crbegin() const noexcept
 		{ return const_reverse_iterator(end()); }
 
-	reverse_iterator rend()
+	reverse_iterator rend() noexcept
 		{ return reverse_iterator(begin()); }
-	const_reverse_iterator rend() const
+	const_reverse_iterator rend() const noexcept
 		{ return const_reverse_iterator(begin()); }
-	const_reverse_iterator crend() const
+	const_reverse_iterator crend() const noexcept
 		{ return const_reverse_iterator(begin()); }
 	
 	//////
@@ -341,20 +362,47 @@ class avl_tree
 	///
 	//////
 
+ private:
+	template <typename ... Args>
+	node_type * construct_node(Args && ... args)
+	{
+		node_type * n = node_alloc_traits::allocate(node_allocator, 1);
+
+		n->left = n->right = nullptr;
+		n->set_parent(nullptr);
+		n->set_balance(0);
+
+		node_alloc_traits::construct(node_allocator,
+		                             n->value_address(),
+		                             std::forward<Args>(args)...);
+
+		return n;
+	}
+
+	void destroy_node(node_type * n)
+	{
+		node_alloc_traits::destroy(node_allocator, n->value_address());
+		node_alloc_traits::deallocate(node_allocator, n, 1);
+	}
+
+ public:
+
 	///
 	/// modifiers - emplace
 	///
 	template <typename ... Args>
 	std::pair<iterator, bool> emplace(Args && ... args)
 	{
-		node_type * n = new node_type(std::forward<Args>(args)...);
+		node_type * n = construct_node(std::forward<Args>(args)...);
+
 		node_type * ret = insert_node(n);
+
 		if (ret == n)
 		{
 			return std::make_pair(iterator(root, n), true);
 		} else
 		{
-			delete n;
+			destroy_node(n);
 			return std::make_pair(iterator(root, ret), false);
 		}
 	}
@@ -362,9 +410,9 @@ class avl_tree
 	template <typename ... Args>
 	iterator emplace_hint(const_iterator, Args && ... args)
 	{
-		node_type * n = new node_type(std::forward<Args>(args)...);
+		node_type * n = construct_node(std::forward<Args>(args)...);
 		node_type * ret = insert_node(n);
-		if (n != ret) delete n;
+		if (n != ret) destroy_node(n);
 		return iterator(root, ret);
 	}
 
@@ -514,7 +562,7 @@ class avl_tree
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 {
-	node_type *  subtree_parent = node->parent;
+	node_type *  subtree_parent = node->parent_node();
 	node_type *  pivot = node->left;
 	node_type *  new_right = node;
 
@@ -522,24 +570,24 @@ void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	  (subtree_parent->left == node) ? subtree_parent->left :
 	                                   subtree_parent->right ) ) = pivot;
 
-	pivot->parent = subtree_parent;
+	pivot->set_parent(subtree_parent);
 
 	// move pivot's right subtree under left side of new_right
 	new_right->left = pivot->right;
 	if (new_right->left != nullptr)
-		new_right->left->parent = new_right;
+		new_right->left->set_parent(new_right);
 
 
 	// move new_right under right side of pivot
 	pivot->right = new_right;
-	new_right->parent = pivot;
+	new_right->set_parent(pivot);
 }
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 {
-	node_type *  subtree_parent = node->parent;
+	node_type *  subtree_parent = node->parent_node();
 	node_type *  pivot = node->right;
 	node_type *  new_left = node;
 
@@ -547,16 +595,16 @@ void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 	  (subtree_parent->left == node) ? subtree_parent->left :
 	                                   subtree_parent->right ) ) = pivot;
 
-	pivot->parent = subtree_parent;
+	pivot->set_parent(subtree_parent);
 
 	// move pivot's left subtree under right side of new_left
 	new_left->right = pivot->left;
 	if (new_left->right != nullptr)
-		new_left->right->parent = new_left;
+		new_left->right->set_parent(new_left);
 
 	// move new_right under right side of pivot
 	pivot->left = new_left;
-	new_left->parent = pivot;
+	new_left->set_parent(pivot);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -564,59 +612,63 @@ template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rebalance_from(typename avl_tree<T,C,A>::node_type * n)
 {
 	node_type * last = n;
-	for (node_type * _current = n->parent; _current != nullptr;
-	     last = _current, _current = _current->parent)
+	for (node_type * current = n->parent_node(); current != nullptr;
+	     last = current, current = current->parent_node())
 	{
-		if (_current->left == last)
-			--_current->balance;
+		int tmp_balance = current->balance();
+		if (current->left == last)
+			--tmp_balance;
 		else
-			++_current->balance;
+			++tmp_balance;
 
-		if (_current->balance == 0)
+		if (tmp_balance == 0)
 		{
+			current->set_balance(0);
 			break;
-		} else if (_current->balance > 1)
+		} else if (tmp_balance > 1)
 		{
-			if (_current->right->balance == 1)
+			if (current->right->balance() == 1)
 			{
-				_current->balance = 0;
-				_current->right->balance = 0;
+				current->set_balance(0);
+				current->right->set_balance(0);
 			} else
 			{
-				_current->balance =
-				  std::min(0, -(_current->right->left->balance));
-				_current->right->balance =
-				  std::max(0, -(_current->right->left->balance));
+				current->set_balance(
+				  std::min(0, -(current->right->left->balance())));
+				current->right->set_balance(
+				  std::max(0, -(current->right->left->balance())));
 
-				_current->right->left->balance = 0;
+				current->right->left->set_balance(0);
 
-				rotate_right(_current->right);
+				rotate_right(current->right);
 			}
 
-			rotate_left(_current);
+			rotate_left(current);
 			break;
-		} else if (_current->balance < -1)
+		} else if (tmp_balance < -1)
 		{
-			if (_current->left->balance == -1)
+			if (current->left->balance() == -1)
 			{
-				_current->balance = 0;
-				_current->left->balance = 0;
+				current->set_balance(0);
+				current->left->set_balance(0);
 			} else
 			{
-				_current->balance =
-				  std::max(0, -(_current->left->right->balance));
-				_current->left->balance =
-				  std::min(0, -(_current->left->right->balance));
+				current->set_balance(
+				  std::max(0, -(current->left->right->balance())));
+				current->left->set_balance(
+				  std::min(0, -(current->left->right->balance())));
 
-				_current->left->right->balance = 0;
+				current->left->right->set_balance(0);
 
-				rotate_left(_current->left);
+				rotate_left(current->left);
 			}
 
-			rotate_right(_current);
+			rotate_right(current);
 			break;
+		} else
+		{
+			current->set_balance(tmp_balance);
 		}
-
 	}
 }
 
@@ -649,7 +701,7 @@ template <typename T, typename C, typename A>
 
 	*child_link = n;
 
-	n->parent = parent;
+	n->set_parent(parent);
 
 	if (parent == nullptr)
 	{
@@ -658,66 +710,6 @@ template <typename T, typename C, typename A>
 
 //	dump();
 	rebalance_from(n);
-#if 0
-	void rebalance_from(node_type * n)
-	{
-		node_type * last = n;
-		for (node_type * _current = n->parent; _current != nullptr;
-		     last = _current, _current = _current->parent)
-		{
-			if (_current->left == last)
-				--_current->balance;
-			else
-				++_current->balance;
-
-			if (_current->balance == 0)
-			{
-				break;
-			} else if (_current->balance > 1)
-			{
-				if (_current->right->balance == 1)
-				{
-					_current->balance = 0;
-					_current->right->balance = 0;
-				} else
-				{
-					_current->balance =
-					  std::min(0, -(_current->right->left->balance));
-					_current->right->balance =
-					  std::max(0, -(_current->right->left->balance));
-
-					_current->right->left->balance = 0;
-
-					rotate_right(_current->right);
-				}
-
-				rotate_left(_current);
-				break;
-			} else if (_current->balance < -1)
-			{
-				if (_current->left->balance == -1)
-				{
-					_current->balance = 0;
-					_current->left->balance = 0;
-				} else
-				{
-					_current->balance =
-					  std::max(0, -(_current->left->right->balance));
-					_current->left->balance =
-					  std::min(0, -(_current->left->right->balance));
-
-					_current->left->right->balance = 0;
-
-					rotate_left(_current->left);
-				}
-
-				rotate_right(_current);
-				break;
-			}
-
-		}
-	}
-#endif
 
 	if (child_link == &(minimum->left))
 		minimum = minimum->left;
@@ -757,16 +749,16 @@ void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 		if (p->left != nullptr)
 		{
 			p = p->left;
-			p->parent->left = nullptr;
+			p->parent_node()->left = nullptr;
 		} else if (p->right != nullptr)
 		{
 			p = p->right;
-			p->parent->right = nullptr;
+			p->parent_node()->right = nullptr;
 		} else
 		{
 			node_type * tmp = p;
-			p = p->parent;
-			delete tmp;
+			p = p->parent_node();
+			destroy_node(tmp);
 			--node_count;
 		}
 	}
