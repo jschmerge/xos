@@ -411,7 +411,33 @@ class avl_tree
 	iterator emplace_hint(const_iterator, Args && ... args)
 	{
 		node_type * n = construct_node(std::forward<Args>(args)...);
-		node_type * ret = insert_node(n);
+		node_type * ret = nullptr;
+
+		if (__builtin_expect(root == nullptr, 0))
+		{
+			ret = root = maximum = minimum = n;
+			++node_count;
+		} else if (compare(maximum->value(), n->value()))
+		{
+			maximum->right = n;
+			n->set_parent(maximum);
+			maximum = n;
+			ret = n;
+			rebalance_from(n);
+			++node_count;
+		} else if (compare(n->value(), minimum->value()))
+		{
+			minimum->left = n;
+			n->set_parent(minimum);
+			minimum = n;
+			ret = n;
+			rebalance_from(n);
+			++node_count;
+		} else
+		{
+			ret = insert_node(n);
+		}
+
 		if (n != ret) destroy_node(n);
 		return iterator(root, ret);
 	}
@@ -551,7 +577,6 @@ class avl_tree
  private:
 
 	node_type * insert_node(node_type * n);
-	node_type * insert_node_before(node_type * n, node_type * start);
 	void destroy_tree() noexcept;
 	void rebalance_from(node_type * n);
 	void rotate_right(node_type * node);
@@ -718,22 +743,6 @@ template <typename T, typename C, typename A>
 
 	++node_count;
 
-	return n;
-}
-
-//////////////////////////////////////////////////////////////////////
-template <typename T, typename C, typename A>
-  typename avl_tree<T,C,A>::node_type *
-  avl_tree<T,C,A>::insert_node_before(typename avl_tree<T,C,A>::node_type * n,
-                                      typename avl_tree<T,C,A>::node_type * end)
-{
-	node_type * current = ((end == nullptr) ? maximum : end);
-	node_type * last = nullptr;
-
-	while (current != nullptr)
-	{
-	}
-	
 	return n;
 }
 
