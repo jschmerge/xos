@@ -218,13 +218,19 @@ template <typename T,
 class avl_tree
 {
  private:
-	typedef std::allocator_traits<Allocator>       alloc_traits;
 	typedef avl_tree_node<T>                       node_type;
+	typedef std::allocator_traits<Allocator>       alloc_traits;
+
+	typedef typename alloc_traits
+	  ::template rebind_traits<node_type>          node_alloc_traits;
+	typedef typename
+	node_alloc_traits::allocator_type              node_alloc;
+
 	static_assert(alignof(node_type) >= 4, "Alignment too small");
 
  public:
 	///
-	/// Type definitions
+	/// Required type definitions
 	///
 	typedef T                                      key_type;
 	typedef T                                      value_type;
@@ -243,16 +249,43 @@ class avl_tree
 	typedef std::reverse_iterator<const_iterator>  const_reverse_iterator;
 
  private:
-	using node_alloc_traits = typename alloc_traits::template rebind_traits<node_type>;
-
-	node_type * root, * minimum, * maximum;
-	size_type node_count;
-
-	typename node_alloc_traits::allocator_type node_allocator;
+	// Data members
+	node_type * root;
+	node_type * minimum;
+	node_type * maximum;
+	size_type   node_count;
+	node_alloc  node_allocator;
 	key_compare compare;
 
- public:
+	template <typename ... Args>
+	node_type * construct_node(Args && ... args)
+	{
+		node_type * n = node_alloc_traits::allocate(node_allocator, 1);
 
+		n->left = n->right = nullptr;
+		n->set_parent(nullptr);
+		n->set_balance(0);
+
+		node_alloc_traits::construct(node_allocator,
+		                             n->value_address(),
+		                             std::forward<Args>(args)...);
+
+		return n;
+	}
+
+	void destroy_node(node_type * n)
+	{
+		node_alloc_traits::destroy(node_allocator, n->value_address());
+		node_alloc_traits::deallocate(node_allocator, n, 1);
+	}
+
+	node_type * insert_node(node_type * n);
+	void destroy_tree() noexcept;
+	void rebalance_from(node_type * n);
+	void rotate_right(node_type * node);
+	void rotate_left(node_type * node);
+
+ public:
 	///
 	/// Constructors
 	///
@@ -310,7 +343,7 @@ class avl_tree
 	/// Assignment
 	/// TODO
 	avl_tree & operator = (const avl_tree & other);
-	avl_tree & operator = (avl_tree && other);
+	avl_tree & operator = (avl_tree && other) noexcept;
 	avl_tree & operator = (std::initializer_list<value_type> list);
 
 	allocator_type get_allocator() const noexcept
@@ -361,31 +394,6 @@ class avl_tree
 	/// Modifiers
 	///
 	//////
-
- private:
-	template <typename ... Args>
-	node_type * construct_node(Args && ... args)
-	{
-		node_type * n = node_alloc_traits::allocate(node_allocator, 1);
-
-		n->left = n->right = nullptr;
-		n->set_parent(nullptr);
-		n->set_balance(0);
-
-		node_alloc_traits::construct(node_allocator,
-		                             n->value_address(),
-		                             std::forward<Args>(args)...);
-
-		return n;
-	}
-
-	void destroy_node(node_type * n)
-	{
-		node_alloc_traits::destroy(node_allocator, n->value_address());
-		node_alloc_traits::deallocate(node_allocator, n, 1);
-	}
-
- public:
 
 	///
 	/// modifiers - emplace
@@ -574,13 +582,6 @@ class avl_tree
 			printf("`(nil)\n");
 	}
 
- private:
-
-	node_type * insert_node(node_type * n);
-	void destroy_tree() noexcept;
-	void rebalance_from(node_type * n);
-	void rotate_right(node_type * node);
-	void rotate_left(node_type * node);
 };
 
 //////////////////////////////////////////////////////////////////////
