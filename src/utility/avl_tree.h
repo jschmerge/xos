@@ -17,8 +17,10 @@ struct avl_tree_node
 {
 	typedef T value_type;
 
-	avl_tree_node * parent, * left, * right;
 	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
+	avl_tree_node * parent;
+	avl_tree_node * left;
+	avl_tree_node * right;
 
 	static constexpr uintptr_t address_mask = ~static_cast<uintptr_t>(3);
 	static constexpr uintptr_t balance_mask = static_cast<uintptr_t>(3);
@@ -221,11 +223,15 @@ class avl_tree
 	typedef avl_tree_node<T>                       node_type;
 	typedef std::allocator_traits<Allocator>       alloc_traits;
 
-	typedef typename alloc_traits
-	  ::template rebind_traits<node_type>          node_alloc_traits;
-	typedef typename
-	node_alloc_traits::allocator_type              node_alloc;
+	typedef typename alloc_traits::template rebind_traits<node_type>
+	                                               node_alloc_traits;
+	typedef typename node_alloc_traits::allocator_type
+	                                               node_alloc;
 
+	// The avl_tree_node/node_type structure places the balance accounting
+	// within the least significant 2 bits of the 'parent' pointer of the
+	// node... This is a necessary check to make sure those bits will
+	// be available for the space optimization
 	static_assert(alignof(node_type) >= 4, "Alignment too small");
 
  public:
@@ -284,6 +290,35 @@ class avl_tree
 	void rebalance_from(node_type * n);
 	void rotate_right(node_type * node);
 	void rotate_left(node_type * node);
+
+	void swap_nodes(node_type * a, node_type * b)
+	{
+		node_type a_parent = a->parent;
+		node_type a_left_child = a->left;
+		node_type a_right_child = a->right;
+
+		node_type b_parent = b->parent;
+		node_type b_left_child = b->left;
+		node_type b_right_child = b->right;
+
+		if (a_left_child)  a_left_child->parent = b;
+		if (a_right_child) a_right_child->parent = b;
+		if (b_left_child)  b_left_child->parent = a;
+		if (b_right_child) b_right_child->parent = a;
+
+		b->left  = a_left_child;
+		b->right = a_right_child;
+		a->left  = b_left_child;
+		a->right = b_right_child;
+
+		if (a_parent->left == a)       a_parent->left = b;
+		else if (a_parent->right == a) a_parent->right = b;
+		else                           abort();
+
+		if (b_parent->left == b)       b_parent->left = a;
+		else if (b_parent->right == b) b_parent->right = a;
+		else                           abort();
+	}
 
  public:
 	///
@@ -475,14 +510,18 @@ class avl_tree
 	///
 	/// modifiers - erase
 	///
-#if 0
 	iterator erase(const_iterator position)
 	{
-		if (position == end())
-			return position;
-
 		iterator rc(position);
-		++rc;
+
+		if (position != end())
+		{
+			++rc;
+
+//			if (rc == end())
+//			{
+//			}
+		}
 
 		return rc;
 	}
@@ -506,7 +545,6 @@ class avl_tree
 
 		return count;
 	}
-#endif
 
 	// TODO
 	void swap(avl_tree &)
@@ -559,7 +597,6 @@ class avl_tree
 	  iter_range equal_range(const K& x);
 	template <class K>
 	  const_iter_range equal_range(const K& x) const;
-
 
 	void dump(node_type * n = nullptr, int level = 0)
 	{
