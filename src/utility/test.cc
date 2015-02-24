@@ -1,7 +1,7 @@
 #include "avl_tree.h"
 #include <unistd.h>
-#include <string>
 #include <locale>
+#include <string>
 #include <set>
 #include <random>
 #include "time/timeutil.h"
@@ -144,7 +144,7 @@ int main()
 	{
 		avl_tree<int64_t> a;
 		std::set<int64_t> b;
-		printf("i = %ld\n------------------------------------\n", i);
+		printf("i = %'ld\n------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
 		{
 			size_t min =  ~0, max = 0;
@@ -178,34 +178,36 @@ int main()
 
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
-		printf("i = %'ld\n------------------------------------\n", i);
-		size_t min =  ~0, max = 0;
-		avl_tree<int64_t> a;
-		std::set<int64_t> b;
-		printf("AVL:\n");
-		test_ordered_insert(a, i);
-		test_ordered_insert(a, i);
-		test_ordered_insert(a, i);
-
-		for (auto x = a.begin(); x != a.end(); ++x)
+		printf("i = %'ld\n--------------------------------------\n", i);
+		for (int j = 0; j < 3; ++j)
 		{
-			if (x.is_leaf_node())
-			{
-				size_t h = x.height();
-				if (h < min)
-					min = h;
-				if (h > max)
-					max = h;
-			}
-		}
-		printf("Height min = %zu, max = %zu\n", min, max);
-		a.clear();
-		a.clear();
-		printf("RB:\n");
+			size_t min =  ~0, max = 0;
+			avl_tree<int64_t> a;
+			std::set<int64_t> b;
+			printf("AVL:\n");
+			test_ordered_insert(a, i);
+			test_ordered_insert(a, i);
+			test_ordered_insert(a, i);
 
-		test_ordered_insert(b, i);
-		test_ordered_insert(b, i);
-		test_ordered_insert(b, i);
-		b.clear();
+			for (auto x = a.begin(); x != a.end(); ++x)
+			{
+				if (x.is_leaf_node())
+				{
+					size_t h = x.height();
+					if (h < min)
+						min = h;
+					if (h > max)
+						max = h;
+				}
+			}
+			printf("Height min = %zu, max = %zu\n", min, max);
+			a.clear();
+
+			printf("RB:\n");
+			test_ordered_insert(b, i);
+			test_ordered_insert(b, i);
+			test_ordered_insert(b, i);
+			b.clear();
+		}
 	}
 }
