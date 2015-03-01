@@ -1,7 +1,9 @@
 #include <cstdio>
 #include <cstdint>
+#include <set>
 #include <vector>
 #include <limits>
+#include <iostream>
 
 //////////////////////////////////////////////////////////////////////
 // Represents the range [low,high]
@@ -48,13 +50,23 @@ class value_range
 
 //////////////////////////////////////////////////////////////////////
 template <typename T>
+bool operator < (const value_range<T> & a, const value_range<T> & b)
+{
+	if (a.min() < b.min())
+		return true;
+	else if (a.min() == b.min() && a.max() < b.max())
+		return true;
+	else
+		return false;
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T>
 value_range<T> find_interval(const std::vector<T> & interval_list, T val)
 {
 	int i = 1;
 	value_range<T> retval { std::numeric_limits<T>::min(),
 	                               std::numeric_limits<T>::max() };
-
-//	uint32_t last = std::numeric_limits<uint32_t>::min();
 
 	for (auto & x : interval_list)
 	{
@@ -77,8 +89,6 @@ value_range<T> find_interval2(const std::vector<T> & list, T val)
 {
 	value_range<T> retval { std::numeric_limits<T>::min(),
 		                    std::numeric_limits<T>::max() };
-	int i = 1;
-
 	if (list.empty())
 	{
 		// do nothing
@@ -88,11 +98,8 @@ value_range<T> find_interval2(const std::vector<T> & list, T val)
 	} else if (val > list.back())
 	{
 		retval.min() = list.back() + 1;
-		++i;
 	} else
 	{
-		++i;
-		++i;
 		size_t lower = 0;
 		size_t upper = (list.size() - 1);
 		size_t middle;
@@ -104,16 +111,60 @@ value_range<T> find_interval2(const std::vector<T> & list, T val)
 				upper = middle;
 			else
 				lower = middle;
-
-			++i;
 		}
 		retval = value_range<T>{list[lower] + 1, list[upper]};
 	}
 
-	printf("--> i = %d\n", i);
-
 	return retval;
 }
+
+//////////////////////////////////////////////////////////////////////
+template <typename T>
+class interval_set
+{
+ public:
+	typedef T value_type;
+	typedef value_range<value_type> interval_type;
+
+	interval_set() : dirty(false) { }
+
+	void add_interval(const value_type & low, const value_type & high)
+	{
+		if (intervals.emplace(low, high).second)
+			dirty = true;
+	}
+
+	void add_interval(const interval_type & i)
+		{ add_interval(i.min(), i.max()); }
+
+	void dump_ends()
+	{
+		if (dirty) build_ends();
+		for (auto & x : ends)
+			std::cout << x << " ";
+		std::cout << std::endl;
+	}
+
+ private:
+	void build_ends()
+	{
+		std::set<value_type> s;
+		for (auto & r : intervals)
+		{
+			if (r.min() != std::numeric_limits<value_type>::min())
+				s.emplace(r.min() - 1);
+
+			if (r.max() != std::numeric_limits<value_type>::max())
+				s.emplace(r.max());
+		}
+		ends.assign(s.begin(), s.end());
+		dirty = false;
+	}
+
+	std::set<interval_type> intervals;
+	std::vector<value_type> ends;
+	bool dirty;
+};
 
 //////////////////////////////////////////////////////////////////////
 int main()
@@ -121,6 +172,11 @@ int main()
 	std::vector<value_range<uint32_t>> intervals;
 	std::vector<uint32_t> search;
 	std::vector<uint32_t> search2;
+	interval_set<uint32_t> set;
+
+	set.add_interval(0, 9);
+	set.add_interval(16, 21);
+	set.dump_ends();
 
 	intervals.emplace_back(0, 9);
 	intervals.emplace_back(intervals.back().max() + 1, 15);
