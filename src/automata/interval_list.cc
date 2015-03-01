@@ -23,9 +23,11 @@ class value_range
 	~value_range() = default;
 */
 
-	value_type min() const { return begin; }
+	value_type & min() { return begin; }
+	const value_type & min() const { return begin; }
 
-	value_type max() const { return end; }
+	value_type & max() { return end; }
+	const value_type & max() const { return end; }
 
 	size_type size() const { return (end - begin); }
 
@@ -45,50 +47,70 @@ class value_range
 };
 
 //////////////////////////////////////////////////////////////////////
-value_range<uint32_t>
-find_interval(std::vector<uint32_t> & interval_list, uint32_t val)
+template <typename T>
+value_range<T> find_interval(const std::vector<T> & interval_list, T val)
 {
-	value_range<uint32_t> retval;
-	uint32_t last = 0;
+	int i = 1;
+	value_range<T> retval { std::numeric_limits<T>::min(),
+	                               std::numeric_limits<T>::max() };
+
+//	uint32_t last = std::numeric_limits<uint32_t>::min();
+
 	for (auto & x : interval_list)
 	{
+		++i;
 		if (val <= x)
 		{
-			retval = value_range<uint32_t>(last, x);
+			retval.max() = x;
 			break;
 		}
 
-		last = x + 1;
+		retval.min() = x + 1;
 	}
+	printf("--> i = %d\n", i);
 	return retval;
 }
 
 //////////////////////////////////////////////////////////////////////
-value_range<uint32_t>
-find_interval2(std::vector<uint32_t> & interval_list, uint32_t val)
+template <typename T>
+value_range<T> find_interval2(const std::vector<T> & list, T val)
 {
-	value_range<uint32_t> retval;
-	size_t index = (interval_list.size() >> 1);
-	size_t lbound = 0;
-	size_t ubound = interval_list.size() - 1;
+	value_range<T> retval { std::numeric_limits<T>::min(),
+		                    std::numeric_limits<T>::max() };
+	int i = 1;
 
-	while ((ubound - lbound) > 1)
+	if (list.empty())
 	{
-		printf("index = %zu, l = %zu, u = %zu\n", index, lbound, ubound);
-		if (val <= interval_list[index])
+		// do nothing
+	} else if (val <= list.front())
+	{
+		retval.max() = list.front();
+	} else if (val > list.back())
+	{
+		retval.min() = list.back() + 1;
+		++i;
+	} else
+	{
+		++i;
+		++i;
+		size_t lower = 0;
+		size_t upper = (list.size() - 1);
+		size_t middle;
+		while (upper - lower > 1)
 		{
-			ubound = index;
-		} else if (val > interval_list[index])
-		{
-			lbound = index;
-		}
+			middle = ((upper + lower) >> 1);
 
-		index = ((ubound + lbound) >> 1);
+			if (val <= list[middle])
+				upper = middle;
+			else
+				lower = middle;
+
+			++i;
+		}
+		retval = value_range<T>{list[lower] + 1, list[upper]};
 	}
 
-	printf("index = %zu, l = %zu, u = %zu\n", index, lbound, ubound);
-	printf("----> %u (%u-%u)\n", interval_list[index],
-	       interval_list[lbound], interval_list[ubound]);
+	printf("--> i = %d\n", i);
 
 	return retval;
 }
@@ -98,8 +120,11 @@ int main()
 {
 	std::vector<value_range<uint32_t>> intervals;
 	std::vector<uint32_t> search;
+	std::vector<uint32_t> search2;
 
-	intervals.emplace_back(0, 20);
+	intervals.emplace_back(0, 9);
+	intervals.emplace_back(intervals.back().max() + 1, 15);
+	intervals.emplace_back(intervals.back().max() + 1, 21);
 	intervals.emplace_back(intervals.back().max() + 1, 23);
 	intervals.emplace_back(intervals.back().max() + 1, 24);
 	intervals.emplace_back(intervals.back().max() + 1, 50);
@@ -107,30 +132,76 @@ int main()
 	intervals.emplace_back(intervals.back().max() + 1, 81);
 	intervals.emplace_back(intervals.back().max() + 1, 85);
 	intervals.emplace_back(intervals.back().max() + 1, 90);
-	intervals.emplace_back(intervals.back().max() + 1, 99);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
+/*
 	intervals.emplace_back(intervals.back().max() + 1,
 	                       std::numeric_limits<uint32_t>::max());
+*/
 
+	printf("SIZE = %zu\n", intervals.size());
 	search.reserve(intervals.size());
+	search2.reserve(intervals.size() + 1);
+	//search2.push_back(0);
 	for (auto & r : intervals)
 	{
 		search.push_back(r.max());
+		search2.push_back(r.max());
 		printf("%u\n", r.max());
 	}
 
-	auto r = find_interval(search, 2);
-	printf("%u -> [%u-%u]\n", 2, r.min(), r.max());
-	r = find_interval2(search, 2);
+	auto r = find_interval(search, 2u);
+	printf("%u -> [%u-%u]\n", 2u, r.min(), r.max());
+	r = find_interval2(search2, 2u);
+	printf("%u -> [%u-%u]\n", 2u, r.min(), r.max());
 
-	r = find_interval(search, 80);
-	printf("%u -> [%u-%u]\n", 80, r.min(), r.max());
-	r = find_interval2(search, 80);
+	r = find_interval(search, 80u);
+	printf("%u -> [%u-%u]\n", 80u, r.min(), r.max());
+	r = find_interval2(search2, 80u);
+	printf("%u -> [%u-%u]\n", 80u, r.min(), r.max());
 
-	r = find_interval(search, 24);
-	printf("%u -> [%u-%u]\n", 24, r.min(), r.max());
-	r = find_interval2(search, 24);
+	r = find_interval(search, 24u);
+	printf("%u -> [%u-%u]\n", 24u, r.min(), r.max());
+	r = find_interval2(search2, 24u);
+	printf("%u -> [%u-%u]\n", 24u, r.min(), r.max());
 
-	r = find_interval2(search, 2000);
+	r = find_interval(search, 2000u);
+	printf("%u -> [%u-%u]\n", 2000u, r.min(), r.max());
+	r = find_interval2(search2, 2000u);
+	printf("%u -> [%u-%u]\n", 2000u, r.min(), r.max());
+
+	r = find_interval(search, 125u);
+	printf("%u -> [%u-%u]\n", 125u, r.min(), r.max());
+	r = find_interval2(search2, 125u);
+	printf("%u -> [%u-%u]\n", 125u, r.min(), r.max());
+
+	r = find_interval(search, 4294967295u);
+	printf("%u -> [%u-%u]\n", 4294967295u, r.min(), r.max());
+	r = find_interval2(search2, 4294967295u);
+	printf("%u -> [%u-%u]\n", 4294967295u, r.min(), r.max());
 
 	return 0;
 }
