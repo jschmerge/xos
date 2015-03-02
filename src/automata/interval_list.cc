@@ -1,9 +1,12 @@
 #include <cstdio>
 #include <cstdint>
 #include <set>
+#include <list>
 #include <vector>
 #include <limits>
 #include <iostream>
+
+#include "utility/avl_tree.h"
 
 //////////////////////////////////////////////////////////////////////
 // Represents the range [low,high]
@@ -47,6 +50,11 @@ class value_range
  private:
 	value_type begin, end;
 };
+
+//////////////////////////////////////////////////////////////////////
+template <typename T>
+std::ostream & operator << (std::ostream & o, const value_range<T> & vr)
+	{ return o << '[' << vr.min() << '-' << vr.max() << ']'; }
 
 //////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -140,30 +148,79 @@ class interval_set
 	void dump_ends()
 	{
 		if (dirty) build_ends();
-		for (auto & x : ends)
-			std::cout << x << " ";
+		auto ei = ends.begin();
+		auto rmi = reverse_mapping.begin();
+		for (; ei != ends.end() && rmi != reverse_mapping.end(); ++ei, ++rmi)
+		{
+			std::cout << *ei << " { ";
+			for (auto x : *rmi)
+			{
+				std::cout << x->interval << ' ';
+			}
+			std::cout << "}\n";
+		}
 		std::cout << std::endl;
+
+		printf("REVERSE\n");
+		for (auto y : intervals)
+		{
+			std::cout << y.interval << " { ";
+			for (auto z : y.fragment_ends)
+			{
+				std::cout << ends[z] << " ";
+			}
+			std::cout << "}\n";
+		}
 	}
 
+	struct foo
+	{
+		foo(const value_type & l, const value_type & h)
+		  : interval(l, h), fragment_ends() { }
+		interval_type interval;
+		mutable std::vector<size_t> fragment_ends;
+
+		bool operator < (const foo & other) const
+			{ return (this->interval < other.interval); }
+	};
+
  private:
+
+	std::set<foo> intervals;
+	std::vector<value_type> ends;
+	typedef std::list<typename std::set<foo>::iterator> iter_list;
+	std::vector<iter_list> reverse_mapping;
+	bool dirty;
+
 	void build_ends()
 	{
 		std::set<value_type> s;
 		for (auto & r : intervals)
 		{
-			if (r.min() != std::numeric_limits<value_type>::min())
-				s.emplace(r.min() - 1);
+			r.fragment_ends.clear();
+			if (r.interval.min() != std::numeric_limits<value_type>::min())
+				s.emplace(r.interval.min() - 1);
 
-			if (r.max() != std::numeric_limits<value_type>::max())
-				s.emplace(r.max());
+			if (r.interval.max() != std::numeric_limits<value_type>::max())
+				s.emplace(r.interval.max());
 		}
 		ends.assign(s.begin(), s.end());
+		reverse_mapping.assign(ends.size(), iter_list{});
+
+		for (auto r = intervals.begin(); r != intervals.end(); ++r)
+		{
+			for (size_t i = 0; i < ends.size(); ++i)
+			{
+				if (  (r->interval.min() < ends[i])
+				   && (r->interval.max() >= ends[i]) )
+				{
+					r->fragment_ends.push_back(i);
+					reverse_mapping.at(i).push_back(r);
+				}
+			}
+		}
 		dirty = false;
 	}
-
-	std::set<interval_type> intervals;
-	std::vector<value_type> ends;
-	bool dirty;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -176,7 +233,7 @@ int main()
 
 	set.add_interval(0, 9);
 	set.add_interval(16, 21);
-	set.dump_ends();
+	set.add_interval(6, 17);
 
 	intervals.emplace_back(0, 9);
 	intervals.emplace_back(intervals.back().max() + 1, 15);
@@ -258,6 +315,9 @@ int main()
 	printf("%u -> [%u-%u]\n", 4294967295u, r.min(), r.max());
 	r = find_interval2(search2, 4294967295u);
 	printf("%u -> [%u-%u]\n", 4294967295u, r.min(), r.max());
+
+	printf("===================\n");
+	set.dump_ends();
 
 	return 0;
 }
