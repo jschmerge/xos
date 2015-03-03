@@ -75,31 +75,6 @@ bool operator >= (const state<SID_T> & a, const state<SID_T> & b)
 	{ return a.id() >= b.id(); }
 
 //////////////////////////////////////////////////////////////////////
-template <typename IN_T, typename SID_T>
-struct transition
-{
- public:
-	typedef IN_T input_type;
-	typedef SID_T state_id_type;
-
-	transition(const state_id_type & old_state,
-	           const state_id_type & new_state,
-	           const input_type & value)
-	  : m_old_state(old_state)
-	  , m_new_state(new_state)
-	  , m_value(value)
-		{ }
-
-	transition(const transition &) = default;
-
-	transition & operator = (const transition &) = default;
-
-	state_id_type m_old_state;
-	state_id_type m_new_state;
-	input_type m_value;
-};
-
-//////////////////////////////////////////////////////////////////////
 // Represents the range [low,high]
 template <typename VAL_T>
 class value_range
@@ -205,25 +180,54 @@ split_ranges(const value_range<T> & a, const value_range<T> & b)
 
 //////////////////////////////////////////////////////////////////////
 template <typename IN_T, typename SID_T>
+struct transition
+{
+ public:
+	typedef IN_T input_type;
+	typedef value_range<IN_T> input_range_type;
+	typedef SID_T state_id_type;
+
+	transition(const state_id_type & old_state,
+	           const state_id_type & new_state,
+	           const input_type & value)
+	  : m_old_state(old_state)
+	  , m_new_state(new_state)
+	  , m_range(value, value)
+		{ }
+
+	transition(const state_id_type & old_state,
+	           const state_id_type & new_state,
+	           const input_range_type & range)
+	  : m_old_state(old_state)
+	  , m_new_state(new_state)
+	  , m_range(range)
+		{ }
+
+	transition(const transition &) = default;
+	transition(transition &&) = default;
+	transition & operator = (const transition &) = default;
+	transition & operator = (transition &&) = default;
+
+	state_id_type m_old_state;
+	state_id_type m_new_state;
+	input_range_type m_range;
+};
+
+//////////////////////////////////////////////////////////////////////
+template <typename IN_T, typename SID_T>
 class automaton
 {
  public:
 	typedef IN_T input_type;
 	typedef SID_T state_id_type;
 
-	automaton()
-	  : m_start_state(m_states.end())
-		{ }
+	automaton() : m_start_state(m_states.end()) { }
 
 	automaton(const automaton & other) = default;
-
 	automaton(automaton && other) = default;
-
 	automaton & operator = (const automaton & other) = default;
-
 	automaton & operator = (automaton && other) = default;
-
-	~automaton() { }
+	~automaton() = default;
 
 	void declare_start_state(const state_id_type & id, bool accept = false)
 	{
@@ -236,9 +240,7 @@ class automaton
 	}
 
 	void declare_state(const state_id_type & id, bool accept = false)
-	{
-		m_states.emplace(id, accept);
-	}
+		{ m_states.emplace(id, accept); }
 
 	void add_input_range(const value_range<input_type> & r)
 	{
@@ -278,18 +280,20 @@ class automaton
 			add_input_range(y);
 	}
 
-	void declare_transition(const state_id_type & ,//old_state,
-	                        const state_id_type & ,//new_state,
+	void declare_transition(const state_id_type & old_state,
+	                        const state_id_type & new_state,
 	                        const input_type & value)
 	{
 		add_input_range(value_range<input_type>(value, value));
+		m_transitions.emplace_back(old_state, new_state, value);
 	}
 
-	void declare_transition_range(const state_id_type & ,//old_state,
-	                              const state_id_type & ,//new_state,
-	                              const value_range<input_type> & range)
+	void declare_transition(const state_id_type & old_state,
+	                        const state_id_type & new_state,
+	                        const value_range<input_type> & range)
 	{
 		add_input_range(range);
+		m_transitions.emplace_back(old_state, new_state, range);
 	}
 
 	int format_state(char buffer[], const state<state_id_type> & s)
@@ -310,6 +314,7 @@ class automaton
 	void dump_all(FILE * f = stdout)
 	{
 		char buffer1[16];
+		char buffer2[16];
 
 		fprintf(f, "%zu States:\n", m_states.size());
 		for (auto s : m_states)
@@ -329,8 +334,7 @@ class automaton
 		{
 			printf("\t[%02x - %02x] - > %d\n", r.min(), r.max(), x++);
 		}
-#if 0
-		char buffer2[16];
+
 		fprintf(f, "%zd Transitions:\n", m_transitions.size());
 		for (const auto & t : m_transitions)
 		{
@@ -343,10 +347,9 @@ class automaton
 			format_state(buffer1, *o);
 			format_state(buffer2, *n);
 
-			fprintf(f, "%s --> %s [value = 0x%02x]\n", buffer1, buffer2,
-			        t.m_value);
+			fprintf(f, "%s --> %s [value = 0x%02x-%02x]\n", buffer1, buffer2,
+			        t.m_range.min(), t.m_range.max());
 		}
-#endif
 	}
 
  protected:
