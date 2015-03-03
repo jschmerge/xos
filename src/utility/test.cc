@@ -13,7 +13,7 @@
 	} \
 } while(0)
 
-const int64_t max_values = 10000000;
+const int64_t max_values = 1000000;
 
 void test_insert(avl_tree<int> & tree, int val)
 {
@@ -29,7 +29,7 @@ void test_insert_dup(avl_tree<int> & tree, int val)
 }
 
 template<typename T>
-void test_speed(T & container, int total = 10000000)
+void test_random_insert(T & container, int total = 10000000)
 {
 	int64_t seed = container.empty() ? 0 : container.size();
 	std::default_random_engine engine(seed);
@@ -138,8 +138,6 @@ int main()
 	printf("-----------------\n");
 	mycopy.dump();
 
-
-#if 0
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
 		avl_tree<int64_t> a;
@@ -149,9 +147,9 @@ int main()
 		{
 			size_t min =  ~0, max = 0;
 			printf("AVL:\n");
-			test_speed(a, i);
-			test_speed(a, i);
-			test_speed(a, i);
+			test_random_insert(a, i);
+			test_random_insert(a, i);
+			test_random_insert(a, i);
 
 			for (auto x = a.begin(); x != a.end(); ++x)
 			{
@@ -168,12 +166,13 @@ int main()
 			a.clear();
 
 			printf("RedBlack:\n");
-			test_speed(b, i);
-			test_speed(b, i);
-			test_speed(b, i);
+			test_random_insert(b, i);
+			test_random_insert(b, i);
+			test_random_insert(b, i);
 			b.clear();
 		}
 	}
+#if 0
 #endif
 
 	for (int64_t i = 1; i <= max_values; i *= 10)
