@@ -70,64 +70,6 @@ bool operator < (const value_range<T> & a, const value_range<T> & b)
 
 //////////////////////////////////////////////////////////////////////
 template <typename T>
-value_range<T> find_interval(const std::vector<T> & interval_list, T val)
-{
-	int i = 1;
-	value_range<T> retval { std::numeric_limits<T>::min(),
-	                               std::numeric_limits<T>::max() };
-
-	for (auto & x : interval_list)
-	{
-		++i;
-		if (val <= x)
-		{
-			retval.max() = x;
-			break;
-		}
-
-		retval.min() = x + 1;
-	}
-	printf("--> i = %d\n", i);
-	return retval;
-}
-
-//////////////////////////////////////////////////////////////////////
-template <typename T>
-value_range<T> find_interval2(const std::vector<T> & list, T val)
-{
-	value_range<T> retval { std::numeric_limits<T>::min(),
-		                    std::numeric_limits<T>::max() };
-	if (list.empty())
-	{
-		// do nothing
-	} else if (val <= list.front())
-	{
-		retval.max() = list.front();
-	} else if (val > list.back())
-	{
-		retval.min() = list.back() + 1;
-	} else
-	{
-		size_t lower = 0;
-		size_t upper = (list.size() - 1);
-		size_t middle;
-		while (upper - lower > 1)
-		{
-			middle = ((upper + lower) >> 1);
-
-			if (val <= list[middle])
-				upper = middle;
-			else
-				lower = middle;
-		}
-		retval = value_range<T>{list[lower] + 1, list[upper]};
-	}
-
-	return retval;
-}
-
-//////////////////////////////////////////////////////////////////////
-template <typename T>
 class interval_set
 {
  public:
@@ -185,7 +127,6 @@ class interval_set
 	};
 
  private:
-
 	std::set<foo> intervals;
 	std::vector<value_type> ends;
 	typedef std::list<typename std::set<foo>::iterator> iter_list;
@@ -222,6 +163,64 @@ class interval_set
 		dirty = false;
 	}
 };
+
+//////////////////////////////////////////////////////////////////////
+template <typename T>
+value_range<T> find_interval(const std::vector<T> & interval_list, T val)
+{
+	int i = 1;
+	value_range<T> retval { std::numeric_limits<T>::min(),
+	                               std::numeric_limits<T>::max() };
+
+	for (auto & x : interval_list)
+	{
+		++i;
+		if (val <= x)
+		{
+			retval.max() = x;
+			break;
+		}
+
+		retval.min() = x + 1;
+	}
+	printf("--> i = %d\n", i);
+	return retval;
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T>
+value_range<T> find_interval2(const std::vector<T> & list, T val)
+{
+	value_range<T> retval { std::numeric_limits<T>::min(),
+		                    std::numeric_limits<T>::max() };
+	if (list.empty())
+	{
+		// do nothing
+	} else if (val <= list.front())
+	{
+		retval.max() = list.front();
+	} else if (val > list.back())
+	{
+		retval.min() = list.back() + 1;
+	} else
+	{
+		size_t lower = 0;
+		size_t upper = (list.size() - 1);
+		size_t middle;
+		while (upper - lower > 1)
+		{
+			middle = ((upper + lower) >> 1);
+
+			if (val <= list[middle])
+				upper = middle;
+			else
+				lower = middle;
+		}
+		retval = value_range<T>{list[lower] + 1, list[upper]};
+	}
+
+	return retval;
+}
 
 //////////////////////////////////////////////////////////////////////
 int main()
