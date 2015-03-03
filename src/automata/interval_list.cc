@@ -57,6 +57,15 @@ std::ostream & operator << (std::ostream & o, const value_range<T> & vr)
 	{ return o << '[' << vr.min() << '-' << vr.max() << ']'; }
 
 //////////////////////////////////////////////////////////////////////
+template <>
+std::ostream & operator << (std::ostream & o, const value_range<uint8_t> & vr)
+{
+	char buffer[20];
+	snprintf(buffer, 20, "[%02hhx-%02hhx]", vr.min(), vr.max());
+	return o << buffer;
+}
+
+//////////////////////////////////////////////////////////////////////
 template <typename T>
 bool operator < (const value_range<T> & a, const value_range<T> & b)
 {
@@ -67,102 +76,6 @@ bool operator < (const value_range<T> & a, const value_range<T> & b)
 	else
 		return false;
 }
-
-//////////////////////////////////////////////////////////////////////
-template <typename T>
-class interval_set
-{
- public:
-	typedef T value_type;
-	typedef value_range<value_type> interval_type;
-
-	interval_set() : dirty(false) { }
-
-	void add_interval(const value_type & low, const value_type & high)
-	{
-		if (intervals.emplace(low, high).second)
-			dirty = true;
-	}
-
-	void add_interval(const interval_type & i)
-		{ add_interval(i.min(), i.max()); }
-
-	void dump_ends()
-	{
-		if (dirty) build_ends();
-		auto ei = ends.begin();
-		auto rmi = reverse_mapping.begin();
-		for (; ei != ends.end() && rmi != reverse_mapping.end(); ++ei, ++rmi)
-		{
-			std::cout << *ei << " { ";
-			for (auto x : *rmi)
-			{
-				std::cout << x->interval << ' ';
-			}
-			std::cout << "}\n";
-		}
-		std::cout << std::endl;
-
-		printf("REVERSE\n");
-		for (auto y : intervals)
-		{
-			std::cout << y.interval << " { ";
-			for (auto z : y.fragment_ends)
-			{
-				std::cout << ends[z] << " ";
-			}
-			std::cout << "}\n";
-		}
-	}
-
-	struct foo
-	{
-		foo(const value_type & l, const value_type & h)
-		  : interval(l, h), fragment_ends() { }
-		interval_type interval;
-		mutable std::vector<size_t> fragment_ends;
-
-		bool operator < (const foo & other) const
-			{ return (this->interval < other.interval); }
-	};
-
- private:
-	std::set<foo> intervals;
-	std::vector<value_type> ends;
-	typedef std::list<typename std::set<foo>::iterator> iter_list;
-	std::vector<iter_list> reverse_mapping;
-	bool dirty;
-
-	void build_ends()
-	{
-		std::set<value_type> s;
-		for (auto & r : intervals)
-		{
-			r.fragment_ends.clear();
-			if (r.interval.min() != std::numeric_limits<value_type>::min())
-				s.emplace(r.interval.min() - 1);
-
-			if (r.interval.max() != std::numeric_limits<value_type>::max())
-				s.emplace(r.interval.max());
-		}
-		ends.assign(s.begin(), s.end());
-		reverse_mapping.assign(ends.size(), iter_list{});
-
-		for (auto r = intervals.begin(); r != intervals.end(); ++r)
-		{
-			for (size_t i = 0; i < ends.size(); ++i)
-			{
-				if (  (r->interval.min() < ends[i])
-				   && (r->interval.max() >= ends[i]) )
-				{
-					r->fragment_ends.push_back(i);
-					reverse_mapping.at(i).push_back(r);
-				}
-			}
-		}
-		dirty = false;
-	}
-};
 
 //////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -223,17 +136,170 @@ value_range<T> find_interval2(const std::vector<T> & list, T val)
 }
 
 //////////////////////////////////////////////////////////////////////
+template <typename T>
+class interval_set
+{
+ public:
+	typedef T value_type;
+	typedef value_range<value_type> interval_type;
+
+ private:
+	struct range_mapping
+	{
+		range_mapping(const value_type & l, const value_type & h)
+		  : interval(l, h), fragment_ends() { }
+
+		interval_type interval;
+		mutable std::vector<size_t> fragment_ends;
+
+		bool operator < (const range_mapping & other) const
+			{ return (this->interval < other.interval); }
+	};
+
+	typedef std::list<typename std::set<range_mapping>::iterator> iter_list;
+
+	std::set<range_mapping> intervals;
+	std::vector<value_type> ends;
+	std::vector<iter_list> reverse_mapping;
+	bool dirty;
+
+ public:
+
+	interval_set()
+	  : intervals{}
+	  , ends{}
+	  , reverse_mapping{}
+	  , dirty(false)
+		{ }
+
+	void add_interval(const value_type & low, const value_type & high)
+	{
+		if (intervals.emplace(low, high).second)
+			dirty = true;
+	}
+
+	void add_interval(const interval_type & i)
+		{ add_interval(i.min(), i.max()); }
+
+	void dump_ends()
+	{
+		if (dirty) build_ends();
+		auto ei = ends.begin();
+		auto rmi = reverse_mapping.begin();
+		for (; ei != ends.end() && rmi != reverse_mapping.end(); ++ei, ++rmi)
+		{
+			std::cout << std::hex << static_cast<unsigned long>(*ei) << " { ";
+			for (auto x : *rmi)
+			{
+				std::cout << x->interval << ' ';
+			}
+			std::cout << "}\n";
+		}
+		std::cout << std::endl;
+
+		printf("REVERSE\n");
+		for (auto y : intervals)
+		{
+			std::cout << y.interval << " { ";
+			for (auto z : y.fragment_ends)
+			{
+				std::cout << std::hex << static_cast<unsigned long>(ends[z])
+				          << " ";
+			}
+			std::cout << "}\n";
+		}
+	}
+
+	struct foo
+	{
+		foo(const value_type & l, const value_type & h)
+		  : interval(l, h), fragment_ends() { }
+		interval_type interval;
+		mutable std::vector<size_t> fragment_ends;
+
+		bool operator < (const foo & other) const
+			{ return (this->interval < other.interval); }
+	};
+
+ private:
+
+	void build_ends()
+	{
+		std::set<value_type> s;
+		for (auto & r : intervals)
+		{
+			r.fragment_ends.clear();
+			if (r.interval.min() != std::numeric_limits<value_type>::min())
+				s.emplace(r.interval.min() - 1);
+
+			if (r.interval.max() != std::numeric_limits<value_type>::max())
+				s.emplace(r.interval.max());
+		}
+		ends.assign(s.begin(), s.end());
+		reverse_mapping.assign(ends.size(), iter_list{});
+
+		for (auto r = intervals.begin(); r != intervals.end(); ++r)
+		{
+			for (size_t i = 0; i < ends.size(); ++i)
+			{
+				if (  (r->interval.min() <= ends[i])
+				   && (r->interval.max() >= ends[i]) )
+				{
+					r->fragment_ends.push_back(i);
+					reverse_mapping.at(i).push_back(r);
+				}
+			}
+		}
+		dirty = false;
+	}
+};
+
+//////////////////////////////////////////////////////////////////////
 int main()
 {
 	std::vector<value_range<uint32_t>> intervals;
 	std::vector<uint32_t> search;
 	std::vector<uint32_t> search2;
-	interval_set<uint32_t> set;
+	interval_set<uint8_t> set;
 
+#if 0
 	set.add_interval(0, 9);
 	set.add_interval(16, 21);
 	set.add_interval(6, 17);
 
+#endif
+	set.add_interval(0x00, 0x7f);
+	set.add_interval(0xc0, 0xdf);
+	set.add_interval(0xe0, 0xee);
+	set.add_interval(0xef, 0xef);
+	set.add_interval(0xf0, 0xf7);
+	set.add_interval(0xf8, 0xfb);
+	set.add_interval(0xfc, 0xfd);
+	set.add_interval(0x80, 0xba);
+	set.add_interval(0xbb, 0xbb);
+	set.add_interval(0xbc, 0xbf);
+	set.add_interval(0x80, 0xbe);
+	set.add_interval(0xbf, 0xbf);
+	set.add_interval(0xbc, 0xbf);
+	set.add_interval(0x00, 0x7f);
+	set.add_interval(0xc0, 0xdf);
+	set.add_interval(0xe0, 0xef);
+	set.add_interval(0xf0, 0xf7);
+	set.add_interval(0xf8, 0xfb);
+	set.add_interval(0xfc, 0xfd);
+	set.add_interval(0x00, 0x7f);
+	set.add_interval(0xc0, 0xdf);
+	set.add_interval(0xe0, 0xef);
+	set.add_interval(0xf0, 0xf7);
+	set.add_interval(0xf8, 0xfb);
+	set.add_interval(0xfc, 0xfd);
+	set.add_interval(0x80, 0xbf);
+	set.add_interval(0x80, 0xbf);
+	set.add_interval(0x80, 0xbf);
+	set.add_interval(0x80, 0xbf);
+	set.add_interval(0x80, 0xbf);
+
+/*
 	intervals.emplace_back(0, 9);
 	intervals.emplace_back(intervals.back().max() + 1, 15);
 	intervals.emplace_back(intervals.back().max() + 1, 21);
@@ -244,35 +310,8 @@ int main()
 	intervals.emplace_back(intervals.back().max() + 1, 81);
 	intervals.emplace_back(intervals.back().max() + 1, 85);
 	intervals.emplace_back(intervals.back().max() + 1, 90);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-	intervals.emplace_back(intervals.back().max() + 1, intervals.back().max() + 5);
-/*
 	intervals.emplace_back(intervals.back().max() + 1,
 	                       std::numeric_limits<uint32_t>::max());
-*/
 
 	printf("SIZE = %zu\n", intervals.size());
 	search.reserve(intervals.size());
@@ -314,6 +353,7 @@ int main()
 	printf("%u -> [%u-%u]\n", 4294967295u, r.min(), r.max());
 	r = find_interval2(search2, 4294967295u);
 	printf("%u -> [%u-%u]\n", 4294967295u, r.min(), r.max());
+*/
 
 	printf("===================\n");
 	set.dump_ends();
