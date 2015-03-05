@@ -204,7 +204,7 @@ class interval_set
 			for (auto z : y.fragment_ends)
 			{
 				std::cout << std::hex << static_cast<unsigned long>(ends[z])
-				          << " ";
+				          << std::dec << '(' << z << ") ";
 			}
 			std::cout << "}\n";
 		}
