@@ -37,8 +37,18 @@ class state_machine
 	{
 		for (const auto & d : init_data)
 		{
+			printf("%zd %zd -> %zd\n", d.old_state, d.input, d.new_state);
 			transition_table[index_of(d.old_state, d.input)] = d.new_state;
 			function_table[index_of(d.old_state, d.input)] = d.callback;
+		}
+
+		for (size_t i = 0; i < num_states; ++i)
+		{
+			for (size_t j = 0; j < num_input_classes; ++j)
+			{
+				printf("%hhx ", transition_table[index_of(i, j)]);
+			}
+			printf("\n");
 		}
 	}
 
@@ -55,7 +65,7 @@ class state_machine
  protected:
 	size_t index_of(state_type s, size_t i)
 	{
-		return ((s * i) + i);
+		return ((s * input_class_mapping.size()) + i);
 	}
 
 	state_type current_state;
