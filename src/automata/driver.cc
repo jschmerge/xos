@@ -37,7 +37,6 @@ int main(int, char **)
 //	a.declare_transition_range(utf8::C, ERROR,   {0x0, 0x7f});
 	a.declare_transition_range(utf8::C, utf8::E, {0x80, 0xbe});
 	a.declare_transition(      utf8::C, utf8::D, 0xbf);
-	a.declare_transition_range(utf8::C, utf8::F, {0xbc, 0xbf});
 //	a.declare_transition_range(utf8::C, ERROR,   {0xc0, 0xff});
 
 	a.declare_transition_range(utf8::D, utf8::E, {0, 0x7f});
@@ -64,7 +63,7 @@ int main(int, char **)
 //	a.declare_transition_range(utf8::F, ERROR,   {0xc0, 0xff});
 
 //	a.declare_transition_range(utf8::G, ERROR,   {0x0, 0x7f});
-	a.declare_transition_range(utf8::G, utf8::E, {0x80, 0xbf});
+	a.declare_transition_range(utf8::G, utf8::H, {0x80, 0xbf});
 //	a.declare_transition_range(utf8::G, ERROR,   {0xc0, 0xff});
 
 //	a.declare_transition_range(utf8::H, ERROR,   {0x0, 0x7f});
