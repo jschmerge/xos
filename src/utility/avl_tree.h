@@ -70,7 +70,7 @@ struct avl_tree_node
 };
 
 //////////////////////////////////////////////////////////////////////
-template <typename T>
+template <typename T, typename C, typename A>
 class avl_tree_iterator
   : public std::iterator<std::bidirectional_iterator_tag,
                          T, std::ptrdiff_t, const T *, const T &>
@@ -201,12 +201,13 @@ class avl_tree_iterator
 		         && (current->right == nullptr)); }
 
  private:
+	friend class avl_tree<T, C, A>;
 	const node_type * root;
 	const node_type * current;
 };
 
-template <typename T>
-void swap(avl_tree_iterator<T> & a, avl_tree_iterator<T> & b) noexcept
+template <typename T, typename C, typename A>
+void swap(avl_tree_iterator<T,C,A> & a, avl_tree_iterator<T,C,A> & b) noexcept
 	{ a.swap(b); }
 
 
@@ -249,8 +250,8 @@ class avl_tree
 	typedef const value_type                     & const_reference;
 	typedef typename alloc_traits::pointer         pointer;
 	typedef typename alloc_traits::const_pointer   const_pointer;
-	typedef avl_tree_iterator<T>                   iterator;
-	typedef avl_tree_iterator<T>                   const_iterator;
+	typedef avl_tree_iterator<T,Compare,Allocator> iterator;
+	typedef avl_tree_iterator<T,Compare,Allocator> const_iterator;
 	typedef std::reverse_iterator<const_iterator>  reverse_iterator;
 	typedef std::reverse_iterator<const_iterator>  const_reverse_iterator;
 
@@ -517,10 +518,12 @@ class avl_tree
 		if (position != end())
 		{
 			++rc;
+			// FIXME: somehow we need to get the current ptr out of the
+			// iterator here... right now we're doing this with a combo
+			// of const_cast (here) and a friend dec'l in the iterator class
+			// ...Can we find a better way?
+			node_type * target = const_cast<node_type *>(position.current);
 
-//			if (rc == end())
-//			{
-//			}
 		}
 
 		return rc;
