@@ -137,14 +137,17 @@ int main()
 	printf("-----------------\n");
 	mycopy.dump();
 
+	mycopy.erase(-1);
+#if 0
 	while (mycopy.size())
 	{
 		printf("Deleting %d\n", *mycopy.begin());
 		mycopy.erase(mycopy.begin());
 	}
+#endif
 
-	my_assert(mycopy.empty());
 #if 0
+	my_assert(mycopy.empty());
 	const int64_t max_values = 1000000;
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{

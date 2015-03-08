@@ -409,57 +409,75 @@ class avl_tree
 
 	void swap_with_neighbor(node_type * target, node_type * neighbor)
 	{
+		using std::swap;
+
 		assert(target->left != nullptr && target->right != nullptr);
 		assert(neighbor->left == nullptr || neighbor->right == nullptr);
 
-		node_type * t_parent = target->parent;
-		node_type * t_left_child = target->left;
-		node_type * t_right_child = target->right;
-		node_type ** t_parent_child_link_ptr = nullptr;
+		node_type * t_parent = target->parent_node();
+		node_type * n_parent = neighbor->parent_node();
 
-		if (t_parent == nullptr) // if we're dealing with target == root
-			t_parent_child_link_ptr = &root;
-		else // grab ptr to the right child ptr
-			t_parent_child_link_ptr = ( t_parent->left == target )
-		                              ? &(t_parent->left)
-		                              : &(t_parent->right);
+		if (t_parent == nullptr)
+			root = neighbor;
+		else if (t_parent->left == target)
+			t_parent->left = neighbor;
+		else if (t_parent->right == target)
+			t_parent->right = neighbor;
 
-		node_type * n_parent = neighbor->parent;
-		node_type * n_left_child = neighbor->left;
-		node_type * n_right_child = neighbor->right;
-		node_type ** n_parent_child_link_ptr = ( n_parent->left == target )
-		                                       ? &(n_parent->left)
-		                                       : &(n_parent->right);
+		if (n_parent->left == neighbor)
+			n_parent->left = target;
+		else if (n_parent->right == neighbor)
+			n_parent->right = target;
+
+		target->left->set_parent(neighbor);
+		if (neighbor->left != nullptr)
+			neighbor->left->set_parent(target);
+
+		target->right->set_parent(neighbor);
+		if (neighbor->right != nullptr)
+			neighbor->right->set_parent(target);
+
+		node_type * tmp = target->parent_node();
+		target->set_parent(neighbor->parent_node());
+		neighbor->set_parent(tmp);
+
+		swap(target->left, neighbor->left);
+		swap(target->right, neighbor->right);
+
+		int tmpbalance = target->balance();
+		target->set_balance(neighbor->balance());
+		neighbor->set_balance(tmpbalance);
 	}
 
 	node_type * delete_inner_node(node_type * target)
 	{
 		node_type * neighbor = nullptr;
+		node_type * rebalance_point = nullptr;
 
-		assert(target->left == nullptr && target->right == nullptr);
+		printf("Deleting inner node\n");
+		assert(target->left != nullptr && target->right != nullptr);
 
-		if (target->balance < 0)
+		if (target->balance() < 0)
 			neighbor = leftmost_child(target->right);
 		else
 			neighbor = rightmost_child(target->left);
 
 		swap_with_neighbor(target, neighbor);
+
+		assert(target->left == nullptr || target->right == nullptr);
+
+		if (target->left == nullptr && target->right == nullptr)
+			rebalance_point = delete_leaf_node(target);
+		else
+			rebalance_point = delete_single_link_node(target);
+			
+		return rebalance_point;
 	}
 
 	void delete_node(node_type * target)
 	{
 		node_type * rebalance_point = nullptr;
-#if 0
-		if (target->left == nullptr && target->right == nullptr)
-		{
-			// node is leaf, just delete it
-			rebalance_point = delete_leaf_node(target);
 
-		} else if (target->left == nullptr || target->right == nullptr)
-		{
-			rebalance_point = delete_single_link_node(target);
-		}
-#endif
 		// TODO: we make the determination of left vs right link node here...
 		// we can avoid branching in delete_single_link_node() by calling
 		// 2 versions of it here
@@ -479,7 +497,9 @@ class avl_tree
 				rebalance_point = delete_single_link_node(target);
 			} else
 			{
-				abort();
+				// target has two child trees, swap node with successor
+				// or predecessor
+				rebalance_point = delete_inner_node(target);
 			}
 		}
 
@@ -730,7 +750,23 @@ class avl_tree
 	///
 	/// Operations
 	///
-	iterator find(const key_type& x);
+	iterator find(const key_type & value)
+	{
+		node_type * current = root;
+
+		while (current != nullptr)
+		{
+			if (compare(value, current->value()))
+				current = current->left;
+			else if (compare(current->value(), value))
+				current = current->right;
+			else
+				break;
+		}
+
+		return iterator(root, current);
+	}
+
 	const_iterator find(const key_type& x) const;
 	template <class K>
 	  iterator find(const K & x);
