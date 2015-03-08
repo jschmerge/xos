@@ -407,9 +407,49 @@ class avl_tree
 		return parent;
 	}
 
+	void swap_with_neighbor(node_type * target, node_type * neighbor)
+	{
+		assert(target->left != nullptr && target->right != nullptr);
+		assert(neighbor->left == nullptr || neighbor->right == nullptr);
+
+		node_type * t_parent = target->parent;
+		node_type * t_left_child = target->left;
+		node_type * t_right_child = target->right;
+		node_type ** t_parent_child_link_ptr = nullptr;
+
+		if (t_parent == nullptr) // if we're dealing with target == root
+			t_parent_child_link_ptr = &root;
+		else // grab ptr to the right child ptr
+			t_parent_child_link_ptr = ( t_parent->left == target )
+		                              ? &(t_parent->left)
+		                              : &(t_parent->right);
+
+		node_type * n_parent = neighbor->parent;
+		node_type * n_left_child = neighbor->left;
+		node_type * n_right_child = neighbor->right;
+		node_type ** n_parent_child_link_ptr = ( n_parent->left == target )
+		                                       ? &(n_parent->left)
+		                                       : &(n_parent->right);
+	}
+
+	node_type * delete_inner_node(node_type * target)
+	{
+		node_type * neighbor = nullptr;
+
+		assert(target->left == nullptr && target->right == nullptr);
+
+		if (target->balance < 0)
+			neighbor = leftmost_child(target->right);
+		else
+			neighbor = rightmost_child(target->left);
+
+		swap_with_neighbor(target, neighbor);
+	}
+
 	void delete_node(node_type * target)
 	{
 		node_type * rebalance_point = nullptr;
+#if 0
 		if (target->left == nullptr && target->right == nullptr)
 		{
 			// node is leaf, just delete it
@@ -418,6 +458,29 @@ class avl_tree
 		} else if (target->left == nullptr || target->right == nullptr)
 		{
 			rebalance_point = delete_single_link_node(target);
+		}
+#endif
+		// TODO: we make the determination of left vs right link node here...
+		// we can avoid branching in delete_single_link_node() by calling
+		// 2 versions of it here
+		if (target->left == nullptr)
+		{
+			if (target->right == nullptr)
+			{
+				rebalance_point = delete_leaf_node(target);
+			} else
+			{
+				rebalance_point = delete_single_link_node(target);
+			}
+		} else
+		{
+			if (target->right == nullptr)
+			{
+				rebalance_point = delete_single_link_node(target);
+			} else
+			{
+				abort();
+			}
 		}
 
 		--node_count;
