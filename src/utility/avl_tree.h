@@ -18,7 +18,9 @@ struct avl_tree_node
 	typedef T value_type;
 
 	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
+ private:
 	avl_tree_node * parent;
+ public:
 	avl_tree_node * left;
 	avl_tree_node * right;
 
@@ -85,12 +87,6 @@ class avl_tree_iterator
 	avl_tree_iterator(const avl_tree_iterator & other) noexcept
 	  : root(other.root)
 	  , current(other.current)
-		{ }
-
-	avl_tree_iterator(const node_type * _root, const node_type * _start)
-	  noexcept
-	  : root(_root)
-	  , current(_start)
 		{ }
 
 	~avl_tree_iterator() = default;
@@ -201,9 +197,14 @@ class avl_tree_iterator
 		         && (current->right == nullptr)); }
 
  private:
+	avl_tree_iterator(node_type * _root, node_type * _start) noexcept
+	  : root(_root)
+	  , current(_start)
+		{ }
+
 	friend class avl_tree<T, C, A>;
-	const node_type * root;
-	const node_type * current;
+	node_type * root;
+	node_type * current;
 };
 
 template <typename T, typename C, typename A>
@@ -286,12 +287,25 @@ class avl_tree
 		node_alloc_traits::deallocate(node_allocator, n, 1);
 	}
 
+	node_type * leftmost_child(node_type * n)
+	{
+		while (n->left != nullptr) { n = n->left; }
+		return n;
+	}
+
+	node_type * rightmost_child(node_type * n)
+	{
+		while (n->right != nullptr) { n = n->right; }
+		return n;
+	}
+
 	node_type * insert_node(node_type * n);
 	void destroy_tree() noexcept;
 	void rebalance_from(node_type * n);
 	void rotate_right(node_type * node);
 	void rotate_left(node_type * node);
 
+#if 0
 	void swap_nodes(node_type * a, node_type * b)
 	{
 		node_type a_parent = a->parent;
@@ -319,6 +333,95 @@ class avl_tree
 		if (b_parent->left == b)       b_parent->left = a;
 		else if (b_parent->right == b) b_parent->right = a;
 		else                           abort();
+	}
+#endif
+
+	node_type * delete_leaf_node(node_type * target)
+	{
+		node_type * parent = target->parent_node();
+
+		printf("Deleting leaf\n");
+
+		assert( (parent == nullptr)
+		     || (parent->left == target)
+		     || (parent->right == target) );
+
+		if (parent == nullptr)
+		{
+			// deleting the tree root
+			root = maximum = minimum = nullptr;
+		} else if (parent->left == target)
+		{
+			parent->left = nullptr;
+
+			if (target == minimum)
+				minimum = parent;
+
+		} else if (parent->right == target)
+		{
+			parent->right = nullptr;
+			if (target == maximum)
+				maximum = parent;
+		}
+
+		return parent;
+	}
+
+	node_type * delete_single_link_node(node_type * target)
+	{
+		node_type * parent = target->parent_node();
+
+		printf("Deleting single link node\n");
+
+		assert( (parent == nullptr)
+		     || (parent->left == target)
+		     || (parent->right == target) );
+
+		assert((target->left == nullptr) ^ (target->right == nullptr));
+
+		// only one child node is set, so we figure it out
+		node_type * child = (target->left != nullptr) ?
+		                    target->left :
+		                    target->right;
+
+		if (parent == nullptr)
+		{
+			// deleting the tree root
+			root = child;
+			child->set_parent(nullptr);
+		} else if (parent->left == target)
+		{
+			parent->left = child;
+			child->set_parent(parent);
+		} else if (parent->right == target)
+		{
+			parent->right = child;
+			child->set_parent(parent);
+		}
+
+		if (target == minimum)
+			minimum = leftmost_child(child);
+		else if (target == maximum)
+			maximum = rightmost_child(child);
+
+		return parent;
+	}
+
+	void delete_node(node_type * target)
+	{
+		node_type * rebalance_point = nullptr;
+		if (target->left == nullptr && target->right == nullptr)
+		{
+			// node is leaf, just delete it
+			rebalance_point = delete_leaf_node(target);
+
+		} else if (target->left == nullptr || target->right == nullptr)
+		{
+			rebalance_point = delete_single_link_node(target);
+		}
+
+		--node_count;
+		destroy_node(target);
 	}
 
  public:
@@ -518,12 +621,10 @@ class avl_tree
 		if (position != end())
 		{
 			++rc;
-			// FIXME: somehow we need to get the current ptr out of the
-			// iterator here... right now we're doing this with a combo
-			// of const_cast (here) and a friend dec'l in the iterator class
-			// ...Can we find a better way?
-			node_type * target = const_cast<node_type *>(position.current);
-
+			// TODO: this is the only place we need to pry open an iterator
+			// and get its content... can we figure out a better mechanism
+			// w/o a friend declaration in the iterator?
+			delete_node(position.current);
 		}
 
 		return rc;

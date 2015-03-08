@@ -13,7 +13,6 @@
 	} \
 } while(0)
 
-const int64_t max_values = 1000000;
 
 void test_insert(avl_tree<int> & tree, int val)
 {
@@ -74,7 +73,7 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 
 int main()
 {
-	std::locale::global(std::locale("en_GB.UTF-8"));
+	//std::locale::global(std::locale("en_GB.UTF-8"));
 
 	avl_tree<int> tree;
 	//avl_tree<int, std::greater<int>> tree;
@@ -138,6 +137,15 @@ int main()
 	printf("-----------------\n");
 	mycopy.dump();
 
+	while (mycopy.size())
+	{
+		printf("Deleting %d\n", *mycopy.begin());
+		mycopy.erase(mycopy.begin());
+	}
+
+	my_assert(mycopy.empty());
+#if 0
+	const int64_t max_values = 1000000;
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
 		avl_tree<int64_t> a;
@@ -172,8 +180,6 @@ int main()
 			b.clear();
 		}
 	}
-#if 0
-#endif
 
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
@@ -209,4 +215,5 @@ int main()
 			b.clear();
 		}
 	}
+#endif
 }
