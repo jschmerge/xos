@@ -784,8 +784,22 @@ class avl_tree
 			dump(n->left, level + 1);
 		else
 			printf("`(nil)\n");
-	}
 
+		if (level == 0)
+		{
+			size_t min = ~0, max = 0;
+			for (auto i = begin(); i != end(); ++i)
+			{
+				if (i.current->left == nullptr || i.current->right == nullptr)
+				{
+					if (min > i.height()) min = i.height();
+					if (max < i.height()) max = i.height();
+				}
+			}
+
+			printf("min = %zu, max = %zu\n", min, max);
+		}
+	}
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -806,7 +820,6 @@ void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	new_right->left = pivot->right;
 	if (new_right->left != nullptr)
 		new_right->left->set_parent(new_right);
-
 
 	// move new_right under right side of pivot
 	pivot->right = new_right;
