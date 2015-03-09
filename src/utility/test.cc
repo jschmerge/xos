@@ -138,6 +138,7 @@ int main()
 	mycopy.dump();
 
 	mycopy.erase(-1);
+	mycopy.dump();
 #if 0
 	while (mycopy.size())
 	{

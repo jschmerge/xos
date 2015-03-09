@@ -304,38 +304,13 @@ class avl_tree
 	void rebalance_from(node_type * n);
 	void rotate_right(node_type * node);
 	void rotate_left(node_type * node);
+	std::pair<node_type *, int> delete_leaf_node(node_type * target);
+	std::pair<node_type *, int> delete_link_node(node_type * target);
+	std::pair<node_type *, int> delete_inner_node(node_type * target);
+	void swap_with_neighbor(node_type * target, node_type * neighbor);
+	void delete_node(node_type * target);
 
 #if 0
-	void swap_nodes(node_type * a, node_type * b)
-	{
-		node_type a_parent = a->parent;
-		node_type a_left_child = a->left;
-		node_type a_right_child = a->right;
-
-		node_type b_parent = b->parent;
-		node_type b_left_child = b->left;
-		node_type b_right_child = b->right;
-
-		if (a_left_child)  a_left_child->parent = b;
-		if (a_right_child) a_right_child->parent = b;
-		if (b_left_child)  b_left_child->parent = a;
-		if (b_right_child) b_right_child->parent = a;
-
-		b->left  = a_left_child;
-		b->right = a_right_child;
-		a->left  = b_left_child;
-		a->right = b_right_child;
-
-		if (a_parent->left == a)       a_parent->left = b;
-		else if (a_parent->right == a) a_parent->right = b;
-		else                           abort();
-
-		if (b_parent->left == b)       b_parent->left = a;
-		else if (b_parent->right == b) b_parent->right = a;
-		else                           abort();
-	}
-#endif
-
 	node_type * delete_leaf_node(node_type * target)
 	{
 		node_type * parent = target->parent_node();
@@ -367,7 +342,7 @@ class avl_tree
 		return parent;
 	}
 
-	node_type * delete_single_link_node(node_type * target)
+	node_type * delete_link_node(node_type * target)
 	{
 		node_type * parent = target->parent_node();
 
@@ -469,7 +444,7 @@ class avl_tree
 		if (target->left == nullptr && target->right == nullptr)
 			rebalance_point = delete_leaf_node(target);
 		else
-			rebalance_point = delete_single_link_node(target);
+			rebalance_point = delete_link_node(target);
 			
 		return rebalance_point;
 	}
@@ -479,7 +454,7 @@ class avl_tree
 		node_type * rebalance_point = nullptr;
 
 		// TODO: we make the determination of left vs right link node here...
-		// we can avoid branching in delete_single_link_node() by calling
+		// we can avoid branching in delete_link_node() by calling
 		// 2 versions of it here
 		if (target->left == nullptr)
 		{
@@ -488,13 +463,13 @@ class avl_tree
 				rebalance_point = delete_leaf_node(target);
 			} else
 			{
-				rebalance_point = delete_single_link_node(target);
+				rebalance_point = delete_link_node(target);
 			}
 		} else
 		{
 			if (target->right == nullptr)
 			{
-				rebalance_point = delete_single_link_node(target);
+				rebalance_point = delete_link_node(target);
 			} else
 			{
 				// target has two child trees, swap node with successor
@@ -506,6 +481,7 @@ class avl_tree
 		--node_count;
 		destroy_node(target);
 	}
+#endif
 
  public:
 	///
@@ -807,14 +783,14 @@ class avl_tree
 
 		if (n == nullptr) return;
 
-		printf("%-10d", n->value());
+		printf("(% 2d)%-10d", n->balance(), n->value());
 
 		if (n->right != nullptr)
 			dump(n->right, level + 1);
 		else
 			printf("-(nil)\n");
 
-		printf("%*s", (level + 1) * 10, "");
+		printf("%*s", (level + 1) * 14, "");
 
 		if (n->left != nullptr)
 			dump(n->left, level + 1);
@@ -970,11 +946,8 @@ template <typename T, typename C, typename A>
 	n->set_parent(parent);
 
 	if (parent == nullptr)
-	{
 		minimum = maximum = n;
-	}
 
-//	dump();
 	rebalance_from(n);
 
 	if (child_link == &(minimum->left))
@@ -985,6 +958,207 @@ template <typename T, typename C, typename A>
 	++node_count;
 
 	return n;
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
+  std::pair<typename avl_tree<T,C,A>::node_type *, int>
+  avl_tree<T,C,A>::
+  delete_leaf_node(typename avl_tree<T,C,A>::node_type * target)
+{
+	node_type * parent = target->parent_node();
+	int balance = 0;
+
+	printf("Deleting leaf\n");
+
+	assert( (parent == nullptr)
+	     || (parent->left == target)
+	     || (parent->right == target) );
+
+	if (parent == nullptr)
+	{
+		// deleting the tree root
+		root = maximum = minimum = nullptr;
+	} else if (parent->left == target)
+	{
+		balance = parent->balance() + 1;
+
+		parent->left = nullptr;
+
+		if (target == minimum)
+			minimum = parent;
+
+	} else if (parent->right == target)
+	{
+		balance = parent->balance() - 1;
+
+		parent->right = nullptr;
+
+		if (target == maximum)
+			maximum = parent;
+	}
+
+	return std::make_pair(parent, balance);
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
+  std::pair<typename avl_tree<T,C,A>::node_type *, int>
+  avl_tree<T,C,A>::
+  delete_link_node(typename avl_tree<T,C,A>::node_type * target)
+{
+	node_type * parent = target->parent_node();
+	int balance = 0;
+
+	printf("Deleting single link node\n");
+
+	assert( (parent == nullptr)
+	     || (parent->left == target)
+	     || (parent->right == target) );
+
+	assert((target->left == nullptr) ^ (target->right == nullptr));
+
+	// only one child node is set, so we figure it out
+	node_type * child = (target->left != nullptr) ?
+	                    target->left :
+	                    target->right;
+
+	if (parent == nullptr)
+	{
+		// deleting the tree root
+		root = child;
+		child->set_parent(nullptr);
+	} else if (parent->left == target)
+	{
+		balance = parent->balance() + 1;
+		parent->left = child;
+		child->set_parent(parent);
+	} else if (parent->right == target)
+	{
+		balance = parent->balance() - 1;
+		parent->right = child;
+		child->set_parent(parent);
+	}
+
+	if (target == minimum)
+		minimum = leftmost_child(child);
+	else if (target == maximum)
+		maximum = rightmost_child(child);
+
+	return std::make_pair(parent, balance);
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
+  void avl_tree<T,C,A>::
+  swap_with_neighbor(typename avl_tree<T,C,A>::node_type * target,
+                     typename avl_tree<T,C,A>::node_type * neighbor)
+{
+	using std::swap;
+
+	assert(target->left != nullptr && target->right != nullptr);
+	assert(neighbor->left == nullptr || neighbor->right == nullptr);
+
+	node_type * t_parent = target->parent_node();
+	node_type * n_parent = neighbor->parent_node();
+
+	if (t_parent == nullptr)
+		root = neighbor;
+	else if (t_parent->left == target)
+		t_parent->left = neighbor;
+	else if (t_parent->right == target)
+		t_parent->right = neighbor;
+
+	if (n_parent->left == neighbor)
+		n_parent->left = target;
+	else if (n_parent->right == neighbor)
+		n_parent->right = target;
+
+	target->left->set_parent(neighbor);
+	if (neighbor->left != nullptr)
+		neighbor->left->set_parent(target);
+
+	target->right->set_parent(neighbor);
+	if (neighbor->right != nullptr)
+		neighbor->right->set_parent(target);
+
+	node_type * tmp = target->parent_node();
+	target->set_parent(neighbor->parent_node());
+	neighbor->set_parent(tmp);
+
+	swap(target->left, neighbor->left);
+	swap(target->right, neighbor->right);
+
+	int tmpbalance = target->balance();
+	target->set_balance(neighbor->balance());
+	neighbor->set_balance(tmpbalance);
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
+  std::pair<typename avl_tree<T,C,A>::node_type *, int>
+  avl_tree<T,C,A>::
+  delete_inner_node(typename avl_tree<T,C,A>::node_type * target)
+{
+	node_type * neighbor = nullptr;
+	std::pair<node_type *, int> rc;
+
+	printf("Deleting inner node\n");
+	assert(target->left != nullptr && target->right != nullptr);
+
+	neighbor = (target->balance() < 0) ? rightmost_child(target->left)
+	                                   : leftmost_child(target->right);
+
+	swap_with_neighbor(target, neighbor);
+
+	assert(target->left == nullptr || target->right == nullptr);
+
+	if (target->left == nullptr && target->right == nullptr)
+		rc = delete_leaf_node(target);
+	else
+		rc = delete_link_node(target);
+		
+	return rc;
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
+  void avl_tree<T,C,A>::
+  delete_node(typename avl_tree<T,C,A>::node_type * target)
+{
+	node_type * rebalance_point = nullptr;
+	int new_balance = 0;
+
+	// TODO: we make the determination of left vs right link node here...
+	// we can avoid branching in delete_link_node() by calling
+	// 2 versions of it here
+	if (target->left == nullptr)
+	{
+		if (target->right == nullptr)
+		{
+			std::tie(rebalance_point,
+			         new_balance) = delete_leaf_node(target);
+		} else
+		{
+			std::tie(rebalance_point,
+			         new_balance) = delete_link_node(target);
+		}
+	} else
+	{
+		if (target->right == nullptr)
+		{
+			std::tie(rebalance_point, new_balance) = delete_link_node(target);
+		} else
+		{
+			// target has two child trees, swap node with successor
+			// or predecessor
+			std::tie(rebalance_point, new_balance) = delete_inner_node(target);
+		}
+	}
+	printf("---> Balance = %d\n", new_balance);
+
+	--node_count;
+	destroy_node(target);
 }
 
 //////////////////////////////////////////////////////////////////////
