@@ -906,28 +906,26 @@ template <typename T, typename C, typename A>
 		root = neighbor;
 	else if (t_parent->left == target)
 		t_parent->left = neighbor;
-	else if (t_parent->right == target)
+	else // if (t_parent->right == target)
 		t_parent->right = neighbor;
 
 	if (n_parent->left == neighbor)
 		n_parent->left = target;
-	else if (n_parent->right == neighbor)
+	else // if (n_parent->right == neighbor)
 		n_parent->right = target;
-
-	target->left->set_parent(neighbor);
-	if (neighbor->left != nullptr)
-		neighbor->left->set_parent(target);
-
-	target->right->set_parent(neighbor);
-	if (neighbor->right != nullptr)
-		neighbor->right->set_parent(target);
-
-	node_type * tmp = target->parent_node();
-	target->set_parent(neighbor->parent_node());
-	neighbor->set_parent(tmp);
 
 	swap(target->left, neighbor->left);
 	swap(target->right, neighbor->right);
+	target->set_parent(n_parent);
+	neighbor->set_parent(t_parent);
+	neighbor->left->set_parent(neighbor);
+	neighbor->right->set_parent(neighbor);
+
+	if (target->left != nullptr)
+		target->left->set_parent(target);
+
+	if (target->right != nullptr)
+		target->right->set_parent(target);
 
 	int tmpbalance = target->balance();
 	target->set_balance(neighbor->balance());
@@ -966,7 +964,7 @@ template <typename T, typename C, typename A>
   void avl_tree<T,C,A>::
   delete_node(typename avl_tree<T,C,A>::node_type * target)
 {
-	node_type * rebalance_point = nullptr;
+	node_type * current = nullptr;
 	int new_balance = 0;
 
 	// TODO: we make the determination of left vs right link node here...
@@ -975,27 +973,88 @@ template <typename T, typename C, typename A>
 	if (target->left == nullptr)
 	{
 		if (target->right == nullptr)
-		{
-			std::tie(rebalance_point,
-			         new_balance) = delete_leaf_node(target);
-		} else
-		{
-			std::tie(rebalance_point,
-			         new_balance) = delete_link_node(target);
-		}
+			std::tie(current, new_balance) = delete_leaf_node(target);
+		else
+			std::tie(current, new_balance) = delete_link_node(target);
 	} else
 	{
 		if (target->right == nullptr)
+			std::tie(current, new_balance) = delete_link_node(target);
+		else
+			std::tie(current, new_balance) = delete_inner_node(target);
+	}
+
+#if 0
+	while (true)
+	{
+		printf("---> Balance = %d\n", new_balance);
+
+		if (new_balance == 0)
 		{
-			std::tie(rebalance_point, new_balance) = delete_link_node(target);
-		} else
+			current->set_balance(new_balance);
+
+			node_type * p = current->parent_node();
+			if (p == nullptr)
+				break;
+
+			new_balance = p->balance();
+
+			if (current == p->left)
+				++new_balance;
+			else if (current == p->right)
+				--new_balance;
+			else
+				abort();
+
+			current = p;
+		} else if (new_balance > 1)
 		{
-			// target has two child trees, swap node with successor
-			// or predecessor
-			std::tie(rebalance_point, new_balance) = delete_inner_node(target);
+			if (current->right->balance() == -1)
+			{
+				current->set_balance(
+				  std::min(0, -(current->right->left->balance())));
+				current->right->set_balance(
+				  std::max(0, -(current->right->left->balance())));
+
+				current->right->left->set_balance(0);
+
+				rotate_right(current->right);
+			}
+			else
+			{
+				current->set_balance(0);
+				current->right->set_balance(0);
+			}
+
+			rotate_left(current);
+			break;
+		} else if (new_balance < -1)
+		{
+			if (current->left->balance() == 1)
+			{
+				current->set_balance(
+				  std::max(0, -(current->left->right->balance())));
+				current->left->set_balance(
+				  std::min(0, -(current->left->right->balance())));
+
+				current->left->right->set_balance(0);
+
+				rotate_left(current->left);
+			} else
+			{
+				current->set_balance(0);
+				current->left->set_balance(0);
+			}
+
+			rotate_right(current);
+			break;
+		} else // 1 or -1
+		{
+			current->set_balance(new_balance);
+			break;
 		}
 	}
-	printf("---> Balance = %d\n", new_balance);
+#endif
 
 	--node_count;
 	destroy_node(target);
