@@ -811,9 +811,11 @@ template <typename T, typename C, typename A>
 
 	printf("Deleting leaf\n");
 
-	assert( (parent == nullptr)
-	     || (parent->left == target)
-	     || (parent->right == target) );
+	assert(  (  (parent == nullptr)
+	         || (parent->left == target)
+	         || (parent->right == target) )
+          && (target->left == nullptr)
+	      && (target->right == nullptr) );
 
 	if (parent == nullptr)
 	{
@@ -982,6 +984,36 @@ template <typename T, typename C, typename A>
 			std::tie(current, new_balance) = delete_link_node(target);
 		else
 			std::tie(current, new_balance) = delete_inner_node(target);
+	}
+
+	printf("old = %d, new = %d\n", current->balance(), new_balance);
+
+	if (new_balance < -1)
+	{
+		printf("Rebancing right\n");
+		if (current->right->balance() == -1)
+		{
+			current->set_balance(
+			std::min(0, -(current->right->left->balance())));
+			current->right->set_balance(
+			std::max(0, -(current->right->left->balance())));
+
+			current->right->left->set_balance(0);
+
+			rotate_right(current->right);
+		}
+		else
+		{
+			current->set_balance(0);
+			current->right->set_balance(0);
+		}
+		rotate_left(current);
+	} else if (new_balance > 1)
+	{
+		printf("Rebancing left\n");
+	} else
+	{
+		current->set_balance(new_balance);
 	}
 
 #if 0

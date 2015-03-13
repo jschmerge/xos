@@ -80,6 +80,7 @@ int main()
 
 	printf("Size of tree: %zu\n", sizeof(tree));
 
+#if 0
 	test_insert(tree, 1);
 	test_insert(tree, -4);
 	test_insert(tree, -20);
@@ -96,8 +97,9 @@ int main()
 	test_insert(tree, 16);
 	test_insert(tree, 17);
 	test_insert(tree, -21);
+#endif
 
-	for (int x = 0; x < 31; ++x)
+	for (int x = 0; x < 15; ++x)
 	{
 		tree.insert(x);
 		printf("----\n");
@@ -106,7 +108,7 @@ int main()
 		tree.dump();
 	}
 
-	for (int x = 0; x > -33; --x)
+	for (int x = 0; x > -17; --x)
 	{
 		tree.insert(x);
 		printf("----\n");
@@ -136,8 +138,13 @@ int main()
 
 	printf("-----------------\n");
 	mycopy.dump();
-
-	mycopy.erase(-1);
+	mycopy.erase(2);
+	mycopy.dump();
+	mycopy.erase(4);
+	mycopy.dump();
+	mycopy.erase(7);
+	mycopy.dump();
+	mycopy.erase(6);
 	mycopy.dump();
 #if 0
 	while (mycopy.size())
