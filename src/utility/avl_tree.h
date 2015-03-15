@@ -302,8 +302,6 @@ class avl_tree
 	node_type * insert_node(node_type * n);
 	void destroy_tree() noexcept;
 	void rebalance_from(node_type * n);
-	void rotate_right2(node_type * node);
-	void rotate_left2(node_type * node);
 	void rotate_right(node_type * node);
 	void rotate_left(node_type * node);
 	void double_rotate_right(node_type * node);
@@ -645,6 +643,7 @@ class avl_tree
 	}
 };
 
+#if OLD_CODE
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
@@ -669,9 +668,10 @@ void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	new_right->set_parent(pivot);
 }
 
+#else
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
-void avl_tree<T,C,A>::rotate_right2(typename avl_tree<T,C,A>::node_type * node)
+void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 {
 	node_type * subtree_parent = node->parent_node();
 	node_type * pivot = node->left;
@@ -702,6 +702,7 @@ void avl_tree<T,C,A>::rotate_right2(typename avl_tree<T,C,A>::node_type * node)
 		new_right->set_balance(-1);
 	}
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
@@ -750,6 +751,7 @@ double_rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	}
 }
 
+#if OLD_CODE
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
@@ -773,10 +775,10 @@ void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 	pivot->left = new_left;
 	new_left->set_parent(pivot);
 }
-
+#else
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
-void avl_tree<T,C,A>::rotate_left2(typename avl_tree<T,C,A>::node_type * node)
+void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 {
 	node_type * subtree_parent = node->parent_node();
 	node_type * pivot = node->right;
@@ -807,6 +809,7 @@ void avl_tree<T,C,A>::rotate_left2(typename avl_tree<T,C,A>::node_type * node)
 		new_left->set_balance(1);
 	}
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
@@ -896,7 +899,7 @@ void avl_tree<T,C,A>::rebalance_from(typename avl_tree<T,C,A>::node_type * n)
 			if (current->right->balance() < 0)
 				double_rotate_left(current);
 			else
-				rotate_left2(current);
+				rotate_left(current);
 #endif
 			break;
 		} else if (tmp_balance < -1)
@@ -923,7 +926,7 @@ void avl_tree<T,C,A>::rebalance_from(typename avl_tree<T,C,A>::node_type * n)
 			if (current->left->balance() > 0)
 				double_rotate_right(current);
 			else
-				rotate_right2(current);
+				rotate_right(current);
 #endif
 			break;
 		} else
@@ -1172,22 +1175,18 @@ template <typename T, typename C, typename A>
 	{
 		printf("Rebancing right\n");
 		if (current->left->balance() == 1)
-		{
-		//	current->set_balance(
-		//	current->left->set_balance(
-		//	current->left->right->set_balance(
+			double_rotate_right(current);
+		else
+			rotate_right(current);
 
-			rotate_left(current->left);
-		} else
-		{
-			current->set_balance(-1);
-			current->left->set_balance(current->left->balance() + 1);
-		}
-
-		rotate_right(current);
 	} else if (new_balance > 1)
 	{
 		printf("Rebancing left\n");
+		if (current->right->balance() == -1)
+			double_rotate_left(current);
+		else
+			rotate_left(current);
+
 	} else
 	{
 		current->set_balance(new_balance);
