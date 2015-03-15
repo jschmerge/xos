@@ -138,13 +138,11 @@ int main()
 
 	printf("-----------------\n");
 	mycopy.dump();
-	mycopy.erase(2);
+	mycopy.erase(-10);
 	mycopy.dump();
-	mycopy.erase(4);
+	mycopy.erase(-11);
 	mycopy.dump();
-	mycopy.erase(7);
-	mycopy.dump();
-	mycopy.erase(6);
+	mycopy.erase(-12);
 	mycopy.dump();
 #if 0
 	while (mycopy.size())

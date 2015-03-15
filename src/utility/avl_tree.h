@@ -304,6 +304,8 @@ class avl_tree
 	void rebalance_from(node_type * n);
 	void rotate_right(node_type * node);
 	void rotate_left(node_type * node);
+	void double_rotate_right(node_type * node);
+	void double_rotate_left(node_type * node);
 	std::pair<node_type *, int> delete_leaf_node(node_type * target);
 	std::pair<node_type *, int> delete_link_node(node_type * target);
 	std::pair<node_type *, int> delete_inner_node(node_type * target);
@@ -645,9 +647,9 @@ class avl_tree
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 {
-	node_type *  subtree_parent = node->parent_node();
-	node_type *  pivot = node->left;
-	node_type *  new_right = node;
+	node_type * subtree_parent = node->parent_node();
+	node_type * pivot = node->left;
+	node_type * new_right = node;
 
 	( (subtree_parent == nullptr)    ? root : (
 	  (subtree_parent->left == node) ? subtree_parent->left :
@@ -667,11 +669,57 @@ void avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
+void avl_tree<T,C,A>::
+double_rotate_right(typename avl_tree<T,C,A>::node_type * node)
+{
+	node_type * subtree_parent = node->parent_node();
+	node_type * pivot = node->left->right;
+	node_type * new_right = node;
+	node_type * new_left = node->left;
+
+	( (subtree_parent == nullptr)    ? root : (
+	  (subtree_parent->left == node) ? subtree_parent->left :
+	                                   subtree_parent->right ) ) = pivot;
+
+	pivot->set_parent(subtree_parent);
+
+	new_right->left = pivot->right;
+	if (new_right->left != nullptr)
+		new_right->left->set_parent(new_right);
+
+	new_left->right = pivot->left;
+	if (new_left->right != nullptr)
+		new_left->right->set_parent(new_left);
+
+	pivot->left = new_left;
+	new_left->set_parent(pivot);
+
+	pivot->right = new_right;
+	new_right->set_parent(pivot);
+
+	if (pivot->balance() == -1)
+	{
+		new_left->set_balance(0);
+		new_right->set_balance(1);
+	} else if (pivot->balance() == 0)
+	{
+		new_left->set_balance(0);
+		new_right->set_balance(0);
+	} else //if (pivot->balance == 1)
+	{
+		new_left->set_balance(-1);
+		new_right->set_balance(0);
+	}
+	pivot->set_balance(0);
+}
+
+//////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 {
-	node_type *  subtree_parent = node->parent_node();
-	node_type *  pivot = node->right;
-	node_type *  new_left = node;
+	node_type * subtree_parent = node->parent_node();
+	node_type * pivot = node->right;
+	node_type * new_left = node;
 
 	( (subtree_parent == nullptr)    ? root : (
 	  (subtree_parent->left == node) ? subtree_parent->left :
@@ -986,28 +1034,26 @@ template <typename T, typename C, typename A>
 			std::tie(current, new_balance) = delete_inner_node(target);
 	}
 
+	dump();
 	printf("old = %d, new = %d\n", current->balance(), new_balance);
 
 	if (new_balance < -1)
 	{
 		printf("Rebancing right\n");
-		if (current->right->balance() == -1)
+		if (current->left->balance() == 1)
 		{
-			current->set_balance(
-			std::min(0, -(current->right->left->balance())));
-			current->right->set_balance(
-			std::max(0, -(current->right->left->balance())));
+		//	current->set_balance(
+		//	current->left->set_balance(
+		//	current->left->right->set_balance(
 
-			current->right->left->set_balance(0);
-
-			rotate_right(current->right);
-		}
-		else
+			rotate_left(current->left);
+		} else
 		{
-			current->set_balance(0);
-			current->right->set_balance(0);
+			current->set_balance(-1);
+			current->left->set_balance(current->left->balance() + 1);
 		}
-		rotate_left(current);
+
+		rotate_right(current);
 	} else if (new_balance > 1)
 	{
 		printf("Rebancing left\n");
