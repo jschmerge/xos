@@ -13,7 +13,7 @@
 	} \
 } while(0)
 
-
+//////////////////////////////////////////////////////////////////////
 void test_insert(avl_tree<int> & tree, int val)
 {
 	printf("ADDING %d\n", val);
@@ -21,18 +21,21 @@ void test_insert(avl_tree<int> & tree, int val)
 	my_assert(p.second == true && *p.first == val);
 }
 
+//////////////////////////////////////////////////////////////////////
 void test_insert_dup(avl_tree<int> & tree, int val)
 {
 	auto p = tree.insert(val);
 	my_assert(p.second == false && *p.first == val);
 }
 
+//////////////////////////////////////////////////////////////////////
 template<typename T>
-void test_random_insert(T & container, int total = 10000000)
+void test_random_insert(T & container,
+                        std::mt19937_64 & engine,
+                        int total)
 {
 	int64_t seed = container.empty() ? 0 : container.size();
-	std::default_random_engine engine(seed);
-	std::uniform_int_distribution<int64_t> dist(-(total * 10), total * 10);
+	std::uniform_int_distribution<int64_t> dist;
 
 	auto begin = posix_clock<clock_source::realtime>::now();
 
@@ -51,6 +54,7 @@ void test_random_insert(T & container, int total = 10000000)
 	fflush(stdout);
 }
 
+//////////////////////////////////////////////////////////////////////
 template<typename T>
 void test_ordered_insert(T & container, int64_t total = 10000000)
 {
@@ -71,9 +75,10 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 	fflush(stdout);
 }
 
+//////////////////////////////////////////////////////////////////////
 int main()
 {
-	//std::locale::global(std::locale("en_GB.UTF-8"));
+	std::locale::global(std::locale("en_GB.UTF-8"));
 
 	avl_tree<int> tree;
 	//avl_tree<int, std::greater<int>> tree;
@@ -154,6 +159,7 @@ int main()
 
 #if 0
 	my_assert(mycopy.empty());
+#endif
 	const int64_t max_values = 1000000;
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
@@ -162,11 +168,12 @@ int main()
 		printf("i = %'ld\n------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
 		{
+			std::mt19937_64 engine(0);
 			size_t min =  ~0, max = 0;
 			printf("AVL:\n");
-			test_random_insert(a, i);
-			test_random_insert(a, i);
-			test_random_insert(a, i);
+			test_random_insert(a, engine, i);
+			test_random_insert(a, engine, i);
+			test_random_insert(a, engine, i);
 
 			for (auto x = a.begin(); x != a.end(); ++x)
 			{
@@ -182,15 +189,16 @@ int main()
 			printf("Height min = %zu, max = %zu\n", min, max);
 			a.clear();
 
+			engine.seed(0);
 			printf("RedBlack:\n");
-			test_random_insert(b, i);
-			test_random_insert(b, i);
-			test_random_insert(b, i);
+			test_random_insert(b, engine, i);
+			test_random_insert(b, engine, i);
+			test_random_insert(b, engine, i);
 			b.clear();
 		}
 	}
 
-	for (int64_t i = 1; i <= max_values; i *= 10)
+	for (int64_t i = 1; i <= (max_values * 10); i *= 10)
 	{
 		printf("i = %'ld\n--------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
@@ -199,9 +207,8 @@ int main()
 			avl_tree<int64_t> a;
 			std::set<int64_t> b;
 			printf("AVL:\n");
-			test_ordered_insert(a, i);
-			test_ordered_insert(a, i);
-			test_ordered_insert(a, i);
+			for (int k = 0; k < 10; ++k)
+				test_ordered_insert(a, i);
 
 			for (auto x = a.begin(); x != a.end(); ++x)
 			{
@@ -218,11 +225,9 @@ int main()
 			a.clear();
 
 			printf("RB:\n");
-			test_ordered_insert(b, i);
-			test_ordered_insert(b, i);
-			test_ordered_insert(b, i);
+			for (int k = 0; k < 10; ++k)
+				test_ordered_insert(b, i);
 			b.clear();
 		}
 	}
-#endif
 }
