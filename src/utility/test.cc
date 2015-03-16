@@ -150,7 +150,7 @@ int main()
 
 	my_assert(mycopy.empty());
 
-	const int64_t max_values = 100000000;
+	const int64_t max_values = 1000000;
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
 		avl_tree<int64_t> a;
@@ -188,7 +188,7 @@ int main()
 		}
 	}
 
-	for (int64_t i = 1; i <= (max_values); i *= 10)
+	for (int64_t i = 1; i <= (max_values * 10); i *= 10)
 	{
 		printf("i = %'ld\n--------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
