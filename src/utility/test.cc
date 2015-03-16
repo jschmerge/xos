@@ -58,12 +58,12 @@ void test_random_insert(T & container,
 template<typename T>
 void test_ordered_insert(T & container, int64_t total = 10000000)
 {
+	int64_t last = container.size() + total;
 	auto begin = posix_clock<clock_source::realtime>::now();
 
-	for (int64_t i = 0; i < total; ++i)
+	for (int64_t i = container.size(); i < last; ++i)
 	{
 		container.insert(container.end(), i);
-		//container.insert(i);
 	}
 
 	auto end = posix_clock<clock_source::realtime>::now();
@@ -142,25 +142,15 @@ int main()
 		printf("\t%d, (%zd, %d)\n", *i, i.height(), i.balance());
 
 	printf("-----------------\n");
-	mycopy.dump();
-	mycopy.erase(-10);
-	mycopy.dump();
-	mycopy.erase(-11);
-	mycopy.dump();
-	mycopy.erase(-12);
-	mycopy.dump();
-#if 0
 	while (mycopy.size())
 	{
-		printf("Deleting %d\n", *mycopy.begin());
+		printf("===> Deleting %d\n", *mycopy.begin());
 		mycopy.erase(mycopy.begin());
 	}
-#endif
 
-#if 0
 	my_assert(mycopy.empty());
-#endif
-	const int64_t max_values = 1000000;
+
+	const int64_t max_values = 100000000;
 	for (int64_t i = 1; i <= max_values; i *= 10)
 	{
 		avl_tree<int64_t> a;
@@ -198,7 +188,7 @@ int main()
 		}
 	}
 
-	for (int64_t i = 1; i <= (max_values * 10); i *= 10)
+	for (int64_t i = 1; i <= (max_values); i *= 10)
 	{
 		printf("i = %'ld\n--------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
@@ -207,7 +197,7 @@ int main()
 			avl_tree<int64_t> a;
 			std::set<int64_t> b;
 			printf("AVL:\n");
-			for (int k = 0; k < 10; ++k)
+			for (int k = 0; k < 10 && a.size() < 500000000; ++k)
 				test_ordered_insert(a, i);
 
 			for (auto x = a.begin(); x != a.end(); ++x)
@@ -225,9 +215,11 @@ int main()
 			a.clear();
 
 			printf("RB:\n");
-			for (int k = 0; k < 10; ++k)
+			for (int k = 0; k < 10 && b.size() < 500000000; ++k)
 				test_ordered_insert(b, i);
 			b.clear();
 		}
 	}
+#if 0
+#endif
 }
