@@ -58,10 +58,10 @@ void test_random_insert(T & container,
 template<typename T>
 void test_ordered_insert(T & container, int64_t total = 10000000)
 {
-	int64_t last = container.size() + total;
+	int64_t starting_size = container.size();
 	auto begin = posix_clock<clock_source::realtime>::now();
 
-	for (int64_t i = container.size(); i < last; ++i)
+	for (int64_t i = container.size(); i < (starting_size + total); ++i)
 	{
 		container.insert(container.end(), i);
 	}
@@ -70,8 +70,8 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 
 	std::chrono::duration<double> d = end - begin;
 
-	printf("insertion took %.9f seconds for %ld ordered values\n",
-	       d.count(), container.size());
+	printf("insertion took %.9f seconds for %ld-%ld ordered values\n",
+	       d.count(), starting_size, container.size());
 	fflush(stdout);
 }
 
