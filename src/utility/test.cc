@@ -163,7 +163,7 @@ int main()
 			std::mt19937_64 engine(0);
 			size_t min =  ~0, max = 0;
 			{
-				homogenous_arena<avl_tree_node<int64_t>> arena{100000000};
+				homogenous_arena<avl_tree_node<int64_t>> arena{i * 10ul};
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 				avl_tree<int64_t, std::less<int64_t>,
 			         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
@@ -189,7 +189,7 @@ int main()
 			engine.seed(0);
 			printf("RedBlack:\n");
 			{
-				homogenous_arena<std::_Rb_tree_node<int64_t>> arena{100000000};
+				homogenous_arena<std::_Rb_tree_node<int64_t>> arena{i * 10ul};
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 				std::set<int64_t, std::less<int64_t>,
 			             bulk_allocator<int64_t>> b{std::less<int64_t>{},alloc};
@@ -207,7 +207,8 @@ int main()
 		for (int j = 0; j < 3; ++j)
 		{
 			{
-				homogenous_arena<avl_tree_node<int64_t>> arena{100000000};
+				homogenous_arena<avl_tree_node<int64_t>>
+				                         arena{std::min(i * 10ul, 500000000ul)};
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 			
 				size_t min =  ~0, max = 0;
@@ -232,7 +233,8 @@ int main()
 			}
 
 			{
-				homogenous_arena<std::_Rb_tree_node<int64_t>> arena{100000000};
+				homogenous_arena<std::_Rb_tree_node<int64_t>>
+				                         arena{std::min(i * 10ul, 500000000ul)};
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 			
 
