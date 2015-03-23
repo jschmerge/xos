@@ -18,9 +18,8 @@ struct avl_tree_node
 	typedef T value_type;
 
 	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
- private:
+
 	avl_tree_node * parent;
- public:
 	avl_tree_node * left;
 	avl_tree_node * right;
 
@@ -72,20 +71,30 @@ struct avl_tree_node
 };
 
 //////////////////////////////////////////////////////////////////////
+template <typename T>
+struct avl_tree_root
+{
+	avl_tree_node<T> * root;
+	avl_tree_node<T> * minimum;
+	avl_tree_node<T> * maximum;
+};
+
+//////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 class avl_tree_iterator
   : public std::iterator<std::bidirectional_iterator_tag,
                          T, std::ptrdiff_t, const T *, const T &>
 {
+	typedef avl_tree_root<T> tree_type;
 	typedef avl_tree_node<T> node_type;
  public:
 	avl_tree_iterator() noexcept
-	  : root(nullptr)
+	  : tree(nullptr)
 	  , current(nullptr)
 		{ }
 
 	avl_tree_iterator(const avl_tree_iterator & other) noexcept
-	  : root(other.root)
+	  : tree(other.tree)
 	  , current(other.current)
 		{ }
 
@@ -95,7 +104,7 @@ class avl_tree_iterator
 	{
 		if (this != &other)
 		{
-			root = other.root;
+			tree = other.tree;
 			current = other.current;
 		}
 		return *this;
@@ -116,7 +125,7 @@ class avl_tree_iterator
 	int balance() const { return current->balance(); }
 
 	bool operator == (const avl_tree_iterator & other) noexcept
-		{ return ( (root == other.root) && (current == other.current) ); }
+		{ return ( (tree == other.tree) && (current == other.current) ); }
 
 	bool operator != (const avl_tree_iterator & other) noexcept
 		{ return !(*this == other); }
@@ -150,9 +159,7 @@ class avl_tree_iterator
 		if (current == nullptr)
 		{
 			// if the iterator currently contains the value of end()
-			current = root;
-			while (current->right != nullptr)
-				current = current->right;
+			current = tree->maximum;
 		} else if (current->left != nullptr)
 		{
 			node_type * tmp = current->left;
@@ -188,7 +195,7 @@ class avl_tree_iterator
 	void swap(avl_tree_iterator & other) noexcept
 	{
 		using std::swap;
-		swap(root, other.root);
+		swap(tree, other.tree);
 		swap(current, other.current);
 	}
 
@@ -197,13 +204,13 @@ class avl_tree_iterator
 		         && (current->right == nullptr)); }
 
  private:
-	avl_tree_iterator(node_type * _root, node_type * _start) noexcept
-	  : root(_root)
+	avl_tree_iterator(tree_type * _root, node_type * _start) noexcept
+	  : tree(_root)
 	  , current(_start)
 		{ }
 
 	friend class avl_tree<T, C, A>;
-	node_type * root;
+	tree_type * tree;
 	node_type * current;
 };
 
@@ -223,8 +230,11 @@ class avl_tree
 {
  private:
 	typedef avl_tree_node<T>                       node_type;
+	typedef avl_tree_root<T>                       tree_type;
 	typedef std::allocator_traits<Allocator>       alloc_traits;
 
+	typedef typename alloc_traits::template rebind_traits<tree_type>
+	                                               tree_alloc_traits;
 	typedef typename alloc_traits::template rebind_traits<node_type>
 	                                               node_alloc_traits;
 	typedef typename node_alloc_traits::allocator_type
@@ -258,9 +268,7 @@ class avl_tree
 
  private:
 	// Data members
-	node_type * root;
-	node_type * minimum;
-	node_type * maximum;
+	tree_type * tree_root;
 	size_type   node_count;
 	node_alloc  node_allocator;
 	key_compare compare;
@@ -319,14 +327,17 @@ class avl_tree
 	avl_tree() : avl_tree(key_compare()) { }
 
 	explicit
-	avl_tree(const key_compare & c, const allocator_type & a = allocator_type())
-	  : root(nullptr)
-	  , minimum(nullptr)
-	  , maximum(nullptr)
-	  , node_count(0)
-	  , node_allocator(a)
-	  , compare(c)
-		{ }
+	avl_tree(const key_compare & c,
+	         const allocator_type & a = allocator_type())
+	  : tree_root{nullptr}
+	  , node_count{0}
+	  , node_allocator{a}
+	  , compare{c}
+	{
+		typename tree_alloc_traits::allocator_type t_a{node_allocator};
+		tree_root = tree_alloc_traits::allocate(t_a, 1);
+		tree_root->root = tree_root->minimum = tree_root->maximum = nullptr;
+	}
 	  
 	template <class InputIterator>
 	avl_tree(InputIterator first, InputIterator last,
@@ -364,7 +375,12 @@ class avl_tree
 	///
 	/// Destructor
 	///
-	~avl_tree() { destroy_tree(); }
+	~avl_tree()
+	{
+		destroy_tree();
+		typename tree_alloc_traits::allocator_type t_a{node_allocator};
+		tree_alloc_traits::deallocate(t_a, tree_root, 1);
+	}
 
 	///
 	/// Assignment
@@ -380,18 +396,18 @@ class avl_tree
 	/// iteration bounds
 	///
 	iterator begin() noexcept
-		{ return iterator(root, minimum); }
+		{ return iterator(tree_root, tree_root->minimum); }
 	const_iterator begin() const noexcept
-		{ return const_iterator(root, minimum); }
+		{ return const_iterator(tree_root, tree_root->minimum); }
 	const_iterator cbegin() const noexcept
-		{ return const_iterator(root, minimum); }
+		{ return const_iterator(tree_root, tree_root->minimum); }
 
 	iterator end() noexcept
-		{ return iterator(root, nullptr); }
+		{ return iterator(tree_root, nullptr); }
 	const_iterator end() const noexcept
-		{ return const_iterator(root, nullptr); }
+		{ return const_iterator(tree_root, nullptr); }
 	const_iterator cend() const noexcept
-		{ return const_iterator(root, nullptr); }
+		{ return const_iterator(tree_root, nullptr); }
 
 	reverse_iterator rbegin() noexcept
 		{ return reverse_iterator(end()); }
@@ -412,7 +428,7 @@ class avl_tree
 	/// Capacity
 	///
 	//////
-	bool empty() const noexcept { return (root == nullptr); }
+	bool empty() const noexcept { return (tree_root->root == nullptr); }
 	size_type size() const noexcept { return node_count; }
 	size_type max_size() const noexcept { return size_type(-1); }
 
@@ -434,11 +450,11 @@ class avl_tree
 
 		if (ret == n)
 		{
-			return std::make_pair(iterator(root, n), true);
+			return std::make_pair(iterator(tree_root, n), true);
 		} else
 		{
 			destroy_node(n);
-			return std::make_pair(iterator(root, ret), false);
+			return std::make_pair(iterator(tree_root, ret), false);
 		}
 	}
 
@@ -448,23 +464,23 @@ class avl_tree
 		node_type * n = construct_node(std::forward<Args>(args)...);
 		node_type * ret = nullptr;
 
-		if (__builtin_expect(root == nullptr, 0))
+		if (__builtin_expect(tree_root->root == nullptr, 0))
 		{
-			ret = root = maximum = minimum = n;
+			ret = tree_root->root = tree_root->maximum = tree_root->minimum = n;
 			++node_count;
-		} else if (compare(maximum->value(), n->value()))
+		} else if (compare(tree_root->maximum->value(), n->value()))
 		{
-			maximum->right = n;
-			n->set_parent(maximum);
-			maximum = n;
+			tree_root->maximum->right = n;
+			n->set_parent(tree_root->maximum);
+			tree_root->maximum = n;
 			ret = n;
 			rebalance_after_insert_from(n);
 			++node_count;
-		} else if (compare(n->value(), minimum->value()))
+		} else if (compare(n->value(), tree_root->minimum->value()))
 		{
-			minimum->left = n;
-			n->set_parent(minimum);
-			minimum = n;
+			tree_root->minimum->left = n;
+			n->set_parent(tree_root->minimum);
+			tree_root->minimum = n;
 			ret = n;
 			rebalance_after_insert_from(n);
 			++node_count;
@@ -474,7 +490,7 @@ class avl_tree
 		}
 
 		if (n != ret) destroy_node(n);
-		return iterator(root, ret);
+		return iterator(tree_root, ret);
 	}
 
 	///
@@ -557,7 +573,7 @@ class avl_tree
 	///
 	iterator find(const key_type & value)
 	{
-		node_type * current = root;
+		node_type * current = tree_root->root;
 
 		while (current != nullptr)
 		{
@@ -569,7 +585,7 @@ class avl_tree
 				break;
 		}
 
-		return iterator(root, current);
+		return iterator(tree_root->root, current);
 	}
 
 	const_iterator find(const key_type& x) const;
@@ -608,7 +624,7 @@ class avl_tree
 
 	void dump(node_type * n = nullptr, int level = 0)
 	{
-		if (n == nullptr) n = root;
+		if (n == nullptr) n = tree_root->root;
 
 		if (n == nullptr) { printf("EMPTY TREE\n"); return; }
 
@@ -652,7 +668,7 @@ bool avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	node_type * new_right = node;
 	bool rc = true;
 
-	( (subtree_parent == nullptr)    ? root : (
+	( (subtree_parent == nullptr)    ? tree_root->root : (
 	  (subtree_parent->left == node) ? subtree_parent->left :
 	                                   subtree_parent->right ) ) = pivot;
 
@@ -691,7 +707,7 @@ double_rotate_right(typename avl_tree<T,C,A>::node_type * node)
 	node_type * new_right = node;
 	node_type * new_left = node->left;
 
-	( (subtree_parent == nullptr)    ? root : (
+	( (subtree_parent == nullptr)    ? tree_root->root : (
 	  (subtree_parent->left == node) ? subtree_parent->left :
 	                                   subtree_parent->right ) ) = pivot;
 
@@ -739,7 +755,7 @@ bool avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 	node_type * new_left = node;
 	bool rc = true;
 
-	( (subtree_parent == nullptr)    ? root : (
+	( (subtree_parent == nullptr)    ? tree_root->root : (
 	  (subtree_parent->left == node) ? subtree_parent->left :
 	                                   subtree_parent->right ) ) = pivot;
 
@@ -778,7 +794,7 @@ double_rotate_left(typename avl_tree<T,C,A>::node_type * node)
 	node_type * new_right = node->right;
 	node_type * new_left = node;
 
-	( (subtree_parent == nullptr)    ? root : (
+	( (subtree_parent == nullptr)    ? tree_root->root : (
 	  (subtree_parent->left == node) ? subtree_parent->left :
 	                                   subtree_parent->right ) ) = pivot;
 
@@ -862,9 +878,9 @@ template <typename T, typename C, typename A>
   typename avl_tree<T,C,A>::node_type *
   avl_tree<T,C,A>::insert_node(typename avl_tree<T,C,A>::node_type * n)
 {
-	node_type * current = root;
+	node_type * current = tree_root->root;
 	node_type * parent = nullptr;
-	node_type ** child_link = &root;
+	node_type ** child_link = &tree_root->root;
 
 	while (current != nullptr)
 	{
@@ -889,14 +905,14 @@ template <typename T, typename C, typename A>
 	n->set_parent(parent);
 
 	if (parent == nullptr)
-		minimum = maximum = n;
+		tree_root->minimum = tree_root->maximum = n;
 
 	rebalance_after_insert_from(n);
 
-	if (child_link == &(minimum->left))
-		minimum = minimum->left;
-	else if (child_link == &(maximum->right))
-		maximum = maximum->right;
+	if (child_link == &(tree_root->minimum->left))
+		tree_root->minimum = tree_root->minimum->left;
+	else if (child_link == &(tree_root->maximum->right))
+		tree_root->maximum = tree_root->maximum->right;
 
 	++node_count;
 
@@ -923,15 +939,15 @@ template <typename T, typename C, typename A>
 	if (parent == nullptr)
 	{
 		// deleting the tree root
-		root = maximum = minimum = nullptr;
+		tree_root->root = tree_root->maximum = tree_root->minimum = nullptr;
 	} else if (parent->left == target)
 	{
 		balance = parent->balance() + 1;
 
 		parent->left = nullptr;
 
-		if (target == minimum)
-			minimum = parent;
+		if (target == tree_root->minimum)
+			tree_root->minimum = parent;
 
 	} else if (parent->right == target)
 	{
@@ -939,8 +955,8 @@ template <typename T, typename C, typename A>
 
 		parent->right = nullptr;
 
-		if (target == maximum)
-			maximum = parent;
+		if (target == tree_root->maximum)
+			tree_root->maximum = parent;
 	}
 
 	return std::make_pair(parent, balance);
@@ -971,7 +987,7 @@ template <typename T, typename C, typename A>
 	if (parent == nullptr)
 	{
 		// deleting the tree root
-		root = child;
+		tree_root->root = child;
 		child->set_parent(nullptr);
 	} else if (parent->left == target)
 	{
@@ -985,10 +1001,10 @@ template <typename T, typename C, typename A>
 		child->set_parent(parent);
 	}
 
-	if (target == minimum)
-		minimum = leftmost_child(child);
-	else if (target == maximum)
-		maximum = rightmost_child(child);
+	if (target == tree_root->minimum)
+		tree_root->minimum = leftmost_child(child);
+	else if (target == tree_root->maximum)
+		tree_root->maximum = rightmost_child(child);
 
 	return std::make_pair(parent, balance);
 }
@@ -1008,7 +1024,7 @@ template <typename T, typename C, typename A>
 	node_type * n_parent = neighbor->parent_node();
 
 	if (t_parent == nullptr)
-		root = neighbor;
+		tree_root->root = neighbor;
 	else if (t_parent->left == target)
 		t_parent->left = neighbor;
 	else // if (t_parent->right == target)
@@ -1146,8 +1162,8 @@ template <typename T, typename C, typename A>
 template <typename T, typename Comp, typename Alloc>
 void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 {
-	node_type * p = root;
-	root = maximum = minimum = nullptr;
+	node_type * p = tree_root->root;
+	tree_root->root = tree_root->maximum = tree_root->minimum = nullptr;
 
 	while (p != nullptr)
 	{
