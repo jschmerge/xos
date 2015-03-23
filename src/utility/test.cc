@@ -107,7 +107,7 @@ void test_performance()
 		{
 			std::mt19937_64 engine(0);
 			{
-				homogenous_arena<avl_tree_node<int64_t>> arena{i * 10ul};
+				homogenous_arena<avl_tree_node<int64_t>> arena{1 + (i * 10ul)};
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 				avl_tree<int64_t, std::less<int64_t>,
 			         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
@@ -122,7 +122,8 @@ void test_performance()
 			engine.seed(0);
 			printf("RedBlack:\n");
 			{
-				homogenous_arena<std::_Rb_tree_node<int64_t>> arena{i * 10ul};
+				homogenous_arena<std::_Rb_tree_node<int64_t>>
+				                                          arena{1 + (i * 10ul)};
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 				std::set<int64_t, std::less<int64_t>,
 			             bulk_allocator<int64_t>> b{std::less<int64_t>{},alloc};
@@ -141,7 +142,7 @@ void test_performance()
 		{
 			{
 				homogenous_arena<avl_tree_node<int64_t>>
-				                         arena{std::min(i * 10ul, 500000000ul)};
+				                 arena{std::min(1ul + (i * 10ul), 500000000ul)};
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 
 				avl_tree<int64_t, std::less<int64_t>,
@@ -155,7 +156,7 @@ void test_performance()
 
 			{
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				                         arena{std::min(i * 10ul, 500000000ul)};
+				                 arena{std::min(1ul + (i * 10ul), 500000000ul)};
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 
 
