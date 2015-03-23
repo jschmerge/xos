@@ -78,6 +78,97 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 }
 
 //////////////////////////////////////////////////////////////////////
+template <typename T, typename C, typename A>
+void print_leaf_heights(const avl_tree<T,C,A> & t)
+{
+	size_t min =  ~0, max = 0;
+	for (auto x = t.begin(); x != t.end(); ++x)
+	{
+		if (x.is_leaf_node())
+		{
+			size_t h = x.height();
+			if (h < min)
+				min = h;
+			if (h > max)
+				max = h;
+		}
+	}
+	printf("Height min = %zu, max = %zu\n", min, max);
+}
+
+//////////////////////////////////////////////////////////////////////
+void test_performance()
+{
+	const int64_t max_values = 100000;
+	for (int64_t i = 1; i <= max_values; i *= 10)
+	{
+		printf("i = %'ld\n------------------------------------\n", i);
+		for (int j = 0; j < 3; ++j)
+		{
+			std::mt19937_64 engine(0);
+			{
+				homogenous_arena<avl_tree_node<int64_t>> arena{i * 10ul};
+				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
+				avl_tree<int64_t, std::less<int64_t>,
+			         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
+				printf("AVL:\n");
+				test_random_insert(a, engine, i);
+				test_random_insert(a, engine, i);
+				test_random_insert(a, engine, i);
+
+				print_leaf_heights(a);
+			}
+
+			engine.seed(0);
+			printf("RedBlack:\n");
+			{
+				homogenous_arena<std::_Rb_tree_node<int64_t>> arena{i * 10ul};
+				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
+				std::set<int64_t, std::less<int64_t>,
+			             bulk_allocator<int64_t>> b{std::less<int64_t>{},alloc};
+				test_random_insert(b, engine, i);
+				test_random_insert(b, engine, i);
+				test_random_insert(b, engine, i);
+			}
+		}
+	}
+
+	for (int64_t i = 1; i <= (max_values * 10); i *= 10)
+	{
+
+		printf("i = %'ld\n--------------------------------------\n", i);
+		for (int j = 0; j < 3; ++j)
+		{
+			{
+				homogenous_arena<avl_tree_node<int64_t>>
+				                         arena{std::min(i * 10ul, 500000000ul)};
+				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
+
+				avl_tree<int64_t, std::less<int64_t>,
+				      bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
+				printf("AVL:\n");
+				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
+					test_ordered_insert(a, i);
+
+				print_leaf_heights(a);
+			}
+
+			{
+				homogenous_arena<std::_Rb_tree_node<int64_t>>
+				                         arena{std::min(i * 10ul, 500000000ul)};
+				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
+
+
+				printf("RB:\n");
+				std::set<int64_t, std::less<int64_t>,
+				         bulk_allocator<int64_t>> b{std::less<int64_t>{}, alloc};
+				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
+					test_ordered_insert(b, i);
+			}
+		}
+	}
+}
+//////////////////////////////////////////////////////////////////////
 int main()
 {
 	std::locale::global(std::locale("en_GB.UTF-8"));
@@ -152,100 +243,6 @@ int main()
 
 	my_assert(mycopy.empty());
 
-	const int64_t max_values = 1000000;
-#if 0
-#endif
-	for (int64_t i = 1; i <= max_values; i *= 10)
-	{
-		printf("i = %'ld\n------------------------------------\n", i);
-		for (int j = 0; j < 3; ++j)
-		{
-			std::mt19937_64 engine(0);
-			size_t min =  ~0, max = 0;
-			{
-				homogenous_arena<avl_tree_node<int64_t>> arena{i * 10ul};
-				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
-				avl_tree<int64_t, std::less<int64_t>,
-			         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
-				printf("AVL:\n");
-				test_random_insert(a, engine, i);
-				test_random_insert(a, engine, i);
-				test_random_insert(a, engine, i);
-
-				for (auto x = a.begin(); x != a.end(); ++x)
-				{
-					if (x.is_leaf_node())
-					{
-						size_t h = x.height();
-						if (h < min)
-							min = h;
-						if (h > max)
-							max = h;
-					}
-				}
-				printf("Height min = %zu, max = %zu\n", min, max);
-			}
-
-			engine.seed(0);
-			printf("RedBlack:\n");
-			{
-				homogenous_arena<std::_Rb_tree_node<int64_t>> arena{i * 10ul};
-				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
-				std::set<int64_t, std::less<int64_t>,
-			             bulk_allocator<int64_t>> b{std::less<int64_t>{},alloc};
-				test_random_insert(b, engine, i);
-				test_random_insert(b, engine, i);
-				test_random_insert(b, engine, i);
-			}
-		}
-	}
-
-	for (int64_t i = 1; i <= (max_values * 10); i *= 10)
-	{
-
-		printf("i = %'ld\n--------------------------------------\n", i);
-		for (int j = 0; j < 3; ++j)
-		{
-			{
-				homogenous_arena<avl_tree_node<int64_t>>
-				                         arena{std::min(i * 10ul, 500000000ul)};
-				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
-			
-				size_t min =  ~0, max = 0;
-				avl_tree<int64_t, std::less<int64_t>,
-			         	bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
-				printf("AVL:\n");
-				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
-					test_ordered_insert(a, i);
-
-				for (auto x = a.begin(); x != a.end(); ++x)
-				{
-					if (x.is_leaf_node())
-					{
-						size_t h = x.height();
-						if (h < min)
-							min = h;
-						if (h > max)
-							max = h;
-					}
-				}
-				printf("Height min = %zu, max = %zu\n", min, max);
-			}
-
-			{
-				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				                         arena{std::min(i * 10ul, 500000000ul)};
-				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
-			
-
-				printf("RB:\n");
-				std::set<int64_t, std::less<int64_t>,
-			         	bulk_allocator<int64_t>> b{std::less<int64_t>{}, alloc};
-				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
-					test_ordered_insert(b, i);
-			}
-		}
-	}
-#if 0
-#endif
+	test_performance();
 }
+
