@@ -928,7 +928,7 @@ template <typename T, typename C, typename A>
 	node_type * parent = target->parent_node();
 	int balance = 0;
 
-	printf("Deleting leaf\n");
+	//printf("Deleting leaf\n");
 
 	assert(  (  (parent == nullptr)
 	         || (parent->left == target)
@@ -971,7 +971,7 @@ template <typename T, typename C, typename A>
 	node_type * parent = target->parent_node();
 	int balance = 0;
 
-	printf("Deleting single link node\n");
+	//printf("Deleting single link node\n");
 
 	assert( (parent == nullptr)
 	     || (parent->left == target)
@@ -1062,7 +1062,7 @@ template <typename T, typename C, typename A>
 	node_type * neighbor = nullptr;
 	std::pair<node_type *, int> rc;
 
-	printf("Deleting inner node\n");
+	//printf("Deleting inner node\n");
 	assert(target->left != nullptr && target->right != nullptr);
 
 	neighbor = (target->balance() < 0) ? rightmost_child(target->left)
@@ -1105,16 +1105,16 @@ template <typename T, typename C, typename A>
 			std::tie(current, new_balance) = delete_inner_node(target);
 	}
 
-	printf("====================================\n");
+	//printf("====================================\n");
 	node_type * last = current;
 	while (current != nullptr)
 	{
 		bool height_changed = false;
-		printf("old = %d, new = %d\n", current->balance(), new_balance);
+		//printf("old = %d, new = %d\n", current->balance(), new_balance);
 
 		if (new_balance < -1)
 		{
-			printf("Rebancing right\n");
+			//printf("Rebancing right\n");
 			if (current->left->balance() == 1)
 				height_changed = double_rotate_right(current);
 			else
@@ -1122,7 +1122,7 @@ template <typename T, typename C, typename A>
 
 		} else if (new_balance > 1)
 		{
-			printf("Rebancing left\n");
+			//printf("Rebancing left\n");
 			if (current->right->balance() == -1)
 				height_changed = double_rotate_left(current);
 			else
@@ -1152,7 +1152,6 @@ template <typename T, typename C, typename A>
 		}
 
 	}
-	dump();
 
 	--node_count;
 	destroy_node(target);
