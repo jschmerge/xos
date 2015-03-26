@@ -20,7 +20,7 @@ class homogenous_arena
 
 	homogenous_arena & operator = (const homogenous_arena &) = delete;
 
-	~homogenous_arena() { ::operator delete [] (data_start); }
+	~homogenous_arena() { ::operator delete (data_start); }
 	
 	void * get()
 	{
