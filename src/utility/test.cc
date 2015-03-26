@@ -1,4 +1,5 @@
 #include "avl_tree.h"
+#include <malloc.h>
 #include <unistd.h>
 #include <locale>
 #include <string>
@@ -123,33 +124,47 @@ void test_performance()
 		{
 			std::mt19937_64 engine(0);
 			{
+#if 1
 				homogenous_arena<avl_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 500000000ul)};
 
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 				avl_tree<int64_t, std::less<int64_t>,
 			         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
+#else
+				avl_tree<int64_t> a;
+#endif
 				printf("AVL:\n");
 				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
+				{
 					test_random_insert(a, engine, i);
-
+//					malloc_info(0, stdout);
+				}
 				print_leaf_heights(a);
 				time_ordered_delete(a);
+//				malloc_info(0, stdout);
 			}
 
 			engine.seed(0);
 			printf("RedBlack:\n");
 			{
+#if 1
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
 
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 				std::set<int64_t, std::less<int64_t>,
 			             bulk_allocator<int64_t>> b{std::less<int64_t>{},alloc};
+#else
+				std::set<int64_t> b;
+#endif
 				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
+				{
 					test_random_insert(b, engine, i);
-
+//					malloc_info(0, stdout);
+				}
 				time_ordered_delete(b);
+//				malloc_info(0, stdout);
 			}
 		}
 	}
@@ -161,6 +176,7 @@ void test_performance()
 		for (int j = 0; j < 3; ++j)
 		{
 			{
+#if 1
 				homogenous_arena<avl_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 500000000ul)};
 
@@ -168,28 +184,43 @@ void test_performance()
 
 				avl_tree<int64_t, std::less<int64_t>,
 				      bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
+#else
+				avl_tree<int64_t> a;
+#endif
 				printf("AVL:\n");
 				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
+				{
 					test_ordered_insert(a, i);
+//					malloc_info(0, stdout);
+				}
 
 				print_leaf_heights(a);
 				time_ordered_delete(a);
+//				malloc_info(0, stdout);
 			}
 
 			{
+#if 1
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
 
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 
-
-				printf("RB:\n");
 				std::set<int64_t, std::less<int64_t>,
 				         bulk_allocator<int64_t>> b{std::less<int64_t>{},
 				                                    alloc};
+#else
+				std::set<int64_t> b;
+#endif
+				printf("RB:\n");
 				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
+				{
 					test_ordered_insert(b, i);
+//					malloc_info(0, stdout);
+				}
+
 				time_ordered_delete(b);
+//				malloc_info(0, stdout);
 			}
 		}
 	}
@@ -200,7 +231,6 @@ int main()
 	std::locale::global(std::locale("en_GB.UTF-8"));
 
 	avl_tree<int> tree;
-	//avl_tree<int, std::greater<int>> tree;
 
 	printf("Size of tree: %zu\n", sizeof(tree));
 
@@ -270,5 +300,11 @@ int main()
 	my_assert(mycopy.empty());
 
 	test_performance();
+
+	printf("-------------------------\n");
+//	malloc_info(0, stdout);
+	printf("-------------------------\n");
+	malloc_trim(0);
+//	malloc_info(0, stdout);
 }
 
