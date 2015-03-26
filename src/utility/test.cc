@@ -51,7 +51,7 @@ void test_random_insert(T & container,
 
 	std::chrono::duration<double> d = end - begin;
 
-	printf("insertion took %.9f seconds for %ld random new values\n",
+	printf("insertion took %'.9f seconds for %'ld random new values\n",
 	       d.count(), container.size() - seed);
 	fflush(stdout);
 }
@@ -72,7 +72,7 @@ void test_ordered_insert(T & container, int64_t total = 10000000)
 
 	std::chrono::duration<double> d = end - begin;
 
-	printf("insertion took %.9f seconds for %ld-%ld ordered values\n",
+	printf("insertion took %'.9f seconds for %'ld-%'ld ordered values\n",
 	       d.count(), starting_size, container.size());
 	fflush(stdout);
 }
@@ -97,44 +97,64 @@ void print_leaf_heights(const avl_tree<T,C,A> & t)
 }
 
 //////////////////////////////////////////////////////////////////////
+template <typename T>
+void time_ordered_delete(T & container)
+{
+	size_t n = container.size();
+	auto begin = posix_clock<clock_source::realtime>::now();
+	for (auto i = container.begin(); i
+	     != container.end();
+	     i = container.erase(i)) { }
+	auto end = posix_clock<clock_source::realtime>::now();
+
+	std::chrono::duration<double> d = end - begin;
+	printf("\nDeletion took %'.9f seconds for %'zd values\n\n", d.count(), n);
+}
+
+//////////////////////////////////////////////////////////////////////
 void test_performance()
 {
-	const int64_t max_values = 100000;
-	for (int64_t i = 1; i <= max_values; i *= 10)
+	const int64_t min_values = 1000;
+	const int64_t max_values = 1000000;
+	for (int64_t i = min_values; i <= max_values; i *= 10)
 	{
 		printf("i = %'ld\n------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
 		{
 			std::mt19937_64 engine(0);
 			{
-				homogenous_arena<avl_tree_node<int64_t>> arena{1 + (i * 10ul)};
+				homogenous_arena<avl_tree_node<int64_t>>
+				  arena{1ul + std::min((i * 10ul), 500000000ul)};
+
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 				avl_tree<int64_t, std::less<int64_t>,
 			         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
 				printf("AVL:\n");
-				test_random_insert(a, engine, i);
-				test_random_insert(a, engine, i);
-				test_random_insert(a, engine, i);
+				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
+					test_random_insert(a, engine, i);
 
 				print_leaf_heights(a);
+				time_ordered_delete(a);
 			}
 
 			engine.seed(0);
 			printf("RedBlack:\n");
 			{
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				                                          arena{1 + (i * 10ul)};
+				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
+
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 				std::set<int64_t, std::less<int64_t>,
 			             bulk_allocator<int64_t>> b{std::less<int64_t>{},alloc};
-				test_random_insert(b, engine, i);
-				test_random_insert(b, engine, i);
-				test_random_insert(b, engine, i);
+				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
+					test_random_insert(b, engine, i);
+
+				time_ordered_delete(b);
 			}
 		}
 	}
 
-	for (int64_t i = 1; i <= (max_values * 10); i *= 10)
+	for (int64_t i = min_values; i <= (max_values * 10); i *= 10)
 	{
 
 		printf("i = %'ld\n--------------------------------------\n", i);
@@ -142,7 +162,8 @@ void test_performance()
 		{
 			{
 				homogenous_arena<avl_tree_node<int64_t>>
-				                 arena{std::min(1ul + (i * 10ul), 500000000ul)};
+				  arena{1ul + std::min((i * 10ul), 500000000ul)};
+
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 
 				avl_tree<int64_t, std::less<int64_t>,
@@ -152,19 +173,23 @@ void test_performance()
 					test_ordered_insert(a, i);
 
 				print_leaf_heights(a);
+				time_ordered_delete(a);
 			}
 
 			{
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				                 arena{std::min(1ul + (i * 10ul), 500000000ul)};
+				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
+
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 
 
 				printf("RB:\n");
 				std::set<int64_t, std::less<int64_t>,
-				         bulk_allocator<int64_t>> b{std::less<int64_t>{}, alloc};
+				         bulk_allocator<int64_t>> b{std::less<int64_t>{},
+				                                    alloc};
 				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
 					test_ordered_insert(b, i);
+				time_ordered_delete(b);
 			}
 		}
 	}
