@@ -71,15 +71,6 @@ struct avl_tree_node
 };
 
 //////////////////////////////////////////////////////////////////////
-template <typename T>
-struct avl_tree_root
-{
-	avl_tree_node<T> * root;
-	avl_tree_node<T> * minimum;
-	avl_tree_node<T> * maximum;
-};
-
-//////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 class avl_tree_iterator
   : public std::iterator<std::bidirectional_iterator_tag,
@@ -215,11 +206,7 @@ class avl_tree
 {
  private:
 	typedef avl_tree_node<T>                       node_type;
-	typedef avl_tree_root<T>                       tree_type;
 	typedef std::allocator_traits<Allocator>       alloc_traits;
-
-	typedef typename alloc_traits::template rebind_traits<tree_type>
-	                                               tree_alloc_traits;
 	typedef typename alloc_traits::template rebind_traits<node_type>
 	                                               node_alloc_traits;
 	typedef typename node_alloc_traits::allocator_type
@@ -253,8 +240,9 @@ class avl_tree
 
  private:
 	// Data members
-	tree_type * tree_root;
 	node_type   sentinel;
+	node_type * minimum;
+	node_type * maximum;
 	size_type   node_count;
 	node_alloc  node_allocator;
 	key_compare compare;
@@ -315,16 +303,13 @@ class avl_tree
 	explicit
 	avl_tree(const key_compare & c,
 	         const allocator_type & a = allocator_type())
-	  : tree_root{nullptr}
-	  , sentinel()
+	  : sentinel()
+	  , minimum(&sentinel)
+	  , maximum(&sentinel)
 	  , node_count{0}
 	  , node_allocator{a}
 	  , compare{c}
 	{
-		typename tree_alloc_traits::allocator_type t_a{node_allocator};
-		tree_root = tree_alloc_traits::allocate(t_a, 1);
-		tree_root->root = tree_root->minimum = tree_root->maximum = nullptr;
-
 		sentinel.set_parent(nullptr, 0);
 		sentinel.left = sentinel.right = nullptr;
 	}
@@ -368,8 +353,6 @@ class avl_tree
 	~avl_tree()
 	{
 		destroy_tree();
-		typename tree_alloc_traits::allocator_type t_a{node_allocator};
-		tree_alloc_traits::deallocate(t_a, tree_root, 1);
 	}
 
 	///
@@ -386,11 +369,11 @@ class avl_tree
 	/// iteration bounds
 	///
 	iterator begin() noexcept
-		{ return iterator(tree_root->minimum != nullptr ? tree_root->minimum : &sentinel); }
+		{ return iterator(minimum); }
 	const_iterator begin() const noexcept
-		{ return const_iterator(tree_root->minimum != nullptr ? tree_root->minimum : &sentinel); }
+		{ return const_iterator(minimum); }
 	const_iterator cbegin() const noexcept
-		{ return const_iterator(tree_root->minimum != nullptr ? tree_root->minimum : &sentinel); }
+		{ return const_iterator(minimum); }
 
 	iterator end() noexcept
 		{ return iterator(&sentinel); }
@@ -428,6 +411,36 @@ class avl_tree
 	///
 	//////
 
+private:
+	std::tuple<node_type *,
+	           node_type *,
+	           node_type **> internal_find(const key_type & value)
+	{
+		node_type * last = &sentinel;
+		node_type * current = sentinel.left;
+		node_type ** child_link = &(sentinel.left);
+
+		while (current != nullptr)
+		{
+			if (compare(value, current->value()))
+			{
+				last = current;
+				child_link = &(current->left);
+				current = current->left;
+			} else if (compare(current->value(), value))
+			{
+	
+				last = current;
+				child_link = &(current->right);
+				current = current->right;
+			} else
+				break;
+		}
+
+		return std::make_tuple(current, last, child_link);
+	}
+public:
+
 	///
 	/// modifiers - emplace
 	///
@@ -456,22 +469,22 @@ class avl_tree
 
 		if (__builtin_expect(sentinel.left == nullptr, 0))
 		{
-			ret = sentinel.left = tree_root->maximum = tree_root->minimum = n;
+			ret = sentinel.left = maximum = minimum = n;
 			n->set_parent(&sentinel);
 			++node_count;
-		} else if (compare(tree_root->maximum->value(), n->value()))
+		} else if (compare(maximum->value(), n->value()))
 		{
-			tree_root->maximum->right = n;
-			n->set_parent(tree_root->maximum);
-			tree_root->maximum = n;
+			maximum->right = n;
+			n->set_parent(maximum);
+			maximum = n;
 			ret = n;
 			rebalance_after_insert_from(n);
 			++node_count;
-		} else if (compare(n->value(), tree_root->minimum->value()))
+		} else if (compare(n->value(), minimum->value()))
 		{
-			tree_root->minimum->left = n;
-			n->set_parent(tree_root->minimum);
-			tree_root->minimum = n;
+			minimum->left = n;
+			n->set_parent(minimum);
+			minimum = n;
 			ret = n;
 			rebalance_after_insert_from(n);
 			++node_count;
@@ -513,12 +526,9 @@ class avl_tree
 	{
 		iterator rc(position);
 
-		if (position != end())
+		if (position.current != &sentinel)
 		{
 			++rc;
-			// TODO: this is the only place we need to pry open an iterator
-			// and get its content... can we figure out a better mechanism
-			// w/o a friend declaration in the iterator?
 			delete_node(position.current);
 		}
 
@@ -534,13 +544,14 @@ class avl_tree
 
 	size_type erase(const key_type & k)
 	{
-		size_type count = 1;
-		iterator i = find(k);
+		size_type count = 0;
+		node_type * target = std::get<0>(internal_find(k));
 
-		if (i != end())
-			erase(i);
-		else
-			count = 0;
+		if (target != nullptr)
+		{
+			++count;
+			delete_node(target);
+		}
 
 		return count;
 	}
@@ -896,14 +907,14 @@ template <typename T, typename C, typename A>
 	n->set_parent(parent);
 
 	if (parent == &sentinel)
-		tree_root->minimum = tree_root->maximum = n;
+		minimum = maximum = n;
 
 	rebalance_after_insert_from(n);
 
-	if (child_link == &(tree_root->minimum->left))
-		tree_root->minimum = tree_root->minimum->left;
-	else if (child_link == &(tree_root->maximum->right))
-		tree_root->maximum = tree_root->maximum->right;
+	if (child_link == &(minimum->left))
+		minimum = minimum->left;
+	else if (child_link == &(maximum->right))
+		maximum = maximum->right;
 
 	++node_count;
 
@@ -930,15 +941,16 @@ template <typename T, typename C, typename A>
 	if (parent == &sentinel)
 	{
 		// deleting the tree root
-		sentinel.left = tree_root->maximum = tree_root->minimum = nullptr;
+		maximum = minimum = &sentinel;
+		sentinel.left = nullptr;
 	} else if (parent->left == target)
 	{
 		balance = parent->balance() + 1;
 
 		parent->left = nullptr;
 
-		if (target == tree_root->minimum)
-			tree_root->minimum = parent;
+		if (target == minimum)
+			minimum = parent;
 
 	} else if (parent->right == target)
 	{
@@ -946,8 +958,8 @@ template <typename T, typename C, typename A>
 
 		parent->right = nullptr;
 
-		if (target == tree_root->maximum)
-			tree_root->maximum = parent;
+		if (target == maximum)
+			maximum = parent;
 	}
 
 	return std::make_pair(parent, balance);
@@ -992,10 +1004,10 @@ template <typename T, typename C, typename A>
 		child->set_parent(parent);
 	}
 
-	if (target == tree_root->minimum)
-		tree_root->minimum = leftmost_child(child);
-	else if (target == tree_root->maximum)
-		tree_root->maximum = rightmost_child(child);
+	if (target == minimum)
+		minimum = leftmost_child(child);
+	else if (target == maximum)
+		maximum = rightmost_child(child);
 
 	return std::make_pair(parent, balance);
 }
@@ -1077,6 +1089,10 @@ template <typename T, typename C, typename A>
 	node_type * current = nullptr;
 	int new_balance = 0;
 
+	// TODO: Do we wish to make a more explicit runtime check here instead
+	// of relying on this debug-only build statement?
+	assert(target != &sentinel);
+
 	// TODO: we make the determination of left vs right link node here...
 	// we can avoid branching in delete_link_node() by calling
 	// 2 versions of it here
@@ -1151,26 +1167,30 @@ template <typename T, typename Comp, typename Alloc>
 void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 {
 	node_type * p = sentinel.left;
-	sentinel.left = tree_root->maximum = tree_root->minimum = nullptr;
+	sentinel.left = maximum = minimum = nullptr;
 
-	if (p != nullptr) p->set_parent(nullptr);
-
-	while (p != nullptr)
+	if (p != &sentinel)
 	{
-		if (p->left != nullptr)
+
+		if (p != nullptr) p->set_parent(nullptr);
+
+		while (p != nullptr)
 		{
-			p = p->left;
-			p->parent_node()->left = nullptr;
-		} else if (p->right != nullptr)
-		{
-			p = p->right;
-			p->parent_node()->right = nullptr;
-		} else
-		{
-			node_type * tmp = p;
-			p = p->parent_node();
-			destroy_node(tmp);
-			--node_count;
+			if (p->left != nullptr)
+			{
+				p = p->left;
+				p->parent_node()->left = nullptr;
+			} else if (p->right != nullptr)
+			{
+				p = p->right;
+				p->parent_node()->right = nullptr;
+			} else
+			{
+				node_type * tmp = p;
+				p = p->parent_node();
+				destroy_node(tmp);
+				--node_count;
+			}
 		}
 	}
 
