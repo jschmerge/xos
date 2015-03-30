@@ -412,13 +412,12 @@ class avl_tree
 	//////
 
 private:
-	std::tuple<node_type *,
-	           node_type *,
-	           node_type **> internal_find(const key_type & value)
+	node_type * internal_find(const key_type & value,
+	                          node_type  * starting_point,
+	                          node_type  * & last,
+	                          node_type ** & child_link) noexcept
 	{
-		node_type * last = &sentinel;
-		node_type * current = sentinel.left;
-		node_type ** child_link = &(sentinel.left);
+		node_type * current = starting_point;
 
 		while (current != nullptr)
 		{
@@ -437,7 +436,7 @@ private:
 				break;
 		}
 
-		return std::make_tuple(current, last, child_link);
+		return current;
 	}
 public:
 
@@ -545,7 +544,10 @@ public:
 	size_type erase(const key_type & k)
 	{
 		size_type count = 0;
-		node_type * target = std::get<0>(internal_find(k));
+		node_type * last = &sentinel;
+		node_type ** child_link = &(sentinel.left);
+
+		node_type * target = internal_find(k, sentinel.left, last, child_link);
 
 		if (target != nullptr)
 		{
@@ -573,56 +575,55 @@ public:
 	///
 	/// Operations
 	///
-	iterator find(const key_type & value)
-	{
-		node_type * current = sentinel.left;
-
-		while (current != nullptr)
-		{
-			if (compare(value, current->value()))
-				current = current->left;
-			else if (compare(current->value(), value))
-				current = current->right;
-			else
-				break;
-		}
-
-		return iterator(current);
-	}
-
-	const_iterator find(const key_type& x) const;
-	template <class K>
-	  iterator find(const K & x);
-	template <class K>
-	  const_iterator find(const K & x) const;
-
-	size_type count(const key_type& x) const;
-	template <class K>
-	  size_type count(const K& x) const;
-
-	iterator lower_bound(const key_type & x);
-	const_iterator lower_bound(const key_type& x) const;
-	template <class K>
-	  iterator lower_bound(const K& x);
-	template <class K>
-	  const_iterator lower_bound(const K& x) const;
-
-	iterator upper_bound(const key_type & x);
-	const_iterator upper_bound(const key_type& x) const;
-	template <class K>
-	  iterator upper_bound(const K& x);
-	template <class K>
-	  const_iterator upper_bound(const K& x) const;
 
 	typedef std::pair<iterator,iterator> iter_range;
 	typedef std::pair<const_iterator,const_iterator> const_iter_range;
 
+	iterator find(const key_type & value)
+	{
+		node_type * last = &sentinel;
+		node_type ** child_link = &(sentinel.left);
+		node_type * target = internal_find(value, sentinel.left,
+		                                   last, child_link);
+
+		return (target != nullptr) ?  iterator(target) : end();
+	}
+
+	const_iterator find(const key_type & value) const
+	{
+		node_type * last = &sentinel;
+		node_type ** child_link = &(sentinel.left);
+		const node_type * target = internal_find(value, sentinel.left,
+		                                         last, child_link);
+
+		return (target != nullptr) ?  iterator(target) : end();
+	}
+
+	size_type count(const key_type& x) const;
+	iterator lower_bound(const key_type & x);
+
+	// XXX FIXME - this isn't the proper algorithm
+	const_iterator lower_bound(const key_type & value) const
+	{
+		const_iterator ret = begin();
+		while (ret != end() && compare(*ret, value)) { ++ret; }
+		return ret;
+	}
+
+	iterator upper_bound(const key_type & x);
+	const_iterator upper_bound(const key_type& x) const;
 	iter_range equal_range(const key_type& x);
 	const_iter_range equal_range(const key_type& x) const;
-	template <class K>
-	  iter_range equal_range(const K& x);
-	template <class K>
-	  const_iter_range equal_range(const K& x) const;
+
+	template <class K> iterator find(const K & x);
+	template <class K> const_iterator find(const K & x) const;
+	template <class K> size_type count(const K& x) const;
+	template <class K> iterator lower_bound(const K& x);
+	template <class K> const_iterator lower_bound(const K& x) const;
+	template <class K> iterator upper_bound(const K& x);
+	template <class K> const_iterator upper_bound(const K& x) const;
+	template <class K> iter_range equal_range(const K& x);
+	template <class K> const_iter_range equal_range(const K& x) const;
 
 	void dump(node_type * n = nullptr, int level = 0);
 };
@@ -880,27 +881,14 @@ template <typename T, typename C, typename A>
   typename avl_tree<T,C,A>::node_type *
   avl_tree<T,C,A>::insert_node(typename avl_tree<T,C,A>::node_type * n)
 {
-	node_type * current = sentinel.left;
+	node_type * current = nullptr;
 	node_type * parent = &sentinel;
 	node_type ** child_link = &(sentinel.left);
 
-	while (current != nullptr)
-	{
-		parent = current;
+	current = internal_find(n->value(), sentinel.left, parent, child_link);
 
-		if (compare(n->value(), current->value()))
-		{
-			child_link = &(current->left);
-			current = current->left;
-		} else if (compare(current->value(), n->value()))
-		{
-			child_link = &(current->right);
-			current = current->right;
-		} else
-		{
-			return current;
-		}
-	}
+	if (current != nullptr)
+		return current;
 
 	*child_link = n;
 
@@ -1167,7 +1155,8 @@ template <typename T, typename Comp, typename Alloc>
 void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 {
 	node_type * p = sentinel.left;
-	sentinel.left = maximum = minimum = nullptr;
+	sentinel.left = nullptr;
+	maximum = minimum = &sentinel;
 
 	if (p != &sentinel)
 	{
