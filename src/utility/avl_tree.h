@@ -600,26 +600,60 @@ public:
 	}
 
 	size_type count(const key_type& x) const;
-	iterator lower_bound(const key_type & x);
 
-	// XXX FIXME - this isn't the proper algorithm
+	template <typename K>
+	const_iterator internal_lower_bound(const K & value,
+	                                    const node_type * current,
+	                                    const node_type * last) const
+	{
+		while (current != nullptr)
+		{
+			// if (current->value() >= value)
+			if ( ! compare(current->value(), value))
+			{
+				last = current;
+				current = current->left;
+			} else if (compare(current->value(), value))
+			{
+				current = current->right;
+			}
+		}
+
+		return last;
+	}
+
+	/// Returns an iterator pointing to the first element that is
+	/// not less than key.
+	iterator lower_bound(const key_type & value)
+	{
+		const node_type * last = &sentinel;
+		const node_type * current = sentinel.left;
+		return internal_lower_bound(value, current, last);
+	}
+
 	const_iterator lower_bound(const key_type & value) const
 	{
-		const_iterator ret = begin();
-		while (ret != end() && compare(*ret, value)) { ++ret; }
-		return ret;
+		const node_type * last = &sentinel;
+		const node_type * current = sentinel.left;
+		return internal_lower_bound(value, current, last);
 	}
+
+	template <class K>
+	iterator lower_bound(const K & value);
+
+	template <class K>
+	const_iterator
+	lower_bound(const K & value) const;
 
 	iterator upper_bound(const key_type & x);
 	const_iterator upper_bound(const key_type& x) const;
+
 	iter_range equal_range(const key_type& x);
 	const_iter_range equal_range(const key_type& x) const;
 
 	template <class K> iterator find(const K & x);
 	template <class K> const_iterator find(const K & x) const;
 	template <class K> size_type count(const K& x) const;
-	template <class K> iterator lower_bound(const K& x);
-	template <class K> const_iterator lower_bound(const K& x) const;
 	template <class K> iterator upper_bound(const K& x);
 	template <class K> const_iterator upper_bound(const K& x) const;
 	template <class K> iter_range equal_range(const K& x);
