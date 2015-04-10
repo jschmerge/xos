@@ -306,5 +306,15 @@ int main()
 	printf("-------------------------\n");
 	malloc_trim(0);
 //	malloc_info(0, stdout);
+
+	avl_tree<int> xyz{2, 5, 7};
+	my_assert(*xyz.lower_bound(1) == 2);
+	my_assert(*xyz.lower_bound(4) == 5);
+	my_assert(*xyz.lower_bound(6) == 7);
+	my_assert(xyz.lower_bound(8) == xyz.end());
+
+	printf("--->%d\n", *xyz.upper_bound(6));
+
+	my_assert(*xyz.upper_bound(6) == 7);
 }
 
