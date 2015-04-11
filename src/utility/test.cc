@@ -115,8 +115,8 @@ void time_ordered_delete(T & container)
 //////////////////////////////////////////////////////////////////////
 void test_performance()
 {
-	const int64_t min_values = 1000;
-	const int64_t max_values = 1000000;
+	const int64_t min_values = 100000;
+	const int64_t max_values = 10000000;
 	for (int64_t i = min_values; i <= max_values; i *= 10)
 	{
 		printf("i = %'ld\n------------------------------------\n", i);
@@ -150,7 +150,7 @@ void test_performance()
 			{
 #if 1
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
+				  arena{1ul + std::min((i * 10ul), 5000000000ul)};
 
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 				std::set<int64_t, std::less<int64_t>,
@@ -202,7 +202,7 @@ void test_performance()
 			{
 #if 1
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
+				  arena{1ul + std::min((i * 10ul), 5000000000ul)};
 
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 
