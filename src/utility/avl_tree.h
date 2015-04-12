@@ -6,20 +6,23 @@
 #include <iterator>
 
 #include <cstdio>
+#include <iostream>
+#include <iomanip>
 #include <cassert>
 
 namespace {
-	template <typename...> using type_defined = void;
+	template <typename...>
+	using type_defined = void;
 
 	template<typename CMP, typename = type_defined<>>
-	struct is_transparent { static constexpr bool value = false; };
+	struct is_transparent { };
 
 	template<typename CMP>
 	struct is_transparent<CMP, type_defined<typename CMP::is_transparent>>
-		 { static constexpr bool value = false; };
+		 { typedef void type; };
 
-	template <bool B, typename T>
-	using enable_if_t = typename std::enable_if<B, T>::type;
+	template <typename CMP>
+	using transparent_t = typename is_transparent<CMP>::type;
 }
 
 // forward declaration
@@ -310,7 +313,9 @@ class avl_tree
 	template <typename K>
 	node_type *
 	find_impl(const K & value, node_type  * starting_point,
-	              node_type  * & last, node_type ** & child_link)
+	          node_type  * & last, node_type ** & child_link)
+	noexcept(  noexcept(compare(value, starting_point->value()))
+	        && noexcept(compare(starting_point->value(), value)) )
 	{
 		node_type * current = starting_point;
 
@@ -335,9 +340,10 @@ class avl_tree
 	}
 
 	template <typename K>
-	node_type * lower_bound_impl(const K & value,
-	                             const node_type * current,
-	                             const node_type * last) const
+	const node_type *
+	lower_bound_impl(const K & value,
+	                 const node_type * current,
+	                 const node_type * last) const
 	{
 		while (current != nullptr)
 		{
@@ -345,7 +351,7 @@ class avl_tree
 			{
 				last = current;
 				current = current->left;
-			} else if (compare(current->value(), value))
+			} else
 			{
 				current = current->right;
 			}
@@ -355,9 +361,10 @@ class avl_tree
 	}
 
 	template <typename K>
-	node_type * upper_bound_impl(const K & value,
-	                             const node_type * current,
-	                             const node_type * last) const
+	const node_type *
+	upper_bound_impl(const K & value,
+	                 const node_type * current,
+	                 const node_type * last) const
 	{
 		while (current != nullptr)
 		{
@@ -365,7 +372,7 @@ class avl_tree
 			{
 				last = current;
 				current = current->left;
-			} else if (compare(current->value(), value))
+			} else
 			{
 				current = current->right;
 			}
@@ -376,27 +383,28 @@ class avl_tree
 
 	template <typename K>
 	void equal_range_impl(const K & value,
-	                      node_type * & begin,
-	                      node_type * & end) const
+	                      const node_type * & begin,
+	                      const node_type * & end) const
 	{
 		node_type * current = sentinel.left;
-		node_type * last = &sentinel;
+		const node_type * last = &sentinel;
 		begin = &sentinel;
 		end = &sentinel;
 
 		while (current != nullptr)
 		{
-			last = current;
 			if (compare(value, current->value()))
 			{
+			last = current;
 				current = current->left;
 			} else if (compare(current->value(), value))
 			{
+			last = current;
 				current = current->right;
 			} else
 			{
-				begin = lower_bound(value, current, last);
-				end = upper_bound(value, current, last);
+				begin = lower_bound_impl(value, current, last);
+				end = upper_bound_impl(value, current, last);
 				current = nullptr;
 			}
 		}
@@ -414,9 +422,9 @@ class avl_tree
 	  : sentinel()
 	  , minimum(&sentinel)
 	  , maximum(&sentinel)
-	  , node_count{0}
-	  , node_allocator{a}
-	  , compare{c}
+	  , node_count(0)
+	  , node_allocator(a)
+	  , compare(c)
 	{
 		sentinel.set_parent(nullptr, 0);
 		sentinel.left = sentinel.right = nullptr;
@@ -426,30 +434,30 @@ class avl_tree
 	avl_tree(InputIterator first, InputIterator last,
 	         const Compare & comp = Compare{},
 	         const Allocator & alloc = Allocator{})
-	  : avl_tree{comp, alloc}
+	  : avl_tree(comp, alloc)
 		{ insert(first, last); }
 
 	template <class InputIterator>
 	avl_tree(InputIterator first, InputIterator last, const Allocator & a)
-	  : avl_tree{first, last, Compare{}, a} { }
+	  : avl_tree(first, last, Compare{}, a) { }
 
 	explicit avl_tree(const Allocator & a)
-	  : avl_tree{key_compare(), a} { }
+	  : avl_tree(key_compare(), a) { }
 
 	avl_tree(const avl_tree & other, const allocator_type & a)
-	  : avl_tree{other.begin(), other.end(), other.compare, a} { }
+	  : avl_tree(other.begin(), other.end(), other.compare, a) { }
 
 	avl_tree(const avl_tree & other)
-	  : avl_tree{other, alloc_traits::select_on_container_copy_construction(
-	                      other.get_allocator())} { }
+	  : avl_tree(other, alloc_traits::select_on_container_copy_construction(
+	             other.get_allocator())) { }
 
 	avl_tree(std::initializer_list<value_type> list,
 	         const key_compare & c = key_compare{},
 	         const allocator_type & a = allocator_type{})
-	  : avl_tree{list.begin(), list.end(), c, a} { }
+	  : avl_tree(list.begin(), list.end(), c, a) { }
 
 	avl_tree(std::initializer_list<value_type> list, const allocator_type & a)
-	  : avl_tree{list.begin(), list.end(), key_compare{}, a} { }
+	  : avl_tree(list.begin(), list.end(), key_compare{}, a) { }
 
 	// TODO
 	avl_tree(avl_tree && other, const allocator_type & a);
@@ -520,7 +528,7 @@ class avl_tree
 	//////
 
 	///
-	/// modifiers - emplace
+	/// Modifiers - emplace
 	///
 	template <typename ... Args>
 	std::pair<iterator, bool> emplace(Args && ... args)
@@ -576,7 +584,7 @@ class avl_tree
 	}
 
 	///
-	/// modifiers - insert
+	/// Modifiers - insert
 	///
 	std::pair<iterator, bool> insert(const value_type & val)
 		{ return emplace(val); }
@@ -598,7 +606,7 @@ class avl_tree
 		{ insert(list.begin(), list.end()); }
 
 	///
-	/// modifiers - erase
+	/// Modifiers - erase
 	///
 	iterator erase(const_iterator position)
 	{
@@ -626,7 +634,7 @@ class avl_tree
 		node_type * last = &sentinel;
 		node_type ** child_link = &(sentinel.left);
 
-		node_type * target = internal_find(k, sentinel.left, last, child_link);
+		node_type * target = find_impl(k, sentinel.left, last, child_link);
 
 		if (target != nullptr)
 		{
@@ -651,127 +659,174 @@ class avl_tree
 	key_compare key_comp() const { return Compare{}; }
 	value_compare value_comp() const { return Compare{}; }
 
+	//////
 	///
 	/// Operations
 	///
+	//////
 
-#	define FIND_BODY() \
-		node_type * last = &sentinel; \
-		node_type ** child_link = &(sentinel.left); \
-		const node_type * target = internal_find(value, sentinel.left, \
-		                                         last, child_link); \
-		return ((target != nullptr) ?  iterator(target) : end());
-
+	///
+	/// returns an iterator pointing to an element with the key
+	/// equivalent to k, or a.end() if such an element is not found
+	///
+	/// Complexity: log(tree.size())
+	///
 	iterator find(const key_type & value)
-		{ FIND_BODY(); }
+	{
+		node_type ** child = &(sentinel.left);
+		node_type * last = &sentinel;
+		const node_type * target = find_impl(value, sentinel.left, last, child);
+		return (target ?  iterator(target) : end());
+	}
 
 	const_iterator find(const key_type & value) const
-		{ FIND_BODY(); }
+	{
+		node_type ** child = &(sentinel.left);
+		node_type * last = &sentinel;
+		const node_type * target = find_impl(value, sentinel.left, last, child);
+		return (target ?  iterator(target) : end());
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, iterator>
-	find(const K & value)
-		{ FIND_BODY(); }
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, const_iterator>
-	find(const K & value) const
-		{ FIND_BODY(); }
+	template <typename K, typename = transparent_t<key_compare>>
+	iterator find(const K & value)
+	{
+		node_type ** child = &(sentinel.left);
+		node_type * last = &sentinel;
+		const node_type * target = find_impl(value, sentinel.left, last, child);
+		return (target ?  iterator(target) : end());
+	}
 
-#	undef FIND_BODY
 
+	template <typename K, typename = transparent_t<key_compare>>
+	const_iterator find(const K & value) const
+	{
+		node_type ** child = &(sentinel.left);
+		node_type * last = &sentinel;
+		const node_type * target = find_impl(value, sentinel.left, last, child);
+		return (target ?  iterator(target) : end());
+	}
+
+	///
+	/// Returns the number of elements with key equivalent to value
+	///
+	/// Complexity:  log(tree.size()) + tree.count(value)
+	///
 	size_type count(const key_type & value) const
 	{
 		auto r = equal_range(value);
 		return std::distance(r.first, r.second);
 	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, size_type>
-	count(const K & value) const
+	template <typename K, typename = transparent_t<key_compare>>
+	size_type count(const K & value) const
 	{
 		auto r = equal_range(value);
 		return std::distance(r.first, r.second);
 	}
 
-#	define LOWER_BOUND_BODY() \
-		const node_type * last = &sentinel; \
-		const node_type * current = sentinel.left; \
-		return lower_bound_impl(value, current, last);
-
-	/// Returns an iterator pointing to the first element that is
-	/// not less than key.
+	///
+	/// Returns an iterator pointing to the first element with key not
+	/// less than value, or a.end() if such an element is not found.
+	///
+	/// Complexity: log(tree.size())
+	///
 	iterator lower_bound(const key_type & value)
-		{ LOWER_BOUND_BODY(); }
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return lower_bound_impl(value, current, last);
+	}
 
 	const_iterator lower_bound(const key_type & value) const
-		{ LOWER_BOUND_BODY(); }
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return lower_bound_impl(value, current, last);
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, iterator>
-	lower_bound(const K & value)
-		{ LOWER_BOUND_BODY(); }
+	template <typename K, typename = transparent_t<key_compare>>
+	iterator lower_bound(const K & value)
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return lower_bound_impl(value, current, last);
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, const_iterator>
-	lower_bound(const K & value) const
-		{ LOWER_BOUND_BODY(); }
+	template <typename K, typename = transparent_t<key_compare>>
+	const_iterator lower_bound(const K & value) const
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return lower_bound_impl(value, current, last);
+	}
 
-#	undef LOWER_BOUND_BODY
-
-#	define UPPER_BOUND_BODY() \
-		const node_type * last = &sentinel; \
-		const node_type * current = sentinel.left; \
-		return upper_bound_impl(value, current, last);
-
+	///
+	/// returns an iterator pointing to the first element with key
+	/// greater than k, or a.end() if such an element is not found.
+	///
+	/// Complexity: logarithmic
+	///
 	iterator upper_bound(const key_type & value)
-		{ UPPER_BOUND_BODY(); }
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return upper_bound_impl(value, current, last);
+	}
 
 	const_iterator upper_bound(const key_type & value) const
-		{ UPPER_BOUND_BODY(); }
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return upper_bound_impl(value, current, last);
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, iterator>
-	upper_bound(const K & value)
-		{ UPPER_BOUND_BODY(); }
+	template <typename K, typename = transparent_t<key_compare>>
+	iterator upper_bound(const K & value)
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return upper_bound_impl(value, current, last);
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value, const_iterator>
-	upper_bound(const K & value) const
-		{ UPPER_BOUND_BODY(); }
+	template <typename K, typename = transparent_t<key_compare>>
+	const_iterator upper_bound(const K & value) const
+	{
+		const node_type * last = &sentinel, * current = sentinel.left;
+		return upper_bound_impl(value, current, last);
+	}
 
-#	undef UPPER_BOUND_BODY
-
-
-	typedef std::pair<iterator,iterator> iter_range;
-	typedef std::pair<const_iterator,const_iterator> const_iter_range;
-
-#	define EQUAL_RANGE_BODY() \
-		node_type * begin = nullptr, * end = nullptr; \
-		equal_range_impl(value, begin, end); \
-		return std::make_pair(iterator{begin}, iterator{end});
-
+	///
+	/// Equivalent to make_pair(a.lower_bound(k), a.upper_bound(k)).
+	///
+	/// Complexity: logarithmic
+	///
 	std::pair<iterator, iterator>
 	equal_range(const key_type & value)
-		{ EQUAL_RANGE_BODY(); }
+	{
+		const node_type * begin = nullptr, * end = nullptr;
+		equal_range_impl(value, begin, end);
+		return std::make_pair(iterator{begin}, iterator{end});
+	}
 
 	std::pair<const_iterator, const_iterator>
 	equal_range(const key_type & value) const
-		{ EQUAL_RANGE_BODY(); }
+	{
+		const node_type * begin = nullptr, * end = nullptr;
+		equal_range_impl(value, begin, end);
+		return std::make_pair(iterator{begin}, iterator{end});
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value,
-	            std::pair<iterator, iterator>>
+	template <typename K, typename = transparent_t<key_compare>>
+	std::pair<iterator, iterator>
 	equal_range(const K & value)
-		{ EQUAL_RANGE_BODY(); }
+	{
+		const node_type * begin = nullptr, * end = nullptr;
+		equal_range_impl(value, begin, end);
+		return std::make_pair(iterator{begin}, iterator{end});
+	}
 
-	template <class K>
-	enable_if_t<is_transparent<key_compare>::value,
-	            std::pair<const_iterator, const_iterator>>
+	template <typename K, typename = transparent_t<key_compare>>
+	std::pair<const_iterator, const_iterator>
 	equal_range(const K & value) const
-		{ EQUAL_RANGE_BODY(); }
-
-#	undef EQUAL_RANGE_BODY
+	{
+		const node_type * begin = nullptr, * end = nullptr;
+		equal_range_impl(value, begin, end);
+		return std::make_pair(iterator{begin}, iterator{end});
+	}
 
 	void dump(node_type * n = nullptr, int level = 0);
 };
@@ -784,7 +839,11 @@ void avl_tree<T,C,A>::dump(typename avl_tree<T,C,A>::node_type * n, int level)
 
 	if (n == nullptr) { printf("EMPTY TREE\n"); return; }
 
-	printf("(% 2d)%-10d", n->balance(), n->value());
+	std::cout << "(" << std::setw(2) << n->balance() << ")"
+	          << std::setw(10) << std::left << n->value();
+	          
+	
+	//printf("(% 2d)%-10d", n->balance(), n->value());
 
 	if (n->right != nullptr)
 		dump(n->right, level + 1);
