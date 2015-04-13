@@ -9,6 +9,8 @@
 
 #include "bulk_allocator.h"
 
+#define USE_BULK_ALLOC 0
+
 #define my_assert(expr) do { \
 	if ( ! (expr)) { \
 		fputs("Assertion failed: '" #expr "'\n", stderr); \
@@ -115,7 +117,7 @@ void time_ordered_delete(T & container)
 //////////////////////////////////////////////////////////////////////
 void test_performance()
 {
-	const int64_t min_values = 1000;
+	const int64_t min_values = 10000;
 	const int64_t max_values = 1000000;
 	for (int64_t i = min_values; i <= max_values; i *= 10)
 	{
@@ -124,7 +126,7 @@ void test_performance()
 		{
 			std::mt19937_64 engine(0);
 			{
-#if 1
+#if USE_BULK_ALLOC
 				homogenous_arena<avl_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 500000000ul)};
 
@@ -148,7 +150,7 @@ void test_performance()
 			engine.seed(0);
 			printf("RedBlack:\n");
 			{
-#if 1
+#if USE_BULK_ALLOC
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
 
@@ -169,14 +171,14 @@ void test_performance()
 		}
 	}
 
-	for (int64_t i = min_values; i <= (max_values * 10); i *= 10)
+	for (int64_t i = min_values; i <= max_values; i *= 10)
 	{
 
 		printf("i = %'ld\n--------------------------------------\n", i);
 		for (int j = 0; j < 3; ++j)
 		{
 			{
-#if 1
+#if USE_BULK_ALLOC
 				homogenous_arena<avl_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 500000000ul)};
 
@@ -200,7 +202,7 @@ void test_performance()
 			}
 
 			{
-#if 1
+#if USE_BULK_ALLOC
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
 				  arena{1ul + std::min((i * 10ul), 5000000001ul)};
 
@@ -234,40 +236,21 @@ int main()
 
 	printf("Size of tree: %zu\n", sizeof(tree));
 
-#if 0
-	test_insert(tree, 1);
-	test_insert(tree, -4);
-	test_insert(tree, -20);
-	test_insert(tree, 6);
-	test_insert(tree, 3);
-	test_insert(tree, 2);
-	tree.emplace(10);
-	test_insert_dup(tree, 10);
-	test_insert(tree, 11);
-	test_insert(tree, 12);
-	test_insert(tree, 13);
-	test_insert(tree, 14);
-	test_insert(tree, 15);
-	test_insert(tree, 16);
-	test_insert(tree, 17);
-	test_insert(tree, -21);
-#endif
-
-	for (int x = 0; x < 15; ++x)
-	{
-		tree.insert(x);
-		printf("----\n");
-		for (auto i = tree.begin(); i != tree.end(); ++i)
-			printf("\t%d, (%zd, %d)\n", *i, i.height(), i.balance());
-		tree.dump();
-	}
-
-	for (int x = 0; x > -17; --x)
+	for (int x = -1; x > -16; --x)
 	{
 		tree.insert(x);
 		printf("----\n");
 		tree.dump();
 	}
+
+	for (int x = 1; x < 16; ++x)
+	{
+		tree.insert(x);
+		printf("----\n");
+		tree.dump();
+	}
+
+	my_assert(tree.find(1) != tree.end());
 
 	printf("-----------------\n");
 	for (auto i = tree.begin(); i != tree.end(); ++i)
@@ -289,6 +272,10 @@ int main()
 	avl_tree<int> mycopy(tree);
 	for (auto i = mycopy.begin(); i != mycopy.end(); ++i)
 		printf("\t%d, (%zd, %d)\n", *i, i.height(), i.balance());
+	mycopy.dump();
+
+	auto q = mycopy.lower_bound(0);
+	printf("---> tree.lower_bound(0) = %d\n", *q);
 
 	printf("-----------------\n");
 	while (mycopy.size())
@@ -304,7 +291,7 @@ int main()
 	printf("-------------------------\n");
 //	malloc_info(0, stdout);
 	printf("-------------------------\n");
-	malloc_trim(0);
+//	malloc_trim(0);
 //	malloc_info(0, stdout);
 }
 
