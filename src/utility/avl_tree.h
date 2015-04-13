@@ -215,8 +215,7 @@ void swap(avl_tree_iterator<T,C,A> & a, avl_tree_iterator<T,C,A> & b) noexcept
 //
 // TODO - This class needs noexcept specifications
 //
-template <typename T,
-          typename Compare = std::less<T>,
+template <typename T, typename Compare = std::less<T>,
           typename Allocator = std::allocator<T>>
 class avl_tree
 {
@@ -300,10 +299,10 @@ class avl_tree
 	node_type * insert_node(node_type * n);
 	void destroy_tree() noexcept;
 	void rebalance_after_insert_from(node_type * n);
-	bool rotate_right(node_type * node);
-	bool rotate_left(node_type * node);
-	bool double_rotate_right(node_type * node);
-	bool double_rotate_left(node_type * node);
+	bool rotate_right(node_type * node) noexcept;
+	bool rotate_left(node_type * node) noexcept;
+	bool double_rotate_right(node_type * node) noexcept;
+	bool double_rotate_left(node_type * node) noexcept;
 	std::pair<node_type *, int> delete_leaf_node(node_type * target);
 	std::pair<node_type *, int> delete_link_node(node_type * target);
 	std::pair<node_type *, int> delete_inner_node(node_type * target);
@@ -395,11 +394,11 @@ class avl_tree
 		{
 			if (compare(value, current->value()))
 			{
-			last = current;
+				last = current;
 				current = current->left;
 			} else if (compare(current->value(), value))
 			{
-			last = current;
+				last = current;
 				current = current->right;
 			} else
 			{
@@ -473,10 +472,26 @@ class avl_tree
 
 	///
 	/// Assignment
+	///
+	avl_tree & operator = (const avl_tree & other)
+	{
+		if (this != &other)
+		{
+			this->clear();
+			this->insert(other.begin(), other.end());
+		}
+		return *this;
+	}
+
 	/// TODO
-	avl_tree & operator = (const avl_tree & other);
 	avl_tree & operator = (avl_tree && other) noexcept;
-	avl_tree & operator = (std::initializer_list<value_type> list);
+
+	avl_tree & operator = (std::initializer_list<value_type> list)
+	{
+		this->clear();
+		this->insert(list.begin(), list.end());
+		return *this;
+	}
 
 	allocator_type get_allocator() const noexcept
 		{ return allocator_type{node_allocator}; }
@@ -876,6 +891,7 @@ void avl_tree<T,C,A>::dump(typename avl_tree<T,C,A>::node_type * n, int level)
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 bool avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
+  noexcept
 {
 	node_type * subtree_parent = node->parent_node();
 	node_type * pivot = node->left;
@@ -914,6 +930,7 @@ bool avl_tree<T,C,A>::rotate_right(typename avl_tree<T,C,A>::node_type * node)
 template <typename T, typename C, typename A>
 bool avl_tree<T,C,A>::
 double_rotate_right(typename avl_tree<T,C,A>::node_type * node)
+  noexcept
 {
 	node_type * subtree_parent = node->parent_node();
 	node_type * pivot = node->left->right;
@@ -961,6 +978,7 @@ double_rotate_right(typename avl_tree<T,C,A>::node_type * node)
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 bool avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
+  noexcept
 {
 	node_type * subtree_parent = node->parent_node();
 	node_type * pivot = node->right;
@@ -999,6 +1017,7 @@ bool avl_tree<T,C,A>::rotate_left(typename avl_tree<T,C,A>::node_type * node)
 template <typename T, typename C, typename A>
 bool avl_tree<T,C,A>::
 double_rotate_left(typename avl_tree<T,C,A>::node_type * node)
+  noexcept
 {
 	node_type * subtree_parent = node->parent_node();
 	node_type * pivot = node->right->left;
