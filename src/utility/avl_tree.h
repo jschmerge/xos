@@ -112,7 +112,7 @@ class avl_tree_iterator
 		return *this;
 	}
 
-	size_t height() const
+	size_t height() const noexcept
 	{
 		const node_type * ptr = current;
 		size_t count = 0;
@@ -124,7 +124,7 @@ class avl_tree_iterator
 		return count;
 	}
 
-	int balance() const { return current->balance(); }
+	int balance() const noexcept { return current->balance(); }
 
 	bool operator == (const avl_tree_iterator & other) noexcept
 		{ return (current == other.current); }
@@ -284,37 +284,42 @@ class avl_tree
 		node_alloc_traits::deallocate(node_allocator, n, 1);
 	}
 
-	node_type * leftmost_child(node_type * n)
+	node_type * leftmost_child(node_type * n) noexcept
 	{
 		while (n->left != nullptr) { n = n->left; }
 		return n;
 	}
 
-	node_type * rightmost_child(node_type * n)
+	node_type * rightmost_child(node_type * n) noexcept
 	{
 		while (n->right != nullptr) { n = n->right; }
 		return n;
 	}
 
 	node_type * insert_node(node_type * n);
+
 	void destroy_tree() noexcept;
-	void rebalance_after_insert_from(node_type * n);
+
+	// rebalancing routines
+	void rebalance_after_insert_from(node_type * n) noexcept;
 	bool rotate_right(node_type * node) noexcept;
 	bool rotate_left(node_type * node) noexcept;
 	bool double_rotate_right(node_type * node) noexcept;
 	bool double_rotate_left(node_type * node) noexcept;
-	std::pair<node_type *, int> delete_leaf_node(node_type * target);
-	std::pair<node_type *, int> delete_link_node(node_type * target);
-	std::pair<node_type *, int> delete_inner_node(node_type * target);
-	void swap_with_neighbor(node_type * target, node_type * neighbor);
-	void delete_node(node_type * target);
+
+	// Deletion helpers
+	void delete_node(node_type * target) noexcept;
+	void swap_with_neighbor(node_type * target, node_type * neighbor) noexcept;
+	std::pair<node_type *, int> delete_leaf_node(node_type * target) noexcept;
+	std::pair<node_type *, int> delete_link_node(node_type * target) noexcept;
+	std::pair<node_type *, int> delete_inner_node(node_type * target) noexcept;
 
 	template <typename K>
 	node_type *
 	find_impl(const K & value, node_type  * starting_point,
 	          node_type  * & last, node_type ** & child_link)
-	noexcept(  noexcept(compare(value, starting_point->value()))
-	        && noexcept(compare(starting_point->value(), value)) )
+	  noexcept(  noexcept(compare(value, starting_point->value()))
+	          && noexcept(compare(starting_point->value(), value)) )
 	{
 		node_type * current = starting_point;
 
@@ -465,10 +470,7 @@ class avl_tree
 	///
 	/// Destructor
 	///
-	~avl_tree()
-	{
-		destroy_tree();
-	}
+	~avl_tree() { destroy_tree(); }
 
 	///
 	/// Assignment
@@ -601,6 +603,9 @@ class avl_tree
 	///
 	/// Modifiers - insert
 	///
+
+	// TODO - insert currently uses emplace to invoke the value_type's copy
+	// ctor, this is sub-optimal
 	std::pair<iterator, bool> insert(const value_type & val)
 		{ return emplace(val); }
 
@@ -671,8 +676,13 @@ class avl_tree
 	///
 	/// Observers
 	///
-	key_compare key_comp() const { return Compare{}; }
-	value_compare value_comp() const { return Compare{}; }
+	key_compare key_comp() const
+	  noexcept(std::is_nothrow_constructible<Compare>::value)
+		{ return Compare{}; }
+
+	value_compare value_comp() const
+	  noexcept(std::is_nothrow_constructible<Compare>::value)
+		{ return Compare{}; }
 
 	//////
 	///
@@ -1065,7 +1075,7 @@ double_rotate_left(typename avl_tree<T,C,A>::node_type * node)
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::
-rebalance_after_insert_from(typename avl_tree<T,C,A>::node_type * n)
+rebalance_after_insert_from(typename avl_tree<T,C,A>::node_type * n) noexcept
 {
 	node_type * last = n;
 	for (node_type * current = n->parent_node(); current != &sentinel;
@@ -1139,7 +1149,7 @@ template <typename T, typename C, typename A>
 template <typename T, typename C, typename A>
   std::pair<typename avl_tree<T,C,A>::node_type *, int>
   avl_tree<T,C,A>::
-  delete_leaf_node(typename avl_tree<T,C,A>::node_type * target)
+  delete_leaf_node(typename avl_tree<T,C,A>::node_type * target) noexcept
 {
 	node_type * parent = target->parent_node();
 	int balance = 0;
@@ -1183,7 +1193,7 @@ template <typename T, typename C, typename A>
 template <typename T, typename C, typename A>
   std::pair<typename avl_tree<T,C,A>::node_type *, int>
   avl_tree<T,C,A>::
-  delete_link_node(typename avl_tree<T,C,A>::node_type * target)
+  delete_link_node(typename avl_tree<T,C,A>::node_type * target) noexcept
 {
 	node_type * parent = target->parent_node();
 	int balance = 0;
@@ -1230,7 +1240,7 @@ template <typename T, typename C, typename A>
 template <typename T, typename C, typename A>
   void avl_tree<T,C,A>::
   swap_with_neighbor(typename avl_tree<T,C,A>::node_type * target,
-                     typename avl_tree<T,C,A>::node_type * neighbor)
+                     typename avl_tree<T,C,A>::node_type * neighbor) noexcept
 {
 	using std::swap;
 
@@ -1272,7 +1282,7 @@ template <typename T, typename C, typename A>
 template <typename T, typename C, typename A>
   std::pair<typename avl_tree<T,C,A>::node_type *, int>
   avl_tree<T,C,A>::
-  delete_inner_node(typename avl_tree<T,C,A>::node_type * target)
+  delete_inner_node(typename avl_tree<T,C,A>::node_type * target) noexcept
 {
 	node_type * neighbor = nullptr;
 	std::pair<node_type *, int> rc;
@@ -1298,7 +1308,7 @@ template <typename T, typename C, typename A>
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
   void avl_tree<T,C,A>::
-  delete_node(typename avl_tree<T,C,A>::node_type * target)
+  delete_node(typename avl_tree<T,C,A>::node_type * target) noexcept
 {
 	node_type * current = nullptr;
 	int new_balance = 0;
