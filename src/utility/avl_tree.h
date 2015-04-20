@@ -234,6 +234,11 @@ class avl_tree
 	static_assert(alignof(node_type) >= 4, "Alignment too small");
 
  public:
+	template <typename U, typename V>
+	static constexpr
+	bool compare_is_noexcept(const U & u = U{}, const V & v = V{})
+		{ return (noexcept(compare(u, v)) && noexcept(compare(v, u))); }
+
 	///
 	/// Required type definitions
 	///
@@ -318,8 +323,7 @@ class avl_tree
 	node_type *
 	find_impl(const K & value, node_type  * starting_point,
 	          node_type  * & last, node_type ** & child_link)
-	  noexcept(  noexcept(compare(value, starting_point->value()))
-	          && noexcept(compare(starting_point->value(), value)) )
+	  noexcept(compare_is_noexcept<K, T>())
 	{
 		node_type * current = starting_point;
 
@@ -348,6 +352,7 @@ class avl_tree
 	lower_bound_impl(const K & value,
 	                 const node_type * current,
 	                 const node_type * last) const
+	  noexcept(compare_is_noexcept<K, T>())
 	{
 		while (current != nullptr)
 		{
@@ -369,6 +374,7 @@ class avl_tree
 	upper_bound_impl(const K & value,
 	                 const node_type * current,
 	                 const node_type * last) const
+	  noexcept(compare_is_noexcept<K, T>())
 	{
 		while (current != nullptr)
 		{
@@ -389,6 +395,7 @@ class avl_tree
 	void equal_range_impl(const K & value,
 	                      const node_type * & begin,
 	                      const node_type * & end) const
+	  noexcept(compare_is_noexcept<K, T>())
 	{
 		node_type * current = sentinel.left;
 		const node_type * last = &sentinel;
@@ -418,7 +425,9 @@ class avl_tree
 	///
 	/// Constructors
 	///
-	avl_tree() : avl_tree(key_compare()) { }
+	avl_tree() noexcept( noexcept(key_compare{})
+	                  && noexcept(avl_tree(key_compare{})))
+	  : avl_tree(key_compare()) { }
 
 	explicit
 	avl_tree(const key_compare & c,
@@ -677,11 +686,11 @@ class avl_tree
 	/// Observers
 	///
 	key_compare key_comp() const
-	  noexcept(std::is_nothrow_constructible<Compare>::value)
+	  noexcept(std::is_nothrow_constructible<key_compare>::value)
 		{ return Compare{}; }
 
 	value_compare value_comp() const
-	  noexcept(std::is_nothrow_constructible<Compare>::value)
+	  noexcept(std::is_nothrow_constructible<key_compare>::value)
 		{ return Compare{}; }
 
 	//////
