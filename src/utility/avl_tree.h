@@ -14,15 +14,12 @@ namespace {
 	template <typename...>
 	using type_defined = void;
 
-	template<typename CMP, typename = type_defined<>>
-	struct is_transparent { };
+	template<typename K, typename CMP, typename = type_defined<>>
+	struct is_transparent : std::false_type { };
 
-	template<typename CMP>
-	struct is_transparent<CMP, type_defined<typename CMP::is_transparent>>
-		 { typedef void type; };
-
-	template <typename CMP>
-	using transparent_t = typename is_transparent<CMP>::type;
+	template<typename K, typename CMP>
+	struct is_transparent<K, CMP, type_defined<typename CMP::is_transparent>>
+	  : std::true_type { };
 }
 
 // forward declaration
@@ -722,8 +719,9 @@ class avl_tree
 	}
 
 
-	template <typename K, typename = transparent_t<key_compare>>
-	iterator find(const K & value)
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{}, iterator>::type
+	find(const K & value)
 	{
 		node_type ** child = &(sentinel.left);
 		node_type * last = &sentinel;
@@ -732,8 +730,10 @@ class avl_tree
 	}
 
 
-	template <typename K, typename = transparent_t<key_compare>>
-	const_iterator find(const K & value) const
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{},
+	                        const_iterator>::type
+	find(const K & value) const
 	{
 		node_type ** child = &(sentinel.left);
 		node_type * last = &sentinel;
@@ -752,8 +752,9 @@ class avl_tree
 		return std::distance(r.first, r.second);
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	size_type count(const K & value) const
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{}, size_type>::type
+	count(const K & value) const
 	{
 		auto r = equal_range(value);
 		return std::distance(r.first, r.second);
@@ -777,15 +778,18 @@ class avl_tree
 		return lower_bound_impl(value, current, last);
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	iterator lower_bound(const K & value)
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{}, iterator>::type
+	lower_bound(const K & value)
 	{
 		const node_type * last = &sentinel, * current = sentinel.left;
 		return lower_bound_impl(value, current, last);
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	const_iterator lower_bound(const K & value) const
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{},
+	                        const_iterator>::type
+	lower_bound(const K & value) const
 	{
 		const node_type * last = &sentinel, * current = sentinel.left;
 		return lower_bound_impl(value, current, last);
@@ -809,15 +813,18 @@ class avl_tree
 		return upper_bound_impl(value, current, last);
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	iterator upper_bound(const K & value)
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{}, iterator>::type
+	upper_bound(const K & value)
 	{
 		const node_type * last = &sentinel, * current = sentinel.left;
 		return upper_bound_impl(value, current, last);
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	const_iterator upper_bound(const K & value) const
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{},
+	                        const_iterator>::type
+	upper_bound(const K & value) const
 	{
 		const node_type * last = &sentinel, * current = sentinel.left;
 		return upper_bound_impl(value, current, last);
@@ -844,8 +851,9 @@ class avl_tree
 		return std::make_pair(iterator{begin}, iterator{end});
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	std::pair<iterator, iterator>
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{},
+	                        std::pair<iterator, iterator>>::type
 	equal_range(const K & value)
 	{
 		const node_type * begin = nullptr, * end = nullptr;
@@ -853,8 +861,9 @@ class avl_tree
 		return std::make_pair(iterator{begin}, iterator{end});
 	}
 
-	template <typename K, typename = transparent_t<key_compare>>
-	std::pair<const_iterator, const_iterator>
+	template <typename K>
+	typename std::enable_if<is_transparent<K, key_compare>{},
+	                        std::pair<const_iterator, const_iterator>>::type
 	equal_range(const K & value) const
 	{
 		const node_type * begin = nullptr, * end = nullptr;
