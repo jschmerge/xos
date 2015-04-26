@@ -1,6 +1,8 @@
 #ifndef GUARD_AVL_TREE_H
 #define GUARD_AVL_TREE_H 1
 
+void gets();
+
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -501,9 +503,6 @@ class avl_tree
 		return *this;
 	}
 
-	allocator_type get_allocator() const noexcept
-		{ return allocator_type{node_allocator}; }
-
 	///
 	/// iteration bounds
 	///
@@ -610,19 +609,155 @@ class avl_tree
 	/// Modifiers - insert
 	///
 
+
+/*
+	node_type *
+	find_impl(const K & value, node_type  * starting_point,
+	          node_type  * & last, node_type ** & child_link)
+*/
+
 	// TODO - insert currently uses emplace to invoke the value_type's copy
 	// ctor, this is sub-optimal
 	std::pair<iterator, bool> insert(const value_type & val)
-		{ return emplace(val); }
+	{
+		bool inserted = false;
+		node_type  * parent = &sentinel;
+ 		node_type ** child_link = &(sentinel.left);
+		node_type * n = find_impl(val, sentinel.left, parent, child_link);
 
-	std::pair<iterator, bool> insert(value_type && val)
-		{ return emplace(std::forward<value_type>(val)); }
+		if (n == nullptr)
+		{
+			inserted = true;
+			n = construct_node(val);
+			*child_link = n;
+			n->set_parent(parent);
+
+			if (parent == &sentinel)
+				minimum = maximum = n;
+
+			rebalance_after_insert_from(n);
+
+			if (child_link == &(minimum->left))
+				minimum = minimum->left;
+			else if (child_link == &(maximum->right))
+				maximum = maximum->right;
+
+			++node_count;
+		}
+
+		return std::make_pair(iterator{n}, inserted);
+	}
+
+	std::pair<iterator, bool> insert(value_type && value)
+	{
+		bool inserted = false;
+		node_type  * parent = &sentinel;
+ 		node_type ** child_link = &(sentinel.left);
+		node_type * n = find_impl(value, sentinel.left, parent, child_link);
+
+		if (n == nullptr)
+		{
+			inserted = true;
+			n = construct_node(std::forward<value_type>(value));
+			*child_link = n;
+			n->set_parent(parent);
+
+			if (parent == &sentinel)
+				minimum = maximum = n;
+
+			rebalance_after_insert_from(n);
+
+			if (child_link == &(minimum->left))
+				minimum = minimum->left;
+			else if (child_link == &(maximum->right))
+				maximum = maximum->right;
+
+			++node_count;
+		}
+
+		return std::make_pair(iterator{n}, inserted);
+	}
 
 	iterator insert(const_iterator pos, const value_type & value)
-		{ return emplace_hint(pos, value); }
+	{
+		node_type * current = pos.current;
+		node_type * inserted = current;
+
+		if (__builtin_expect(node_count == 0, 0))
+		{
+			return insert(value).first;
+		} else if (current == &sentinel) // pos == end()
+		{
+//			if (node_count != 0
+//			   && (compare(maximum->value(), value)))
+			if (compare(maximum->value(), value))
+			{
+				// insert at max
+//				printf("Inserting right of max\n");
+				inserted = construct_node(value);
+				inserted->set_parent(maximum);
+				maximum->right = inserted;
+				maximum = inserted;
+				rebalance_after_insert_from(inserted);
+				++node_count;
+			} else
+			{
+				return insert(value).first;
+			}
+		} else if (current == minimum)
+		{
+			if (compare(value, minimum->value()))
+			{
+				// insert at min
+//				printf("Inserting left of min\n");
+				inserted = construct_node(value);
+				inserted->set_parent(minimum);
+				minimum->left = inserted;
+				minimum = inserted;
+				rebalance_after_insert_from(inserted);
+				++node_count;
+			} else
+			{
+				return insert(value).first;
+			}
+		} else if (compare(value, current->value()))
+		{
+			node_type * prev = std::prev(pos).current;
+			if (!compare(value, prev->value()))
+			{
+				assert(  (current->left == nullptr)
+				      || (prev->right == nullptr) );
+
+				if (current->left == nullptr)
+				{
+//					printf("Inserting left of hint\n");
+					inserted = construct_node(value);
+					inserted->set_parent(current);
+					current->left = inserted;
+					rebalance_after_insert_from(inserted);
+					++node_count;
+				} else if (prev->right == nullptr)
+				{
+//					printf("Inserting right of prev(hint)\n");
+					inserted = construct_node(value);
+					inserted->set_parent(prev);
+					prev->right = inserted;
+					rebalance_after_insert_from(inserted);
+					++node_count;
+				}
+			}
+		} else if (compare(current->value(), value))
+		{
+			return insert(value).first;
+		}
+
+		return inserted; // equivalent to pos
+	}
+#if 0
 
 	iterator insert(const_iterator pos, value_type && value)
 		{ return emplace_hint(pos, std::forward<value_type>(value)); }
+#endif
 
 	template<class InputIterator>
 	  void insert(InputIterator first, InputIterator last)
@@ -689,6 +824,10 @@ class avl_tree
 	value_compare value_comp() const
 	  noexcept(std::is_nothrow_constructible<key_compare>::value)
 		{ return Compare{}; }
+
+	allocator_type get_allocator() const
+	  noexcept(noexcept(allocator_type{node_allocator}))
+		{ return allocator_type{node_allocator}; }
 
 	//////
 	///
