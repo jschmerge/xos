@@ -605,6 +605,55 @@ class avl_tree
 		return iterator(ret);
 	}
 
+	template <typename ... Args>
+	iterator emplace_hint2(const_iterator pos, Args && ... args)
+	{
+		node_type * current = pos.current;
+		node_type * inserted = current;
+		node_type * n = construct_node(std::forward<Args>(args)...);
+
+		if (__builtin_expect(node_count == 0, 0))
+		{
+			return insert_node(n);
+		} else if (current == &sentinel) // pos == end()
+		{
+			if (compare(maximum->value(), n->value()))
+			{
+				// insert at max
+			} else
+			{
+				return insert_node(n);
+			}
+		} else if (current == minimum)
+		{
+			if (compare(n->value(), minimum->value()))
+			{
+				// insert at min
+			} else
+			{
+				return insert_node(n);
+			}
+		} else if (compare(n->value(), current->value()))
+		{
+			node_type * prev = std::prev(pos).current;
+			if (!compare(n->value(), prev->value()))
+			{
+				assert((current->left == nullptr) || (prev->right == nullptr));
+
+				if (current->left == nullptr)
+				{
+				} else if (prev->right == nullptr)
+				{
+				}
+			}
+		} else if (compare(current->value(), n->value()))
+		{
+			return insert_node(n);
+		}
+
+		return inserted; // equivalent to pos
+	}
+
 	///
 	/// Modifiers - insert
 	///
@@ -669,6 +718,36 @@ class avl_tree
 		return std::make_pair(iterator{n}, inserted);
 	}
 
+#define REFACTOR 1
+#if REFACTOR
+ private:
+	node_type * insert_value(node_type * parent,
+	                         node_type ** child_link,
+	                         const value_type & value)
+	{
+		node_type * inserted = construct_node(value);
+		inserted->set_parent(parent);
+		*child_link = inserted;
+		rebalance_after_insert(inserted);
+		++node_count;
+		return inserted;
+	}
+
+	node_type * insert_value(node_type * parent,
+	                         node_type ** child_link,
+	                         value_type && value)
+	{
+		node_type * inserted = construct_node(std::forward<value_type>(value));
+		inserted->set_parent(parent);
+		*child_link = inserted;
+		rebalance_after_insert(inserted);
+		++node_count;
+		return inserted;
+	}
+
+ public:
+#endif
+
 	iterator insert(const_iterator pos, const value_type & value)
 	{
 		node_type * current = pos.current;
@@ -682,12 +761,18 @@ class avl_tree
 			if (compare(maximum->value(), value))
 			{
 				// insert at max
+#if REFACTOR
+				inserted = insert_value(maximum, &(maximum->right), value);
+				maximum = inserted;
+#else
 				inserted = construct_node(value);
 				inserted->set_parent(maximum);
 				maximum->right = inserted;
 				maximum = inserted;
 				rebalance_after_insert(inserted);
 				++node_count;
+#endif
+
 			} else
 			{
 				return insert(value).first;
@@ -697,12 +782,17 @@ class avl_tree
 			if (compare(value, minimum->value()))
 			{
 				// insert at min
+#if REFACTOR
+				inserted = insert_value(minimum, &(minimum->left), value);
+				minimum = inserted;
+#else
 				inserted = construct_node(value);
 				inserted->set_parent(minimum);
 				minimum->left = inserted;
 				minimum = inserted;
 				rebalance_after_insert(inserted);
 				++node_count;
+#endif
 			} else
 			{
 				return insert(value).first;
@@ -717,18 +807,26 @@ class avl_tree
 
 				if (current->left == nullptr)
 				{
+#if REFACTOR
+					inserted = insert_value(current, &(current->left), value);
+#else
 					inserted = construct_node(value);
 					inserted->set_parent(current);
 					current->left = inserted;
 					rebalance_after_insert(inserted);
 					++node_count;
+#endif
 				} else if (prev->right == nullptr)
 				{
+#if REFACTOR
+					inserted = insert_value(prev, &(prev->right), value);
+#else
 					inserted = construct_node(value);
 					inserted->set_parent(prev);
 					prev->right = inserted;
 					rebalance_after_insert(inserted);
 					++node_count;
+#endif
 				}
 			}
 		} else if (compare(current->value(), value))
@@ -738,11 +836,98 @@ class avl_tree
 
 		return inserted; // equivalent to pos
 	}
-#if 0
 
 	iterator insert(const_iterator pos, value_type && value)
-		{ return emplace_hint(pos, std::forward<value_type>(value)); }
+	{
+		node_type * current = pos.current;
+		node_type * inserted = current;
+
+		if (__builtin_expect(node_count == 0, 0))
+		{
+			return insert(std::forward<value_type>(value)).first;
+		} else if (current == &sentinel) // pos == end()
+		{
+			if (compare(maximum->value(), value))
+			{
+				// insert at max
+#if REFACTOR
+				inserted = insert_value(maximum, &(maximum->right),
+				                        std::forward<value_type>(value));
+				maximum = inserted;
+#else
+				inserted = construct_node(std::forward<value_type>(value));
+				inserted->set_parent(maximum);
+				maximum->right = inserted;
+				maximum = inserted;
+				rebalance_after_insert(inserted);
+				++node_count;
 #endif
+
+			} else
+			{
+				return insert(std::forward<value_type>(value)).first;
+			}
+		} else if (current == minimum)
+		{
+			if (compare(value, minimum->value()))
+			{
+				// insert at min
+#if REFACTOR
+				inserted = insert_value(minimum, &(minimum->left),
+				                        std::forward<value_type>(value));
+				minimum = inserted;
+#else
+				inserted = construct_node(std::forward<value_type>(value));
+				inserted->set_parent(minimum);
+				minimum->left = inserted;
+				minimum = inserted;
+				rebalance_after_insert(inserted);
+				++node_count;
+#endif
+			} else
+			{
+				return insert(std::forward<value_type>(value)).first;
+			}
+		} else if (compare(value, current->value()))
+		{
+			node_type * prev = std::prev(pos).current;
+			if (!compare(value, prev->value()))
+			{
+				assert((current->left == nullptr) || (prev->right == nullptr));
+
+				if (current->left == nullptr)
+				{
+#if REFACTOR
+					inserted = insert_value(current, &(current->left),
+					                        std::forward<value_type>(value));
+#else
+					inserted = construct_node(std::forward<value_type>(value));
+					inserted->set_parent(current);
+					current->left = inserted;
+					rebalance_after_insert(inserted);
+					++node_count;
+#endif
+				} else if (prev->right == nullptr)
+				{
+#if REFACTOR
+					inserted = insert_value(prev, &(prev->right),
+					                        std::forward<value_type>(value));
+#else
+					inserted = construct_node(std::forward<value_type>(value));
+					inserted->set_parent(prev);
+					prev->right = inserted;
+					rebalance_after_insert(inserted);
+					++node_count;
+#endif
+				}
+			}
+		} else if (compare(current->value(), value))
+		{
+			return insert(std::forward<value_type>(value)).first;
+		}
+
+		return inserted; // equivalent to pos
+	}
 
 	template<class InputIterator>
 	  void insert(InputIterator first, InputIterator last)
