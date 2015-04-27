@@ -305,7 +305,7 @@ class avl_tree
 	void destroy_tree() noexcept;
 
 	// rebalancing routines
-	void rebalance_after_insert_from(node_type * n) noexcept;
+	void rebalance_after_insert(node_type * n) noexcept;
 	bool rotate_right(node_type * node) noexcept;
 	bool rotate_left(node_type * node) noexcept;
 	bool double_rotate_right(node_type * node) noexcept;
@@ -586,7 +586,7 @@ class avl_tree
 			n->set_parent(maximum);
 			maximum = n;
 			ret = n;
-			rebalance_after_insert_from(n);
+			rebalance_after_insert(n);
 			++node_count;
 		} else if (compare(n->value(), minimum->value()))
 		{
@@ -594,7 +594,7 @@ class avl_tree
 			n->set_parent(minimum);
 			minimum = n;
 			ret = n;
-			rebalance_after_insert_from(n);
+			rebalance_after_insert(n);
 			++node_count;
 		} else
 		{
@@ -609,15 +609,6 @@ class avl_tree
 	/// Modifiers - insert
 	///
 
-
-/*
-	node_type *
-	find_impl(const K & value, node_type  * starting_point,
-	          node_type  * & last, node_type ** & child_link)
-*/
-
-	// TODO - insert currently uses emplace to invoke the value_type's copy
-	// ctor, this is sub-optimal
 	std::pair<iterator, bool> insert(const value_type & val)
 	{
 		bool inserted = false;
@@ -635,7 +626,7 @@ class avl_tree
 			if (parent == &sentinel)
 				minimum = maximum = n;
 
-			rebalance_after_insert_from(n);
+			rebalance_after_insert(n);
 
 			if (child_link == &(minimum->left))
 				minimum = minimum->left;
@@ -665,7 +656,7 @@ class avl_tree
 			if (parent == &sentinel)
 				minimum = maximum = n;
 
-			rebalance_after_insert_from(n);
+			rebalance_after_insert(n);
 
 			if (child_link == &(minimum->left))
 				minimum = minimum->left;
@@ -688,17 +679,14 @@ class avl_tree
 			return insert(value).first;
 		} else if (current == &sentinel) // pos == end()
 		{
-//			if (node_count != 0
-//			   && (compare(maximum->value(), value)))
 			if (compare(maximum->value(), value))
 			{
 				// insert at max
-//				printf("Inserting right of max\n");
 				inserted = construct_node(value);
 				inserted->set_parent(maximum);
 				maximum->right = inserted;
 				maximum = inserted;
-				rebalance_after_insert_from(inserted);
+				rebalance_after_insert(inserted);
 				++node_count;
 			} else
 			{
@@ -709,12 +697,11 @@ class avl_tree
 			if (compare(value, minimum->value()))
 			{
 				// insert at min
-//				printf("Inserting left of min\n");
 				inserted = construct_node(value);
 				inserted->set_parent(minimum);
 				minimum->left = inserted;
 				minimum = inserted;
-				rebalance_after_insert_from(inserted);
+				rebalance_after_insert(inserted);
 				++node_count;
 			} else
 			{
@@ -730,19 +717,17 @@ class avl_tree
 
 				if (current->left == nullptr)
 				{
-//					printf("Inserting left of hint\n");
 					inserted = construct_node(value);
 					inserted->set_parent(current);
 					current->left = inserted;
-					rebalance_after_insert_from(inserted);
+					rebalance_after_insert(inserted);
 					++node_count;
 				} else if (prev->right == nullptr)
 				{
-//					printf("Inserting right of prev(hint)\n");
 					inserted = construct_node(value);
 					inserted->set_parent(prev);
 					prev->right = inserted;
-					rebalance_after_insert_from(inserted);
+					rebalance_after_insert(inserted);
 					++node_count;
 				}
 			}
@@ -1232,7 +1217,7 @@ double_rotate_left(typename avl_tree<T,C,A>::node_type * node)
 //////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void avl_tree<T,C,A>::
-rebalance_after_insert_from(typename avl_tree<T,C,A>::node_type * n) noexcept
+rebalance_after_insert(typename avl_tree<T,C,A>::node_type * n) noexcept
 {
 	node_type * last = n;
 	for (node_type * current = n->parent_node(); current != &sentinel;
@@ -1290,7 +1275,7 @@ template <typename T, typename C, typename A>
 	if (parent == &sentinel)
 		minimum = maximum = n;
 
-	rebalance_after_insert_from(n);
+	rebalance_after_insert(n);
 
 	if (child_link == &(minimum->left))
 		minimum = minimum->left;
