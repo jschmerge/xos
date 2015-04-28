@@ -37,10 +37,11 @@ struct avl_tree_node
 	avl_tree_node * left;
 	avl_tree_node * right;
 
-	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
+#if (!SPACE_OPTIMIZATION)
+	int8_t balance_factor;
+#endif
 
-	static constexpr uintptr_t address_mask = ~static_cast<uintptr_t>(3);
-	static constexpr uintptr_t balance_mask = static_cast<uintptr_t>(3);
+	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
 	value_type & value() noexcept
 		{ return *value_address(); }
@@ -53,6 +54,10 @@ struct avl_tree_node
 
 	const value_type * value_address() const noexcept
 		{ return reinterpret_cast<const value_type *>(&storage); }
+
+#if (SPACE_OPTIMIZATION)
+	static constexpr uintptr_t address_mask = ~static_cast<uintptr_t>(3);
+	static constexpr uintptr_t balance_mask = static_cast<uintptr_t>(3);
 
 	avl_tree_node * parent_node() const noexcept
 		{ return reinterpret_cast<avl_tree_node*>(
@@ -84,6 +89,18 @@ struct avl_tree_node
 		             (reinterpret_cast<uintptr_t>(parent) & address_mask)
 		           | (static_cast<uintptr_t>(b + 1) & balance_mask));
 	}
+#else
+	avl_tree_node * parent_node() const noexcept { return parent; }
+
+	void set_parent(avl_tree_node * p) noexcept { parent = p; }
+
+	void set_parent(avl_tree_node * p, int _balance) noexcept
+		{ parent = p; balance_factor = _balance; }
+
+	int balance() const noexcept { return balance_factor; }
+
+	void set_balance(int b) noexcept { balance_factor = b; }
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -182,11 +199,9 @@ class avl_tree_iterator
 	avl_tree_iterator & operator -- (int) noexcept
 		{ avl_tree_iterator tmp = *this; --(*this); return tmp; }
 
-	const T & operator * () const noexcept
-		{ return current->value(); }
+	const T & operator * () const noexcept { return current->value(); }
 
-	const T * operator -> () const noexcept
-		{ return &(current->value()); }
+	const T * operator -> () const noexcept { return &(current->value()); }
 
 	void swap(avl_tree_iterator & other) noexcept
 	{
@@ -275,8 +290,7 @@ class avl_tree
 		n->set_parent(nullptr);
 		n->set_balance(0);
 
-		node_alloc_traits::construct(node_allocator,
-		                             n->value_address(),
+		node_alloc_traits::construct(node_allocator, n->value_address(),
 		                             std::forward<Args>(args)...);
 
 		return n;
@@ -298,6 +312,30 @@ class avl_tree
 	{
 		while (n->right != nullptr) { n = n->right; }
 		return n;
+	}
+
+	node_type * insert_node_at(node_type * parent,
+	                           node_type ** child_link,
+	                           node_type * inserted)
+	{
+		inserted->set_parent(parent);
+		*child_link = inserted;
+		rebalance_after_insert(inserted);
+		++node_count;
+		return inserted;
+	}
+
+	node_type * insert_value(node_type * parent, node_type ** child_link,
+	                         const value_type & value)
+	{
+		return insert_node_at(parent, child_link, construct_node(value));
+	}
+
+	node_type * insert_value(node_type * parent, node_type ** child_link,
+	                         value_type && value)
+	{
+		return insert_node_at(parent, child_link,
+		                      construct_node(std::forward<value_type>(value)));
 	}
 
 	node_type * insert_node(node_type * n);
@@ -446,8 +484,7 @@ class avl_tree
 	avl_tree(InputIterator first, InputIterator last,
 	         const Compare & comp = Compare{},
 	         const Allocator & alloc = Allocator{})
-	  : avl_tree(comp, alloc)
-		{ insert(first, last); }
+	  : avl_tree(comp, alloc) { insert(first, last); }
 
 	template <class InputIterator>
 	avl_tree(InputIterator first, InputIterator last, const Allocator & a)
@@ -570,43 +607,7 @@ class avl_tree
 	}
 
 	template <typename ... Args>
-	iterator emplace_hint(const_iterator, Args && ... args)
-	{
-		node_type * n = construct_node(std::forward<Args>(args)...);
-		node_type * ret = nullptr;
-
-		if (__builtin_expect(sentinel.left == nullptr, 0))
-		{
-			ret = sentinel.left = maximum = minimum = n;
-			n->set_parent(&sentinel);
-			++node_count;
-		} else if (compare(maximum->value(), n->value()))
-		{
-			maximum->right = n;
-			n->set_parent(maximum);
-			maximum = n;
-			ret = n;
-			rebalance_after_insert(n);
-			++node_count;
-		} else if (compare(n->value(), minimum->value()))
-		{
-			minimum->left = n;
-			n->set_parent(minimum);
-			minimum = n;
-			ret = n;
-			rebalance_after_insert(n);
-			++node_count;
-		} else
-		{
-			ret = insert_node(n);
-		}
-
-		if (n != ret) destroy_node(n);
-		return iterator(ret);
-	}
-
-	template <typename ... Args>
-	iterator emplace_hint2(const_iterator pos, Args && ... args)
+	iterator emplace_hint(const_iterator pos, Args && ... args)
 	{
 		node_type * current = pos.current;
 		node_type * inserted = current;
@@ -620,6 +621,8 @@ class avl_tree
 			if (compare(maximum->value(), n->value()))
 			{
 				// insert at max
+				inserted = insert_node_at(maximum, &(maximum->right), n);
+				maximum = inserted;
 			} else
 			{
 				return insert_node(n);
@@ -629,6 +632,8 @@ class avl_tree
 			if (compare(n->value(), minimum->value()))
 			{
 				// insert at min
+				inserted = insert_node_at(minimum, &(minimum->left), n);
+				minimum = inserted;
 			} else
 			{
 				return insert_node(n);
@@ -642,8 +647,10 @@ class avl_tree
 
 				if (current->left == nullptr)
 				{
+					inserted = insert_node_at(current, &(current->left), n);
 				} else if (prev->right == nullptr)
 				{
+					inserted = insert_node_at(prev, &(prev->right), n);
 				}
 			}
 		} else if (compare(current->value(), n->value()))
@@ -718,36 +725,6 @@ class avl_tree
 		return std::make_pair(iterator{n}, inserted);
 	}
 
-#define REFACTOR 1
-#if REFACTOR
- private:
-	node_type * insert_value(node_type * parent,
-	                         node_type ** child_link,
-	                         const value_type & value)
-	{
-		node_type * inserted = construct_node(value);
-		inserted->set_parent(parent);
-		*child_link = inserted;
-		rebalance_after_insert(inserted);
-		++node_count;
-		return inserted;
-	}
-
-	node_type * insert_value(node_type * parent,
-	                         node_type ** child_link,
-	                         value_type && value)
-	{
-		node_type * inserted = construct_node(std::forward<value_type>(value));
-		inserted->set_parent(parent);
-		*child_link = inserted;
-		rebalance_after_insert(inserted);
-		++node_count;
-		return inserted;
-	}
-
- public:
-#endif
-
 	iterator insert(const_iterator pos, const value_type & value)
 	{
 		node_type * current = pos.current;
@@ -761,17 +738,8 @@ class avl_tree
 			if (compare(maximum->value(), value))
 			{
 				// insert at max
-#if REFACTOR
 				inserted = insert_value(maximum, &(maximum->right), value);
 				maximum = inserted;
-#else
-				inserted = construct_node(value);
-				inserted->set_parent(maximum);
-				maximum->right = inserted;
-				maximum = inserted;
-				rebalance_after_insert(inserted);
-				++node_count;
-#endif
 
 			} else
 			{
@@ -782,17 +750,8 @@ class avl_tree
 			if (compare(value, minimum->value()))
 			{
 				// insert at min
-#if REFACTOR
 				inserted = insert_value(minimum, &(minimum->left), value);
 				minimum = inserted;
-#else
-				inserted = construct_node(value);
-				inserted->set_parent(minimum);
-				minimum->left = inserted;
-				minimum = inserted;
-				rebalance_after_insert(inserted);
-				++node_count;
-#endif
 			} else
 			{
 				return insert(value).first;
@@ -807,26 +766,10 @@ class avl_tree
 
 				if (current->left == nullptr)
 				{
-#if REFACTOR
 					inserted = insert_value(current, &(current->left), value);
-#else
-					inserted = construct_node(value);
-					inserted->set_parent(current);
-					current->left = inserted;
-					rebalance_after_insert(inserted);
-					++node_count;
-#endif
 				} else if (prev->right == nullptr)
 				{
-#if REFACTOR
 					inserted = insert_value(prev, &(prev->right), value);
-#else
-					inserted = construct_node(value);
-					inserted->set_parent(prev);
-					prev->right = inserted;
-					rebalance_after_insert(inserted);
-					++node_count;
-#endif
 				}
 			}
 		} else if (compare(current->value(), value))
@@ -850,19 +793,9 @@ class avl_tree
 			if (compare(maximum->value(), value))
 			{
 				// insert at max
-#if REFACTOR
 				inserted = insert_value(maximum, &(maximum->right),
 				                        std::forward<value_type>(value));
 				maximum = inserted;
-#else
-				inserted = construct_node(std::forward<value_type>(value));
-				inserted->set_parent(maximum);
-				maximum->right = inserted;
-				maximum = inserted;
-				rebalance_after_insert(inserted);
-				++node_count;
-#endif
-
 			} else
 			{
 				return insert(std::forward<value_type>(value)).first;
@@ -872,18 +805,9 @@ class avl_tree
 			if (compare(value, minimum->value()))
 			{
 				// insert at min
-#if REFACTOR
 				inserted = insert_value(minimum, &(minimum->left),
 				                        std::forward<value_type>(value));
 				minimum = inserted;
-#else
-				inserted = construct_node(std::forward<value_type>(value));
-				inserted->set_parent(minimum);
-				minimum->left = inserted;
-				minimum = inserted;
-				rebalance_after_insert(inserted);
-				++node_count;
-#endif
 			} else
 			{
 				return insert(std::forward<value_type>(value)).first;
@@ -897,28 +821,12 @@ class avl_tree
 
 				if (current->left == nullptr)
 				{
-#if REFACTOR
 					inserted = insert_value(current, &(current->left),
 					                        std::forward<value_type>(value));
-#else
-					inserted = construct_node(std::forward<value_type>(value));
-					inserted->set_parent(current);
-					current->left = inserted;
-					rebalance_after_insert(inserted);
-					++node_count;
-#endif
 				} else if (prev->right == nullptr)
 				{
-#if REFACTOR
 					inserted = insert_value(prev, &(prev->right),
 					                        std::forward<value_type>(value));
-#else
-					inserted = construct_node(std::forward<value_type>(value));
-					inserted->set_parent(prev);
-					prev->right = inserted;
-					rebalance_after_insert(inserted);
-					++node_count;
-#endif
 				}
 			}
 		} else if (compare(current->value(), value))
@@ -926,7 +834,7 @@ class avl_tree
 			return insert(std::forward<value_type>(value)).first;
 		}
 
-		return inserted; // equivalent to pos
+		return inserted;
 	}
 
 	template<class InputIterator>
@@ -1719,7 +1627,6 @@ void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 
 	if (p != &sentinel)
 	{
-
 		if (p != nullptr) p->set_parent(nullptr);
 
 		while (p != nullptr)
