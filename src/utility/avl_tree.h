@@ -27,6 +27,8 @@ namespace {
 // forward declaration
 template <typename T, typename C, typename A> class avl_tree;
 
+#define SPACE_OPTIMIZATION 1
+
 //////////////////////////////////////////////////////////////////////
 template <typename T>
 struct avl_tree_node
@@ -40,6 +42,23 @@ struct avl_tree_node
 #if (!SPACE_OPTIMIZATION)
 	int8_t balance_factor;
 #endif
+
+	avl_tree_node()
+	  : parent(nullptr)
+	  , left(nullptr)
+	  , right(nullptr)
+#if (!SPACE_OPTIMIZATION)
+	  , balance_factor(0)
+#endif
+		{ set_balance(0); }
+
+	avl_tree_node(const avl_tree_node &) noexcept = default;
+	avl_tree_node(avl_tree_node &&) noexcept = default;
+
+	avl_tree_node & operator = (const avl_tree_node &) noexcept = default;
+	avl_tree_node & operator = (avl_tree_node &&) noexcept = default;
+
+	~avl_tree_node() = default;
 
 	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
@@ -68,13 +87,6 @@ struct avl_tree_node
 		parent = reinterpret_cast<avl_tree_node*>(
 		             (reinterpret_cast<uintptr_t>(p) & address_mask)
 		           | (reinterpret_cast<uintptr_t>(parent) & balance_mask));
-	}
-
-	void set_parent(avl_tree_node * p, int _balance) noexcept
-	{
-		parent = reinterpret_cast<avl_tree_node*>(
-		             (reinterpret_cast<uintptr_t>(p) & address_mask)
-		           | (static_cast<uintptr_t>(_balance + 1) & balance_mask));
 	}
 
 	int balance() const noexcept
@@ -112,19 +124,16 @@ class avl_tree_iterator
 	typedef avl_tree_node<T> node_type;
  public:
 	avl_tree_iterator() noexcept
-	  : current(nullptr)
-		{ }
+	  : current(nullptr) { }
 
 	avl_tree_iterator(const avl_tree_iterator & other) noexcept
-	  : current(other.current)
-		{ }
+	  : current(other.current) { }
 
 	~avl_tree_iterator() = default;
 
 	avl_tree_iterator & operator = (const avl_tree_iterator & other) noexcept
 	{
-		if (this != &other)
-			current = other.current;
+		if (this != &other) current = other.current;
 		return *this;
 	}
 
@@ -205,13 +214,11 @@ class avl_tree_iterator
 
 	void swap(avl_tree_iterator & other) noexcept
 	{
-		using std::swap;
-		swap(current, other.current);
+		std::swap(current, other.current);
 	}
 
 	bool is_leaf_node() noexcept
-		{ return (  (current->left == nullptr)
-		         && (current->right == nullptr)); }
+		{ return (current->left == nullptr || current->right == nullptr); }
 
  private:
 	avl_tree_iterator(const node_type * _start) noexcept
@@ -221,6 +228,7 @@ class avl_tree_iterator
 	node_type * current;
 };
 
+//////////////////////////////////////////////////////////////////////
 template <typename T, typename C, typename A>
 void swap(avl_tree_iterator<T,C,A> & a, avl_tree_iterator<T,C,A> & b) noexcept
 	{ a.swap(b); }
@@ -275,6 +283,8 @@ class avl_tree
  private:
 	// Data members
 	node_type   sentinel;
+
+	// TODO - see if we can sink the min & max pointers into the sentinel
 	node_type * minimum;
 	node_type * maximum;
 	size_type   node_count;
@@ -462,10 +472,14 @@ class avl_tree
 	///
 	/// Constructors
 	///
+
+	/// Constructor 1 - Default ctor - delegates to Constructor 2
 	avl_tree() noexcept( noexcept(key_compare{})
 	                  && noexcept(avl_tree(key_compare{})))
 	  : avl_tree(key_compare()) { }
 
+	/// Constructor 2 - The workhorse, sets things up for all other
+	///                 constructors to create an empty tree
 	explicit
 	avl_tree(const key_compare & c,
 	         const allocator_type & a = allocator_type())
@@ -475,42 +489,88 @@ class avl_tree
 	  , node_count(0)
 	  , node_allocator(a)
 	  , compare(c)
-	{
-		sentinel.set_parent(nullptr, 0);
-		sentinel.left = sentinel.right = nullptr;
-	}
+		{ }
 	  
+	/// Constructor 3 - Inserts range of values, after initializing with
+	///                 Constructor 2, and then calling insert(first, last);
 	template <class InputIterator>
 	avl_tree(InputIterator first, InputIterator last,
 	         const Compare & comp = Compare{},
 	         const Allocator & alloc = Allocator{})
-	  : avl_tree(comp, alloc) { insert(first, last); }
+	  : avl_tree(comp, alloc)
+	{
+		try { insert(first, last); }
+		catch (...) { destroy_tree(); throw; }
+	}
 
+	/// Constructor 4 - Same as Constructor 3, but without compare specified;
+	///                 calls Constructor 3 -> Constructor 2
 	template <class InputIterator>
 	avl_tree(InputIterator first, InputIterator last, const Allocator & a)
 	  : avl_tree(first, last, Compare{}, a) { }
 
+	/// Constructor 5 - Default ctor with allocator; calls Constructor 2
 	explicit avl_tree(const Allocator & a)
 	  : avl_tree(key_compare(), a) { }
 
+	/// Constructor 6 - Copy constructor with allocator - Calls Constructor 3,
+	///                 Constructor 2 and insert(begin, end)
 	avl_tree(const avl_tree & other, const allocator_type & a)
 	  : avl_tree(other.begin(), other.end(), other.compare, a) { }
 
+	/// Constructor 7 - Copy constructor - Calls Constructor 6->3->2 followed
+	///                 by an insert(begin, end)
 	avl_tree(const avl_tree & other)
 	  : avl_tree(other, alloc_traits::select_on_container_copy_construction(
-	             other.get_allocator())) { }
+	                                    other.node_allocator)) { }
 
+	/// Constructor 8 - Calls Constructor 3
 	avl_tree(std::initializer_list<value_type> list,
 	         const key_compare & c = key_compare{},
 	         const allocator_type & a = allocator_type{})
 	  : avl_tree(list.begin(), list.end(), c, a) { }
 
+	/// Constructor 9 - Calls constructor 3
 	avl_tree(std::initializer_list<value_type> list, const allocator_type & a)
 	  : avl_tree(list.begin(), list.end(), key_compare{}, a) { }
 
-	// TODO
-	avl_tree(avl_tree && other, const allocator_type & a);
-	avl_tree(avl_tree && other);
+	/// Constructor 10
+	avl_tree(avl_tree && other, const allocator_type & a)
+	  : sentinel()
+	  , minimum(nullptr)
+	  , maximum(nullptr)
+	  , node_count(0)
+	  , node_allocator(a)
+	  , key_compare(std::move(other.key_compare))
+	{
+		if (node_allocator == other.node_allocator)
+		{
+			this->swap(other);
+		} else
+		{
+			// TODO - if we weren't dealing with const iterators here,
+			// we could std::move the node content using a move iterator
+			try { insert(other.begin(), other.end()); }
+			catch (...) { destroy_tree(); throw; }
+		}
+	}
+
+	/// Constructor 11
+	avl_tree(avl_tree && other)
+	  noexcept( noexcept( sentinel(std::move(other.sentinel)))
+	         && noexcept( node_alloc(std::move(other.node_alloc)))
+	         && noexcept( key_compare(std::move(other.key_compare))) )
+	  : sentinel(std::move(other.sentinel))
+	  , minimum(other.minimum)
+	  , maximum(other.maximum)
+	  , node_count(other.node_count)
+	  , node_alloc(std::move(other.node_alloc))
+	  , key_compare(std::move(other.key_compare))
+	{
+		other.sentinel = node_type{};
+		other.minimum = other.maximum = &other.sentinel;
+		other.node_count = 0;
+	}
 
 	///
 	/// Destructor
@@ -524,20 +584,62 @@ class avl_tree
 	{
 		if (this != &other)
 		{
-			this->clear();
-			this->insert(other.begin(), other.end());
+			node_alloc new_alloc =
+			(node_alloc_traits::propagate_on_container_copy_assignment::value) ?
+			    other.get_allocator() : this->get_allocator();
+
+			avl_tree tmp{other.begin(), other.end(),
+			             other.key_comp(), new_alloc};
+			this->swap(avl_tree{other.begin(), other.end(),
+			                    other.key_comp(), new_alloc});
 		}
 		return *this;
 	}
 
-	/// TODO
-	avl_tree & operator = (avl_tree && other) noexcept;
+	avl_tree & operator = (avl_tree && other)
+	  noexcept( alloc_traits::propagate_on_container_move_assignment::value)
+//	         || alloc_traits::is_always_equal::value )
+	{
+		if (this != &other)
+		{
+			if (alloc_traits::propagate_on_container_move_assignment::value)
+				this->swap(other);
+			else if (node_allocator == other.node_allocator)
+				this->swap(other);
+			else
+			{
+				// TODO - if we weren't dealing with const iterators here,
+				// we could std::move the node content using a move iterator
+				avl_tree tmp{other.begin(), other.end(),
+				             other.key_comp(), node_allocator};
+				this->swap(tmp);
+			}
+		}
+
+		return *this;
+	}
 
 	avl_tree & operator = (std::initializer_list<value_type> list)
 	{
 		this->clear();
 		this->insert(list.begin(), list.end());
 		return *this;
+	}
+
+	void swap(avl_tree & other) noexcept
+	{
+		std::swap(sentinel, other.sentinel);
+		std::swap(minimum, other.minimum);
+		std::swap(maximum, other.maximum);
+		std::swap(node_count, other.node_count);
+		std::swap(node_allocator, other.node_allocator);
+		std::swap(compare, other.compare);
+
+		if (this->sentinel.left)
+			this->sentinel.left->set_parent(&(this->sentinel));
+
+		if (other.sentinel.left)
+			other.sentinel.left->set_parent(&(other.sentinel));
 	}
 
 	///
@@ -883,12 +985,6 @@ class avl_tree
 
 		return count;
 	}
-
-	// TODO
-	void swap(avl_tree &)
-	  noexcept(alloc_traits::is_always_equal::value &&
-	           noexcept(swap(std::declval<key_compare&>(),
-	                         std::declval<key_compare&>())));
 
 	void clear() noexcept { destroy_tree(); }
 
