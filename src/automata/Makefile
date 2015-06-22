@@ -1,10 +1,10 @@
-TARGETS             = driver interval
+TARGETS             = 
 LIB_TARGETS         = libautomata
 libautomata_HEADERS = 
 libautomata_OBJS    =
 
-driver_OBJS         = driver.o $(libautomata_OBJS)
-interval_OBJS       = interval_list.o $(libautomata_OBJS)
+driver_OBJS         = 
+interval_OBJS       = 
 
 ifndef TOPDIR
   TOPDIR            = ..
