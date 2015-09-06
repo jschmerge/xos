@@ -266,14 +266,14 @@ void program_config::build_parser()
 
 
 	transit_cb no_param =
-	[this] (const state &, const state &, const char *) {
+	  [this] (const state &, const state &, const char *) {
 		bool rc = false;
 		if (current_option != nullptr) {
 				rc = process_option(*current_option);
 				current_option = nullptr;
 		}
 		return rc;
-	};
+	  };
 
 	transit_cb l_start =
 	[this] (const state &, const state & to, const char * cp) {

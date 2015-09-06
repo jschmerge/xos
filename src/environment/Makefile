@@ -7,7 +7,7 @@ LIB_TARGETS        = libenvironment
 
 libenvironment_HEADERS = program_config.h
 
-libenvironment_OBJS    = program_config.o
+libenvironment_OBJS    = program_config.o config_option.o
 
 test_OBJS          = test.o $(libenvironment_OBJS)
 
