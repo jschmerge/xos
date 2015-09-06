@@ -1,4 +1,4 @@
-SUBDIRS  = codecvt environment filesystem unit
+SUBDIRS  = automata codecvt environment filesystem unit
 
 ifndef TOPDIR
   TOPDIR = .
