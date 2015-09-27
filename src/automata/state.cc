@@ -1,9 +1,13 @@
 
 #include <limits>
 #include <cstdio>
+#include <memory>
 #include <set>
 #include <string>
+#include <map>
 #include <vector>
+
+#include "table.h"
 
 template <typename IN_T>
 struct transition {
@@ -18,71 +22,146 @@ struct s_and_t {
 	std::initializer_list<transition<IN_T>> t;
 };
 
-template <typename IN_T = char>
+//////////////////////////////////////////////////////////////////////
+template<typename IN_T = char>
 class transition_function
+{
+ public:
+	transition_function(std::initializer_list<IN_T> input_classes,
+	                    std::vector<size_t> states);
+
+	size_t operator () (const IN_T & in, size_t current_state);
+
+ private:
+	std::vector<IN_T> input_classes;
+};
+
+//////////////////////////////////////////////////////////////////////
+template <typename IN_T = char>
+class function_generator
 {
  public:
 	typedef IN_T input_type;
 	typedef std::numeric_limits<input_type> input_limits;
 
-	transition_function(input_type min = input_limits::min(),
-	                    input_type max = input_limits::max())
-	  : transition_function({}, min, max) { }
-
-
-	transition_function(std::initializer_list<s_and_t<IN_T>> everything,
-	                    input_type min = input_limits::min(),
-	                    input_type max = input_limits::max())
-	  : minimum_input_value(min)
-	  , maximum_input_value(max)
-	  , number_of_inputs(1ul + max - min)
-	  , states()
-	{
-		std::set<input_type> range_markers;
-		printf("Number of inputs: %zu\n", number_of_inputs);
-		printf("States:\n");
-		for (auto s_t : everything)
-		{
-			printf("\t%s\n", s_t.s.c_str());
-			states.push_back(s_t.s);
-			for (auto t : s_t.t)
-			{
-				range_markers.insert(t.begin);
-				range_markers.insert(t.end + 1);
-			}
-		}
-
-		for (auto x : range_markers)
-			printf("%02hhx\n", static_cast<uint8_t>(x));
-		printf("----\n");
-		int s = 0;
-		for (auto i = range_markers.begin(); i != range_markers.end(); ++i, ++s)
-		{
-			auto e = i;
-			++e;
-			if (e == range_markers.end())
-				e = range_markers.begin();
-
-			printf("%d: %02hhx-%02hhx\n", s,
-			       static_cast<uint8_t>(*i),
-			       static_cast<uint8_t>(*e - 1));
-		}
-	}
-
-
-	~transition_function() { }
-
  protected:
 	const input_type minimum_input_value;
 	const input_type maximum_input_value;
 	const size_t number_of_inputs;
-	std::vector<std::string> states;
+	std::vector<input_type> range_ends;
+	std::map<std::string, size_t> states;
+	std::vector<std::string> state_names;
+	std::unique_ptr<lookup_table<size_t, 2>> transition_table;
+
+ public:
+
+	function_generator(input_type min = input_limits::min(),
+	                   input_type max = input_limits::max())
+	  : function_generator({}, min, max) { }
+
+
+	function_generator(std::initializer_list<s_and_t<IN_T>> everything,
+	                   input_type min = input_limits::min(),
+	                   input_type max = input_limits::max())
+	  : minimum_input_value(min)
+	  , maximum_input_value(max)
+	  , number_of_inputs(1ul + max - min)
+	  , range_ends()
+	  , states()
+	  , state_names(everything.size() + 1)
+	  , transition_table()
+	{
+		size_t state_number = 0;
+
+		std::set<input_type> range_markers;
+		range_markers.insert(maximum_input_value);
+		for (auto s_t : everything)
+		{
+			state_names.at(state_number) = s_t.s;
+			states[s_t.s] = state_number++;
+			for (auto t : s_t.t)
+			{
+				range_markers.insert(t.begin - 1);
+				range_markers.insert(t.end);
+			}
+		}
+
+		state_names.back() = "Error";
+		states["Error"] = everything.size();
+
+		range_ends.assign(range_markers.begin(), range_markers.end());
+
+		transition_table = allocate_table();
+
+		fill_table(everything);
+
+		print_function();
+	}
+
+	void fill_table(const std::initializer_list<s_and_t<IN_T>> & everything)
+	{
+		for (auto s_t : everything)
+		{
+			std::array<size_t, 2> index;
+			size_t target = states[s_t.s];
+			for (auto t : s_t.t)
+			{
+				index[0] = states[t.from];
+				for (size_t r_idx = 0; r_idx < range_ends.size(); ++r_idx)
+				{
+					if ( (range_ends[r_idx] >= t.begin)
+					  && (range_ends[r_idx] <= t.end) )
+					{
+						index[1] = r_idx;
+						transition_table->at(index) = target;
+					}
+				}
+			}
+		}
+	}
+
+	void print_function()
+	{
+		printf("Number of states: %zu\n", states.size());
+		printf("Number of inputs: %zu\n", number_of_inputs);
+		printf("Number of input classes: %zd\n", range_ends.size());
+
+		printf("%20s %-2s  ", "", "");
+		for (size_t x = 0; x < range_ends.size(); ++x)
+			printf("%4zu", x);
+		printf("\n%20s %-2s  ", "", "");
+		for (auto r : range_ends)
+			printf("%4x", r);
+		printf("\n------------------------------"
+		       "--------------------------------------------\n");
+		for (auto name : state_names)
+		{
+			printf("%20s:%-2zd |", name.c_str(), states[name]);
+			for (size_t j = 0; j < range_ends.size(); ++j)
+				printf("%4zu", transition_table->at({{states[name], j}}));
+			printf("\n");
+		}
+	}
+
+
+	~function_generator() { }
+
+	std::unique_ptr<lookup_table<size_t, 2>> allocate_table()
+	{
+		std::array<size_t, 2> table_dimensions{{states.size(),
+		                                        range_ends.size()}};
+		std::unique_ptr<lookup_table<size_t, 2>> ret{
+			new lookup_table<size_t, 2>{table_dimensions, states.size() - 1}};
+
+		return ret;
+	}
+
 };
 
 
 int main()
 {
-	transition_function<unsigned char> utf8_machine{ {
+	function_generator<unsigned char> utf8_machine{ {
 		{ "BOM Start", { } },
 		{ "BOM 1", {
 			{ "BOM Start", 0xef, 0xef }
