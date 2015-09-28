@@ -65,6 +65,14 @@ class lookup_table
 		         });
 	}
 
+
+	template <typename ... Args>
+	T at(Args ... args)
+	{
+		static_assert(sizeof...(args) == N, "Wrong number of parameters");
+		return values[translate_index({{args...}})];
+	}
+
  private:
 	std::vector<T> values;
 };

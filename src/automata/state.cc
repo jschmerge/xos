@@ -8,14 +8,17 @@
 #include <vector>
 
 #include "table.h"
+#include "utfsample.h"
 
+//////////////////////////////////////////////////////////////////////
 template <typename IN_T>
 struct transition {
 	std::string from;
-	IN_T begin;
-	IN_T end;
+	typename std::make_unsigned<IN_T>::type begin;
+	typename std::make_unsigned<IN_T>::type end;
 };
 
+//////////////////////////////////////////////////////////////////////
 template <typename IN_T>
 struct s_and_t {
 	std::string s;
@@ -41,7 +44,7 @@ template <typename IN_T = char>
 class function_generator
 {
  public:
-	typedef IN_T input_type;
+	typedef typename std::make_unsigned<IN_T>::type input_type;
 	typedef std::numeric_limits<input_type> input_limits;
 
  protected:
@@ -98,6 +101,8 @@ class function_generator
 		print_function();
 	}
 
+	~function_generator() { }
+
 	void fill_table(const std::initializer_list<s_and_t<IN_T>> & everything)
 	{
 		for (auto s_t : everything)
@@ -144,8 +149,6 @@ class function_generator
 	}
 
 
-	~function_generator() { }
-
 	std::unique_ptr<lookup_table<size_t, 2>> allocate_table()
 	{
 		std::array<size_t, 2> table_dimensions{{states.size(),
@@ -156,12 +159,25 @@ class function_generator
 		return ret;
 	}
 
+	size_t operator () (size_t current_state, IN_T input)
+	{
+		size_t input_class = 0;
+		auto class_iter = std::lower_bound(range_ends.begin(),
+		                                   range_ends.end(),
+		                                   static_cast<input_type>(input));
+		input_class = std::distance(range_ends.begin(), class_iter);
+
+		size_t ret =  (transition_table->at({{current_state, input_class}}));
+//		printf("(%zu, %zu) -> %zu\n", current_state, input_class, ret);
+		return ret;
+	}
+
 };
 
 
 int main()
 {
-	function_generator<unsigned char> utf8_machine{ {
+	function_generator<char> utf8_machine{ {
 		{ "BOM Start", { } },
 		{ "BOM 1", {
 			{ "BOM Start", 0xef, 0xef }
@@ -211,6 +227,19 @@ int main()
 			{ "BOM Start", 0xfc, 0xfd },
 		} },
 	} };
+
+//	const char * ptr = "\x01\x7f\x80\xba\xbb\xbc\xbe\xbf\xc0\xdf"
+//	                   "\xe0\xee\xef\xf0\xf7\xf8\xfb\xfc\xfd\xfe\xff";
+
+	const char * ptr = sample_utf8;
+
+	size_t state = 0;
+
+	while (*ptr)
+	{
+		state = utf8_machine(state, *ptr);
+		++ptr;
+	}
 
 	return 0;
 }
