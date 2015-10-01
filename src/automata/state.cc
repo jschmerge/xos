@@ -172,6 +172,39 @@ class function_generator
 		return ret;
 	}
 
+	void print_dot()
+	{
+		printf("digraph machine {\n"
+		       "\tStart [shape=point]\n");
+
+		for (auto name : state_names)
+		{
+			printf("\t\"%s\" [shape=circle]\n", name.c_str());
+		}
+
+		for (auto name : state_names)
+		{
+			for (size_t j = 0; j < range_ends.size(); ++j)
+				printf("\t\"%s\" -> \"%s\"\n",
+				       name.c_str(),
+				       state_names[transition_table->at({{states[name],
+				                                          j}})].c_str());
+
+
+			printf("\n");
+		}
+		printf("}\n");
+
+
+
+//		for (auto name : state_names)
+//		{
+//			printf("%20s:%-2zd |", name.c_str(), states[name]);
+//			for (size_t j = 0; j < range_ends.size(); ++j)
+//				printf("%4zu", transition_table->at({{states[name], j}}));
+//			printf("\n");
+//		}
+	}
 };
 
 
@@ -241,5 +274,6 @@ int main()
 		++ptr;
 	}
 
+	utf8_machine.print_dot();
 	return 0;
 }
