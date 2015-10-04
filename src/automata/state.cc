@@ -47,6 +47,15 @@ class function_generator
 	typedef typename std::make_unsigned<IN_T>::type input_type;
 	typedef std::numeric_limits<input_type> input_limits;
 
+ protected:
+	const input_type minimum_input_value;
+	const input_type maximum_input_value;
+	const size_t number_of_inputs;
+	std::vector<input_type> range_ends;
+	std::map<std::string, size_t> states;
+	std::vector<std::string> state_names;
+	std::unique_ptr<lookup_table<size_t, 2>> transition_table;
+
  public:
 
 	function_generator(input_type min = input_limits::min(),
@@ -206,17 +215,43 @@ class function_generator
 		input_class = std::distance(range_ends.begin(), class_iter);
 
 		size_t ret =  (transition_table->at({{current_state, input_class}}));
+//		printf("(%zu, %zu) -> %zu\n", current_state, input_class, ret);
 		return ret;
 	}
 
- protected:
-	const input_type minimum_input_value;
-	const input_type maximum_input_value;
-	const size_t number_of_inputs;
-	std::vector<input_type> range_ends;
-	std::map<std::string, size_t> states;
-	std::vector<std::string> state_names;
-	std::unique_ptr<lookup_table<size_t, 2>> transition_table;
+	void print_dot()
+	{
+		printf("digraph machine {\n"
+		       "\tStart [shape=point]\n");
+
+		for (auto name : state_names)
+		{
+			printf("\t\"%s\" [shape=circle]\n", name.c_str());
+		}
+
+		for (auto name : state_names)
+		{
+			for (size_t j = 0; j < range_ends.size(); ++j)
+				printf("\t\"%s\" -> \"%s\"\n",
+				       name.c_str(),
+				       state_names[transition_table->at({{states[name],
+				                                          j}})].c_str());
+
+
+			printf("\n");
+		}
+		printf("}\n");
+
+
+
+//		for (auto name : state_names)
+//		{
+//			printf("%20s:%-2zd |", name.c_str(), states[name]);
+//			for (size_t j = 0; j < range_ends.size(); ++j)
+//				printf("%4zu", transition_table->at({{states[name], j}}));
+//			printf("\n");
+//		}
+	}
 };
 
 
