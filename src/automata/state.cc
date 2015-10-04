@@ -20,9 +20,9 @@ struct transition {
 
 //////////////////////////////////////////////////////////////////////
 template <typename IN_T>
-struct s_and_t {
-	std::string s;
-	std::initializer_list<transition<IN_T>> t;
+struct state_initializer {
+	std::string name;
+	std::initializer_list<transition<IN_T>> previous_states;
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -47,15 +47,6 @@ class function_generator
 	typedef typename std::make_unsigned<IN_T>::type input_type;
 	typedef std::numeric_limits<input_type> input_limits;
 
- protected:
-	const input_type minimum_input_value;
-	const input_type maximum_input_value;
-	const size_t number_of_inputs;
-	std::vector<input_type> range_ends;
-	std::map<std::string, size_t> states;
-	std::vector<std::string> state_names;
-	std::unique_ptr<lookup_table<size_t, 2>> transition_table;
-
  public:
 
 	function_generator(input_type min = input_limits::min(),
@@ -63,7 +54,7 @@ class function_generator
 	  : function_generator({}, min, max) { }
 
 
-	function_generator(std::initializer_list<s_and_t<IN_T>> everything,
+	function_generator(std::initializer_list<state_initializer<IN_T>> everything,
 	                   input_type min = input_limits::min(),
 	                   input_type max = input_limits::max())
 	  : minimum_input_value(min)
@@ -78,11 +69,11 @@ class function_generator
 
 		std::set<input_type> range_markers;
 		range_markers.insert(maximum_input_value);
-		for (auto s_t : everything)
+		for (auto state_init : everything)
 		{
-			state_names.at(state_number) = s_t.s;
-			states[s_t.s] = state_number++;
-			for (auto t : s_t.t)
+			state_names.at(state_number) = state_init.name;
+			states[state_init.name] = state_number++;
+			for (auto t : state_init.previous_states)
 			{
 				range_markers.insert(t.begin - 1);
 				range_markers.insert(t.end);
@@ -103,13 +94,14 @@ class function_generator
 
 	~function_generator() { }
 
-	void fill_table(const std::initializer_list<s_and_t<IN_T>> & everything)
+	void fill_table(
+	      const std::initializer_list<state_initializer<IN_T>> & everything)
 	{
 		for (auto s_t : everything)
 		{
 			std::array<size_t, 2> index;
-			size_t target = states[s_t.s];
-			for (auto t : s_t.t)
+			size_t target = states[s_t.name];
+			for (auto t : s_t.previous_states)
 			{
 				index[0] = states[t.from];
 				for (size_t r_idx = 0; r_idx < range_ends.size(); ++r_idx)
@@ -137,8 +129,8 @@ class function_generator
 		printf("\n%20s %-2s  ", "", "");
 		for (auto r : range_ends)
 			printf("%4x", r);
-		printf("\n------------------------------"
-		       "--------------------------------------------\n");
+		printf("\n-------------------------------------"
+		       "-------------------------------------\n");
 		for (auto name : state_names)
 		{
 			printf("%20s:%-2zd |", name.c_str(), states[name]);
@@ -148,6 +140,52 @@ class function_generator
 		}
 	}
 
+	void print_dot_function()
+	{
+		printf("digraph {\n"
+		       "\trankdir=\"LR\"\n"
+		       "\tStart [label=\"Start\",shape=point,"
+		       "fontname=\"times bold italic\",fontsize=20]\n"
+		       "Start -> \"%s\"", state_names[0].c_str());
+		for (auto x : state_names)
+		{
+			printf("\t\"%s\" [shape=circle,"
+			       "fontname=\"times bold italic\","
+			       "fontsize=20]\n", x.c_str());
+		}
+
+		for (auto x : states)
+		{
+			input_type last = 0;
+			for (size_t i = 0; i < range_ends.size(); ++i)
+			{
+				size_t to = transition_table->at(x.second, i);
+				if (i == (range_ends.size() - 1))
+				{
+					if (to == 10)
+					printf("\t\"%s\" -> \"%s\" [label=\"0x%02x-%02x\",color=\"red\"]\n",
+					       x.first.c_str(),
+					       state_names[to].c_str(), last, range_ends[i]);
+					else
+					printf("\t\"%s\" -> \"%s\" [label=\"0x%02x-%02x\"]\n",
+					       x.first.c_str(),
+					       state_names[to].c_str(), last, range_ends[i]);
+				} else if (to != transition_table->at(x.second, i + 1))
+				{
+					if (to == 10)
+					printf("\t\"%s\" -> \"%s\" [label=\"0x%02x-%02x\",color=\"red\"]\n",
+					       x.first.c_str(),
+					       state_names[to].c_str(), last, range_ends[i]);
+					else
+					printf("\t\"%s\" -> \"%s\" [label=\"0x%02x-%02x\"]\n",
+					       x.first.c_str(),
+					       state_names[to].c_str(), last, range_ends[i]);
+					last = range_ends[i] + 1;
+				}
+			}
+		}
+		printf("}\n");
+	}
 
 	std::unique_ptr<lookup_table<size_t, 2>> allocate_table()
 	{
@@ -168,10 +206,17 @@ class function_generator
 		input_class = std::distance(range_ends.begin(), class_iter);
 
 		size_t ret =  (transition_table->at({{current_state, input_class}}));
-//		printf("(%zu, %zu) -> %zu\n", current_state, input_class, ret);
 		return ret;
 	}
 
+ protected:
+	const input_type minimum_input_value;
+	const input_type maximum_input_value;
+	const size_t number_of_inputs;
+	std::vector<input_type> range_ends;
+	std::map<std::string, size_t> states;
+	std::vector<std::string> state_names;
+	std::unique_ptr<lookup_table<size_t, 2>> transition_table;
 };
 
 
@@ -241,5 +286,6 @@ int main()
 		++ptr;
 	}
 
+	utf8_machine.print_dot_function();
 	return 0;
 }

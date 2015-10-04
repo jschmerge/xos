@@ -56,16 +56,16 @@ digraph Input {
 				E2 -> D2 [label="0x80-BF"]
 			}
 
-			BOM_A [label="A",  color=gray,  peripheries=2]
-			BOM_B [label="B"   color=grey,  peripheries=1]
-			BOM_C [label="C"   color=grey,  peripheries=1]
-			BOM_D [label="D",  color=grey,  peripheries=2]
-			S2    [label="E",  color=black, peripheries=2]
-			A2    [label="F",  color=black, peripheries=1]
-			E2    [label="G",  color=black, peripheries=1]
-			D2    [label="H",  color=black, peripheries=1]
-			C2    [label="I",  color=black, peripheries=1]
-			B2    [label="J", color=black, peripheries=1]
+			BOM_A [label="BOM\nStart",  color=gray,  peripheries=2]
+			BOM_B [label="BOM 1"   color=grey,  peripheries=1]
+			BOM_C [label="BOM 2"   color=grey,  peripheries=1]
+			BOM_D [label="Complete\nBOM",  color=grey,  peripheries=2]
+			S2    [label="Complete\nCharacter",  color=black, peripheries=2]
+			A2    [label="One\nLeft",  color=black, peripheries=1]
+			E2    [label="Five\nLeft",  color=black, peripheries=1]
+			D2    [label="Four\nLeft",  color=black, peripheries=1]
+			C2    [label="Three\nLeft",  color=black, peripheries=1]
+			B2    [label="Two\nLeft", color=black, peripheries=1]
 		}
 
 		subgraph cluster_basic
@@ -84,12 +84,12 @@ digraph Input {
 			D1 -> C1 [label="0x80-BF"]
 			E1 -> D1 [label="0x80-BF"]
 
-			S1    [label="E",  color=black, peripheries=2]
-			A1    [label="F",  color=black, peripheries=1]
-			E1    [label="G",  color=black, peripheries=1]
-			D1    [label="H",  color=black, peripheries=1]
-			C1    [label="I",  color=black, peripheries=1]
-			B1    [label="J", color=black, peripheries=1]
+			S1    [label="Complete\nCharacter",  color=black, peripheries=2]
+			A1    [label="One\nLeft",  color=black, peripheries=1]
+			E1    [label="Five\nLeft",  color=black, peripheries=1]
+			D1    [label="Four\nLeft",  color=black, peripheries=1]
+			C1    [label="Three\nLeft",  color=black, peripheries=1]
+			B1    [label="Two\nLeft", color=black, peripheries=1]
 		}
 
 }
