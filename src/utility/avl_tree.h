@@ -300,8 +300,13 @@ class avl_tree
 		n->set_parent(nullptr);
 		n->set_balance(0);
 
-		node_alloc_traits::construct(node_allocator, n->value_address(),
-		                             std::forward<Args>(args)...);
+		try {
+			node_alloc_traits::construct(node_allocator, n->value_address(),
+			                             std::forward<Args>(args)...);
+		} catch (...) {
+			node_alloc_traits::destroy(node_allocator, n);
+			throw;
+		}
 
 		return n;
 	}
