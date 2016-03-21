@@ -9,7 +9,7 @@
 
 #include "bulk_allocator.h"
 
-#define USE_BULK_ALLOC 0
+#define USE_BULK_ALLOC 1
 
 #define my_assert(expr) do { \
 	if ( ! (expr)) { \
@@ -17,21 +17,6 @@
 		abort(); \
 	} \
 } while(0)
-
-template <typename T = void>
-struct myless
-{
-	bool operator () (const T & a, const T & b) noexcept(noexcept(a < b))
-		{ return (a < b); }
-};
-
-template <>
-struct myless<void>
-{
-	template <typename T, typename U>
-	bool operator () (const T & a, const U & b) noexcept(noexcept(a < b))
-		{ return (a < b); }
-};
 
 //////////////////////////////////////////////////////////////////////
 void test_insert(avl_tree<int> & tree, int val)
@@ -229,37 +214,56 @@ void test_performance()
 		}
 	}
 
-	avl_tree<int64_t> a;
-	auto begin = posix_clock<clock_source::realtime>::now();
-	for (uint64_t i = 0; i < limit; ++i)
-		a.insert(i);
-	auto end = posix_clock<clock_source::realtime>::now();
-	std::chrono::duration<double> d = end - begin;
-	printf("avl::insert() took %'.9f seconds for %'lu values\n",
-	       d.count(), limit);
+#if USE_BULK_ALLOC
+	{
+		homogenous_arena<avl_tree_node<int64_t>> arena{limit};
+		bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
+		avl_tree<int64_t, std::less<int64_t>,
+		         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
+#else
+		avl_tree<int64_t> a;
+#endif
+		auto begin = posix_clock<clock_source::realtime>::now();
+		for (uint64_t i = 0; i < limit; ++i)
+			a.insert(a.end(), i);
+		auto end = posix_clock<clock_source::realtime>::now();
+		std::chrono::duration<double> d = end - begin;
+		printf("avl::insert() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+		begin = posix_clock<clock_source::realtime>::now();
+		a.clear();
+		end = posix_clock<clock_source::realtime>::now();
+		d = end - begin;
+		printf("avl::clear() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+	}
 
-	begin = posix_clock<clock_source::realtime>::now();
-	a.clear();
-	end = posix_clock<clock_source::realtime>::now();
-	d = end - begin;
-	printf("avl::clear() took %'.9f seconds for %'lu values\n",
-	       d.count(), limit);
 
-	std::set<int64_t> b;
-	begin = posix_clock<clock_source::realtime>::now();
-	for (uint64_t i = 0; i < limit; ++i)
-		b.insert(i);
-	end = posix_clock<clock_source::realtime>::now();
-	d = end - begin;
-	printf("rb::insert() took %'.9f seconds for %'lu values\n",
-	       d.count(), limit);
+	{
+#if USE_BULK_ALLOC
+		homogenous_arena<std::_Rb_tree_node<int64_t>> arena{limit};
+		bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 
-	begin = posix_clock<clock_source::realtime>::now();
-	b.clear();
-	end = posix_clock<clock_source::realtime>::now();
-	d = end - begin;
-	printf("rb::clear() took %'.9f seconds for %'lu values\n",
-	       d.count(), limit);
+		std::set<int64_t, std::less<int64_t>,
+		         bulk_allocator<int64_t>> b{std::less<int64_t>{}, alloc};
+#else
+		std::set<int64_t> b;
+#endif
+		auto begin = posix_clock<clock_source::realtime>::now();
+		for (uint64_t i = 0; i < limit; ++i)
+			b.insert(b.end(), i);
+		auto end = posix_clock<clock_source::realtime>::now();
+		std::chrono::duration<double> d = end - begin;
+		printf("rb::insert() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+
+		begin = posix_clock<clock_source::realtime>::now();
+		b.clear();
+		end = posix_clock<clock_source::realtime>::now();
+		d = end - begin;
+		printf("rb::clear() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+	}
 }
 //////////////////////////////////////////////////////////////////////
 int main()

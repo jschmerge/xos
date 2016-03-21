@@ -34,7 +34,7 @@ namespace {
 // forward declaration
 template <typename T, typename C, typename A> class avl_tree;
 
-#define SPACE_OPTIMIZATION 1
+#define SPACE_OPTIMIZATION 0
 #define TRIVIAL_CONSTRUCTION 1
 
 //////////////////////////////////////////////////////////////////////
@@ -50,6 +50,8 @@ struct avl_tree_node
 #if (!SPACE_OPTIMIZATION)
 	int8_t balance_factor;
 #endif
+
+	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
 #if TRIVIAL_CONSTRUCTION
 	avl_tree_node()
@@ -71,8 +73,6 @@ struct avl_tree_node
 	avl_tree_node & operator = (avl_tree_node &&) noexcept = default;
 
 	~avl_tree_node() = default;
-
-	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
 	value_type & value() noexcept
 		{ return *value_address(); }
@@ -317,12 +317,9 @@ class avl_tree
 	template <typename ... Args>
 	node_type * construct_node(Args && ... args)
 	{
-		node_type * n = node_alloc_traits::allocate(node_allocator, 1);
-
-		n->left = n->right = nullptr;
-		n->set_parent(nullptr);
-		n->set_balance(0);
-
+		void * ptr = node_alloc_traits::allocate(node_allocator, 1);
+		node_type * n = new (ptr) node_type;
+		
 		try {
 			node_alloc_traits::construct(node_allocator, n->value_address(),
 			                             std::forward<Args>(args)...);
