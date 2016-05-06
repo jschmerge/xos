@@ -22,12 +22,20 @@ namespace {
 	template<typename K, typename CMP>
 	struct is_transparent<K, CMP, type_defined<typename CMP::is_transparent>>
 	  : std::true_type { };
+
+	template <typename T, size_t from_bits>
+	T sign_extend(const T & x)
+	{
+		struct { T v : from_bits; } s{x};
+		return s.v;
+	}
 }
 
 // forward declaration
 template <typename T, typename C, typename A> class avl_tree;
 
-#define SPACE_OPTIMIZATION 1
+#define SPACE_OPTIMIZATION 0
+#define TRIVIAL_CONSTRUCTION 1
 
 //////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -43,6 +51,9 @@ struct avl_tree_node
 	int8_t balance_factor;
 #endif
 
+	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
+
+#if TRIVIAL_CONSTRUCTION
 	avl_tree_node()
 	  : parent(nullptr)
 	  , left(nullptr)
@@ -51,6 +62,9 @@ struct avl_tree_node
 	  , balance_factor(0)
 #endif
 		{ set_balance(0); }
+#else
+	avl_tree_node() noexcept = default;
+#endif
 
 	avl_tree_node(const avl_tree_node &) noexcept = default;
 	avl_tree_node(avl_tree_node &&) noexcept = default;
@@ -59,8 +73,6 @@ struct avl_tree_node
 	avl_tree_node & operator = (avl_tree_node &&) noexcept = default;
 
 	~avl_tree_node() = default;
-
-	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
 	value_type & value() noexcept
 		{ return *value_address(); }
@@ -74,7 +86,7 @@ struct avl_tree_node
 	const value_type * value_address() const noexcept
 		{ return reinterpret_cast<const value_type *>(&storage); }
 
-#if (SPACE_OPTIMIZATION)
+#if SPACE_OPTIMIZATION
 	static constexpr uintptr_t address_mask = ~static_cast<uintptr_t>(3);
 	static constexpr uintptr_t balance_mask = static_cast<uintptr_t>(3);
 
@@ -91,15 +103,26 @@ struct avl_tree_node
 
 	int balance() const noexcept
 	{
+# if TRIVIAL_CONSTRUCTION
+		uintptr_t v = reinterpret_cast<uintptr_t>(parent);
+		return sign_extend<int, 2>( static_cast<int>( v ) & balance_mask );
+# else
 		return (static_cast<int>( reinterpret_cast<uintptr_t>(parent)
 		                        & balance_mask) - 1);
+# endif
 	}
 
 	void set_balance(int b) noexcept
 	{
+# if TRIVIAL_CONSTRUCTION
 		parent = reinterpret_cast<avl_tree_node*>(
 		             (reinterpret_cast<uintptr_t>(parent) & address_mask)
-		           | (static_cast<uintptr_t>(b + 1) & balance_mask));
+		           | (static_cast<uintptr_t>(b) & balance_mask) );
+# else
+		parent = reinterpret_cast<avl_tree_node*>(
+		             (reinterpret_cast<uintptr_t>(parent) & address_mask)
+		           | (static_cast<uintptr_t>(b + 1) & balance_mask) );
+# endif
 	}
 #else
 	avl_tree_node * parent_node() const noexcept { return parent; }
@@ -294,12 +317,9 @@ class avl_tree
 	template <typename ... Args>
 	node_type * construct_node(Args && ... args)
 	{
-		node_type * n = node_alloc_traits::allocate(node_allocator, 1);
-
-		n->left = n->right = nullptr;
-		n->set_parent(nullptr);
-		n->set_balance(0);
-
+		void * ptr = node_alloc_traits::allocate(node_allocator, 1);
+		node_type * n = new (ptr) node_type;
+		
 		try {
 			node_alloc_traits::construct(node_allocator, n->value_address(),
 			                             std::forward<Args>(args)...);

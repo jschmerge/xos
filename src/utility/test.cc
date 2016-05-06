@@ -9,7 +9,7 @@
 
 #include "bulk_allocator.h"
 
-#define USE_BULK_ALLOC 0
+#define USE_BULK_ALLOC 1
 
 #define my_assert(expr) do { \
 	if ( ! (expr)) { \
@@ -118,7 +118,9 @@ void time_ordered_delete(T & container)
 void test_performance()
 {
 	const int64_t min_values = 1000;
-	const int64_t max_values = 1000000;
+	const int64_t max_values = 10000000;
+	const size_t  limit      = 50000000;
+#if 0
 	for (int64_t i = min_values; i <= max_values; i *= 10)
 	{
 		printf("i = %'ld\n------------------------------------\n", i);
@@ -128,7 +130,7 @@ void test_performance()
 			{
 #if USE_BULK_ALLOC
 				homogenous_arena<avl_tree_node<int64_t>>
-				  arena{1ul + std::min((i * 10ul), 500000000ul)};
+				  arena{std::min((i * 10ul), limit)};
 
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 				avl_tree<int64_t, std::less<int64_t>,
@@ -137,14 +139,10 @@ void test_performance()
 				avl_tree<int64_t> a;
 #endif
 				printf("AVL:\n");
-				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
-				{
+				for (int k = 0; k < 10 && a.size() < limit; ++k)
 					test_random_insert(a, engine, i);
-//					malloc_info(0, stdout);
-				}
 				print_leaf_heights(a);
 				time_ordered_delete(a);
-//				malloc_info(0, stdout);
 			}
 
 			engine.seed(0);
@@ -152,7 +150,7 @@ void test_performance()
 			{
 #if USE_BULK_ALLOC
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				  arena{1ul + std::min((i * 10ul), 5000000000ul)};
+				  arena{std::min((i * 10ul), limit)};
 
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 				std::set<int64_t, std::less<int64_t>,
@@ -160,16 +158,13 @@ void test_performance()
 #else
 				std::set<int64_t> b;
 #endif
-				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
-				{
+				for (int k = 0; k < 10 && b.size() < limit; ++k)
 					test_random_insert(b, engine, i);
-//					malloc_info(0, stdout);
-				}
 				time_ordered_delete(b);
-//				malloc_info(0, stdout);
 			}
 		}
 	}
+#endif
 
 	for (int64_t i = min_values; i <= max_values; i *= 10)
 	{
@@ -180,7 +175,7 @@ void test_performance()
 			{
 #if USE_BULK_ALLOC
 				homogenous_arena<avl_tree_node<int64_t>>
-				  arena{1ul + std::min((i * 10ul), 500000000ul)};
+				  arena{std::min((i * 10ul), limit)};
 
 				bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
 
@@ -190,21 +185,17 @@ void test_performance()
 				avl_tree<int64_t> a;
 #endif
 				printf("AVL:\n");
-				for (int k = 0; k < 10 && a.size() < 500000000; ++k)
-				{
+				for (int k = 0; k < 10 && a.size() < limit; ++k)
 					test_ordered_insert(a, i);
-//					malloc_info(0, stdout);
-				}
 
-				print_leaf_heights(a);
+//				print_leaf_heights(a);
 				time_ordered_delete(a);
-//				malloc_info(0, stdout);
 			}
 
 			{
 #if USE_BULK_ALLOC
 				homogenous_arena<std::_Rb_tree_node<int64_t>>
-				  arena{1ul + std::min((i * 10ul), 5000000000ul)};
+				  arena{std::min((i * 10ul), limit)};
 
 				bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
 
@@ -215,16 +206,63 @@ void test_performance()
 				std::set<int64_t> b;
 #endif
 				printf("RB:\n");
-				for (int k = 0; k < 10 && b.size() < 500000000; ++k)
-				{
+				for (int k = 0; k < 10 && b.size() < limit; ++k)
 					test_ordered_insert(b, i);
-//					malloc_info(0, stdout);
-				}
 
 				time_ordered_delete(b);
-//				malloc_info(0, stdout);
 			}
 		}
+	}
+
+#if USE_BULK_ALLOC
+	{
+		homogenous_arena<avl_tree_node<int64_t>> arena{limit};
+		bulk_allocator<avl_tree_node<int64_t>> alloc{&arena};
+		avl_tree<int64_t, std::less<int64_t>,
+		         bulk_allocator<avl_tree_node<int64_t>>> a{alloc};
+#else
+		avl_tree<int64_t> a;
+#endif
+		auto begin = posix_clock<clock_source::realtime>::now();
+		for (uint64_t i = 0; i < limit; ++i)
+			a.insert(a.end(), i);
+		auto end = posix_clock<clock_source::realtime>::now();
+		std::chrono::duration<double> d = end - begin;
+		printf("avl::insert() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+		begin = posix_clock<clock_source::realtime>::now();
+		a.clear();
+		end = posix_clock<clock_source::realtime>::now();
+		d = end - begin;
+		printf("avl::clear() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+	}
+
+
+	{
+#if USE_BULK_ALLOC
+		homogenous_arena<std::_Rb_tree_node<int64_t>> arena{limit};
+		bulk_allocator<std::_Rb_tree_node<int64_t>> alloc{&arena};
+
+		std::set<int64_t, std::less<int64_t>,
+		         bulk_allocator<int64_t>> b{std::less<int64_t>{}, alloc};
+#else
+		std::set<int64_t> b;
+#endif
+		auto begin = posix_clock<clock_source::realtime>::now();
+		for (uint64_t i = 0; i < limit; ++i)
+			b.insert(b.end(), i);
+		auto end = posix_clock<clock_source::realtime>::now();
+		std::chrono::duration<double> d = end - begin;
+		printf("rb::insert() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
+
+		begin = posix_clock<clock_source::realtime>::now();
+		b.clear();
+		end = posix_clock<clock_source::realtime>::now();
+		d = end - begin;
+		printf("rb::clear() took %'.9f seconds for %'lu values\n",
+		       d.count(), limit);
 	}
 }
 //////////////////////////////////////////////////////////////////////
@@ -289,10 +327,7 @@ int main()
 	test_performance();
 
 	printf("-------------------------\n");
-//	malloc_info(0, stdout);
 	printf("-------------------------\n");
-//	malloc_trim(0);
-//	malloc_info(0, stdout);
 
 	avl_tree<int> xyz{2, 5, 7};
 	my_assert(*xyz.lower_bound(1) == 2);
@@ -303,5 +338,5 @@ int main()
 	printf("--->%d\n", *xyz.upper_bound(6));
 
 	my_assert(*xyz.upper_bound(6) == 7);
-}
 
+}
