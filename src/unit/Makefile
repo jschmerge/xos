@@ -32,14 +32,21 @@ unittest_LIBDEPS = filesystem codecvt environment
 
 PROGRESS        ?= brief
 
-ACTIONS      = check debug-check coverage-check
+ACTIONS      = check check-xml debug-check coverage-check
 
 check_DEPS   = unittest
+check-xml_DEPS   = unittest
 
 check_ACTION = if [ -n "$(TEST)" ]; then \
 	  $$EXE -t $(TEST) -p $(PROGRESS); \
 	else \
 	  $$EXE -p $(PROGRESS); \
+	fi
+
+check-xml_ACTION = if [ -n "$(TEST)" ]; then \
+	  $$EXE -t $(TEST) -p none -o xml > unit-summary.xml; \
+	else \
+	  $$EXE -p none -o xml > unit-summary.xml; \
 	fi
 
 debug-check_DEPS = unittest.debug

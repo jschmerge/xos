@@ -112,9 +112,10 @@ class Test_timeutil : public CppUnit::TestFixture
 
 		ts2 = to_timespec(t);
 
-		printf("%lu.%09lu %lu.%09lu\n",
-		       ts1.tv_sec, ts1.tv_nsec,
-		       ts2.tv_sec, ts2.tv_nsec);
+		if (config::verbose)
+			printf("%lu.%09lu %lu.%09lu\n",
+			       ts1.tv_sec, ts1.tv_nsec,
+			       ts2.tv_sec, ts2.tv_nsec);
 	}
 
 	void duration_manipulation()
