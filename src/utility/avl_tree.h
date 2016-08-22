@@ -1,8 +1,6 @@
 #ifndef GUARD_AVL_TREE_H
 #define GUARD_AVL_TREE_H 1
 
-void gets();
-
 #include <memory>
 #include <algorithm>
 #include <iterator>
@@ -34,8 +32,7 @@ namespace {
 // forward declaration
 template <typename T, typename C, typename A> class avl_tree;
 
-#define SPACE_OPTIMIZATION 0
-#define TRIVIAL_CONSTRUCTION 1
+#define SPACE_OPTIMIZATION 1
 
 //////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -53,7 +50,6 @@ struct avl_tree_node
 
 	typename std::aligned_storage<sizeof(T), alignof(T)>::type storage;
 
-#if TRIVIAL_CONSTRUCTION
 	avl_tree_node()
 	  : parent(nullptr)
 	  , left(nullptr)
@@ -62,9 +58,6 @@ struct avl_tree_node
 	  , balance_factor(0)
 #endif
 		{ set_balance(0); }
-#else
-	avl_tree_node() noexcept = default;
-#endif
 
 	avl_tree_node(const avl_tree_node &) noexcept = default;
 	avl_tree_node(avl_tree_node &&) noexcept = default;
@@ -103,26 +96,15 @@ struct avl_tree_node
 
 	int balance() const noexcept
 	{
-# if TRIVIAL_CONSTRUCTION
-		uintptr_t v = reinterpret_cast<uintptr_t>(parent);
-		return sign_extend<int, 2>( static_cast<int>( v ) & balance_mask );
-# else
 		return (static_cast<int>( reinterpret_cast<uintptr_t>(parent)
 		                        & balance_mask) - 1);
-# endif
 	}
 
 	void set_balance(int b) noexcept
 	{
-# if TRIVIAL_CONSTRUCTION
-		parent = reinterpret_cast<avl_tree_node*>(
-		             (reinterpret_cast<uintptr_t>(parent) & address_mask)
-		           | (static_cast<uintptr_t>(b) & balance_mask) );
-# else
 		parent = reinterpret_cast<avl_tree_node*>(
 		             (reinterpret_cast<uintptr_t>(parent) & address_mask)
 		           | (static_cast<uintptr_t>(b + 1) & balance_mask) );
-# endif
 	}
 #else
 	avl_tree_node * parent_node() const noexcept { return parent; }
@@ -358,6 +340,18 @@ class avl_tree
 		rebalance_after_insert(inserted);
 		++node_count;
 		return inserted;
+	}
+
+	void erase_subtree(node_type * subtree)
+	{
+		while (subtree != nullptr)
+		{
+			erase_subtree(subtree->right);
+			node_type * left_subtree = subtree->left;
+			destroy_node(subtree);
+			--node_count;
+			subtree = left_subtree;
+		}
 	}
 
 	node_type * insert_value(node_type * parent, node_type ** child_link,
@@ -1744,31 +1738,11 @@ void avl_tree<T, Comp, Alloc>::destroy_tree() noexcept
 {
 	node_type * p = sentinel.left;
 	sentinel.left = nullptr;
+	maximum->right = nullptr;
+	minimum->left = nullptr;
 	maximum = minimum = &sentinel;
 
-	if (p != &sentinel)
-	{
-		if (p != nullptr) p->set_parent(nullptr);
-
-		while (p != nullptr)
-		{
-			if (p->left != nullptr)
-			{
-				p = p->left;
-				p->parent_node()->left = nullptr;
-			} else if (p->right != nullptr)
-			{
-				p = p->right;
-				p->parent_node()->right = nullptr;
-			} else
-			{
-				node_type * tmp = p;
-				p = p->parent_node();
-				destroy_node(tmp);
-				--node_count;
-			}
-		}
-	}
+	erase_subtree(p);
 
 	assert(node_count == 0);
 }
